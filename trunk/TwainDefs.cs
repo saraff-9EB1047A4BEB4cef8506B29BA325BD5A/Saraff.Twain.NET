@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace Saraff.Twain {
 
@@ -1033,6 +1034,34 @@ namespace Saraff.Twain {
     }
 
     /// <summary>
+    /// Provides image layout information in current units.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwImageLayout {
+
+        /// <summary>
+        /// Frame coords within larger document.
+        /// </summary>
+        [DebuggerDisplay("Left = {Frame.Left.ToFloat()}, Top = {Frame.Top.ToFloat()}, Right = {Frame.Right.ToFloat()}, Bottom = {Frame.Bottom.ToFloat()}")]
+        public TwFrame Frame;
+
+        /// <summary>
+        /// Номер документа.
+        /// </summary>
+        public uint DocumentNumber;
+
+        /// <summary>
+        /// Номер страницы.
+        /// </summary>
+        public uint PageNumber; //Reset when you go to next document
+
+        /// <summary>
+        /// Номер кадра.
+        /// </summary>
+        public uint FrameNumber; //Reset when you go to next page
+    }
+
+    /// <summary>
     /// Used with TwMSG.EndXfer to indicate additional data.
     /// </summary>
     [StructLayout(LayoutKind.Sequential,Pack=2)]
@@ -1044,6 +1073,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Fixed point structure type.
     /// </summary>
+    [DebuggerDisplay("Whole = {Whole}, Frac = {Frac}")]
     [StructLayout(LayoutKind.Sequential,Pack=2)]
     internal struct TwFix32 {									// TW_FIX32
 
@@ -1097,6 +1127,33 @@ namespace Saraff.Twain {
                 Frac=(ushort)(i>>16)
             };
         }
+    }
+
+    /// <summary>
+    /// Defines a frame rectangle in ICAP_UNITS coordinates.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal struct TwFrame {
+
+        /// <summary>
+        /// Gets or sets the x-coordinate of the left edge.
+        /// </summary>
+        public TwFix32 Left;
+
+        /// <summary>
+        /// Gets or sets the y-coordinate of the top edge.
+        /// </summary>
+        public TwFix32 Top;
+
+        /// <summary>
+        /// Gets or sets the x-coordinate that is the sum of TwFrame.Left and width of image.
+        /// </summary>
+        public TwFix32 Right;
+
+        /// <summary>
+        /// Gets or sets the y-coordinate that is the sum of TwFrame.Top and length of image.
+        /// </summary>
+        public TwFix32 Bottom;
     }
 
     /// <summary>

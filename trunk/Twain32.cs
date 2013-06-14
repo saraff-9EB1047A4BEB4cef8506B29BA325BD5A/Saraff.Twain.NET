@@ -47,6 +47,7 @@ namespace Saraff.Twain {
         private _DSiinf _DsImageInfo;
         private _DSixfer _DsImageXfer;
         private _DSpxfer _DsPendingXfer;
+        private _DSimagelayuot _DsImageLayuot;
         #endregion
         private IntPtr _hTwainDll; //дескриптор модуля twain_32.dll
         private IContainer _components=new Container();
@@ -111,6 +112,7 @@ namespace Saraff.Twain {
                     this._DsImageInfo=(_DSiinf)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSiinf));
                     this._DsImageXfer=(_DSixfer)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSixfer));
                     this._DsPendingXfer=(_DSpxfer)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSpxfer));
+                    this._DsImageLayuot=(_DSimagelayuot)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSimagelayuot));
                 } else {
                     throw new TwainException("Cann't find DSM_Entry entry point.");
                 }
@@ -503,6 +505,39 @@ namespace Saraff.Twain {
         public void SetUnitOfMeasure(TwUnits value) {
             this.SetCap(TwCap.IUnits,(ushort)value);
         }
+
+        /// <summary>
+        /// Возвращает или устанавливает кадр физического расположения изображения.
+        /// </summary>
+        public RectangleF ImageLayout {
+            get {
+                var _imageLayout=new TwImageLayout();
+                var _rc=this._DsImageLayuot(this._appid,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Get,_imageLayout);
+                if(_rc!=TwRC.Success) {
+                    throw new TwainException(this._GetTwainStatus());
+                }
+                return new RectangleF(
+                    _imageLayout.Frame.Left.ToFloat(),
+                    _imageLayout.Frame.Top.ToFloat(),
+                    _imageLayout.Frame.Right.ToFloat()-_imageLayout.Frame.Left.ToFloat(),
+                    _imageLayout.Frame.Bottom.ToFloat()-_imageLayout.Frame.Top.ToFloat());
+            }
+            set {
+                var _imageLayout=new TwImageLayout() {
+                    Frame=new TwFrame() {
+                        Left=TwFix32.FromFloat(value.Left),
+                        Top=TwFix32.FromFloat(value.Top),
+                        Right=TwFix32.FromFloat(value.Right),
+                        Bottom=TwFix32.FromFloat(value.Bottom)
+                    }
+                };
+                var _rc=this._DsImageLayuot(this._appid,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Set,_imageLayout);
+                if(_rc!=TwRC.Success) {
+                    throw new TwainException(this._GetTwainStatus());
+                }
+            }
+        }
+
 
         #endregion
 
@@ -1266,6 +1301,8 @@ namespace Saraff.Twain {
         private delegate TwRC _DScap([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwCapability capa);
 
         private delegate TwRC _DSiinf([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwImageInfo imginf);
+
+        private delegate TwRC _DSimagelayuot([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwImageLayout imageLayuot);
 
         private delegate TwRC _DSixfer([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,ref IntPtr hbitmap);
 
