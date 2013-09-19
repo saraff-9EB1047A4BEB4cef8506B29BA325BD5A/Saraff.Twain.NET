@@ -18,10 +18,11 @@
  * PLEASE SEND EMAIL TO:  twain@saraff.ru.
  */
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text;
 using System.Runtime.InteropServices;
-using System.Collections;
 using System.Windows.Forms;
 using System.ComponentModel;
 using System.Reflection;
@@ -59,6 +60,7 @@ namespace Saraff.Twain {
         private _MessageFilter _filter; //фильтр событий WIN32
         private TwIdentity[] _sorces; //массив доступных источников данных.
         private ApplicationContext _context=null; //контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
+        private Collection<Image> _images=new Collection<Image>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Twain32"/> class.
@@ -317,15 +319,16 @@ namespace Saraff.Twain {
         /// <param name="index">Индекс изображения.</param>
         /// <returns>Экземпляр изображения.</returns>
         public Image GetImage(int index) {
-            return this._filter.GetImage(index);
+            return this._images[index];
         }
 
         /// <summary>
         /// Возвращает количество отсканированных изображений.
         /// </summary>
+        [Browsable(false)]
         public int ImageCount {
             get {
-                return this._filter.ImageCount;
+                return this._images.Count;
             }
         }
 
@@ -444,6 +447,40 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
+        /// Возвращает или устанавливает кадр физического расположения изображения.
+        /// </summary>
+        [Browsable(false)]
+        [ReadOnly(true)]
+        public RectangleF ImageLayout {
+            get {
+                var _imageLayout=new TwImageLayout();
+                var _rc=this._DsImageLayuot(this._appid,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Get,_imageLayout);
+                if(_rc!=TwRC.Success) {
+                    throw new TwainException(this._GetTwainStatus());
+                }
+                return new RectangleF(
+                    _imageLayout.Frame.Left.ToFloat(),
+                    _imageLayout.Frame.Top.ToFloat(),
+                    _imageLayout.Frame.Right.ToFloat()-_imageLayout.Frame.Left.ToFloat(),
+                    _imageLayout.Frame.Bottom.ToFloat()-_imageLayout.Frame.Top.ToFloat());
+            }
+            set {
+                var _imageLayout=new TwImageLayout() {
+                    Frame=new TwFrame() {
+                        Left=TwFix32.FromFloat(value.Left),
+                        Top=TwFix32.FromFloat(value.Top),
+                        Right=TwFix32.FromFloat(value.Right),
+                        Bottom=TwFix32.FromFloat(value.Bottom)
+                    }
+                };
+                var _rc=this._DsImageLayuot(this._appid,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Set,_imageLayout);
+                if(_rc!=TwRC.Success) {
+                    throw new TwainException(this._GetTwainStatus());
+                }
+            }
+        }
+
+        /// <summary>
         /// Возвращает разрешения, поддерживаемые источником данных.
         /// </summary>
         /// <returns>Коллекция значений.</returns>
@@ -505,39 +542,6 @@ namespace Saraff.Twain {
         public void SetUnitOfMeasure(TwUnits value) {
             this.SetCap(TwCap.IUnits,(ushort)value);
         }
-
-        /// <summary>
-        /// Возвращает или устанавливает кадр физического расположения изображения.
-        /// </summary>
-        public RectangleF ImageLayout {
-            get {
-                var _imageLayout=new TwImageLayout();
-                var _rc=this._DsImageLayuot(this._appid,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Get,_imageLayout);
-                if(_rc!=TwRC.Success) {
-                    throw new TwainException(this._GetTwainStatus());
-                }
-                return new RectangleF(
-                    _imageLayout.Frame.Left.ToFloat(),
-                    _imageLayout.Frame.Top.ToFloat(),
-                    _imageLayout.Frame.Right.ToFloat()-_imageLayout.Frame.Left.ToFloat(),
-                    _imageLayout.Frame.Bottom.ToFloat()-_imageLayout.Frame.Top.ToFloat());
-            }
-            set {
-                var _imageLayout=new TwImageLayout() {
-                    Frame=new TwFrame() {
-                        Left=TwFix32.FromFloat(value.Left),
-                        Top=TwFix32.FromFloat(value.Top),
-                        Right=TwFix32.FromFloat(value.Right),
-                        Bottom=TwFix32.FromFloat(value.Bottom)
-                    }
-                };
-                var _rc=this._DsImageLayuot(this._appid,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Set,_imageLayout);
-                if(_rc!=TwRC.Success) {
-                    throw new TwainException(this._GetTwainStatus());
-                }
-            }
-        }
-
 
         #endregion
 
@@ -782,49 +786,37 @@ namespace Saraff.Twain {
 
         #endregion
 
-        private ArrayList _TransferPictures() {
-            ArrayList pics=new ArrayList();
-            if(this._srcds.Id==IntPtr.Zero)
-                return pics;
-
-            TwRC rc;
+        private void _TransferPictures() {
+            ArrayList _pics=new ArrayList();
+            if(this._srcds.Id==IntPtr.Zero) {
+                return;
+            }
             IntPtr _hBitmap=IntPtr.Zero;
-            TwPendingXfers pxfr=new TwPendingXfers();
+            TwPendingXfers _pxfr=new TwPendingXfers();
+            Image _img=null;
+            this._images.Clear();
 
             do {
-                pxfr.Count=0;
+                _pxfr.Count=0;
                 _hBitmap=IntPtr.Zero;
 
-                TwImageInfo iinf=new TwImageInfo();
-                rc=this._DsImageInfo(this._appid,this._srcds,TwDG.Image,TwDAT.ImageInfo,TwMSG.Get,iinf);
-                if(rc!=TwRC.Success) {
-                    this.CloseDataSource();
-                    return pics;
-                }
+                var _isXferDone=_DsImageXfer(this._appid,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap)==TwRC.XferDone;
 
-                rc=_DsImageXfer(this._appid,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap);
-                if(rc!=TwRC.XferDone) {
-                    this.CloseDataSource();
-                    return pics;
-                }
-
-                rc=_DsPendingXfer(this._appid,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,pxfr);
-                if(rc!=TwRC.Success) {
-                    this.CloseDataSource();
-                    return pics;
-                }
-
-                IntPtr _pBitmap=GlobalLock(_hBitmap);
-                try {
-                    pics.Add(_pBitmap);
-                } finally {
-                    GlobalUnlock(_hBitmap);
+                if(_DsPendingXfer(this._appid,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)==TwRC.Success && _isXferDone) {
+                    IntPtr _pBitmap=GlobalLock(_hBitmap);
+                    try {
+                        this._images.Add(_img=DibToImage.WithScan0(_pBitmap));
+                        this._OnEndXfer(new EndXferEventArgs(_img));
+                    } finally {
+                        GlobalUnlock(_hBitmap);
+                        GlobalFree(_hBitmap);
+                    }
+                } else {
+                    break;
                 }
             }
-            while(pxfr.Count!=0);
-
-            rc=_DsPendingXfer(this._appid,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,pxfr);
-            return pics;
+            while(_pxfr.Count!=0);
+            var _rc=_DsPendingXfer(this._appid,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
         }
 
         private TwainCommand _PassMessage(ref Message m) {
@@ -866,6 +858,12 @@ namespace Saraff.Twain {
             }
             if(this.AcquireCompleted!=null) {
                 this.AcquireCompleted(this,e);
+            }
+        }
+
+        private void _OnEndXfer(EndXferEventArgs e) {
+            if(this.EndXfer!=null) {
+                this.EndXfer(this,e);
             }
         }
 
@@ -951,20 +949,9 @@ namespace Saraff.Twain {
         private sealed class _MessageFilter:IMessageFilter {
             private Twain32 _twain;
             private bool _is_set_filter=false;
-            private List<Image> _images=new List<Image>();
 
             public _MessageFilter(Twain32 twain) {
                 this._twain=twain;
-            }
-
-            public Image GetImage(int index) {
-                return this._images[index];
-            }
-
-            public int ImageCount {
-                get {
-                    return this._images.Count;
-                }
             }
 
             public bool PreFilterMessage(ref Message m) {
@@ -986,12 +973,7 @@ namespace Saraff.Twain {
                     case TwainCommand.DeviceEvent:
                         break;
                     case TwainCommand.TransferReady:
-                        ArrayList _pics=this._twain._TransferPictures();
-                        this._images.Clear();
-                        for(int i=0;i<_pics.Count;i++) {
-                            this._images.Add(DibToImage.WithScan0((IntPtr)_pics[i]));
-                            IntPtr _res=GlobalFree((IntPtr)_pics[i]);
-                        }
+                        this._twain._TransferPictures();
                         _end();
                         this._twain._OnAcquireCompleted(new EventArgs());
                         break;
@@ -1048,6 +1030,35 @@ namespace Saraff.Twain {
         [Category("Action")]
         [Description("Возникает в момент окончания сканирования.")]
         public event EventHandler AcquireCompleted;
+
+        /// <summary>
+        /// Возникает в момент окончания получения изображения.
+        /// </summary>
+        [Category("Action")]
+        [Description("Возникает в момент окончания получения изображения.")]
+        public event EventHandler<EndXferEventArgs> EndXfer;
+
+        /// <summary>
+        /// Аргументы события EndXfer.
+        /// </summary>
+        public sealed class EndXferEventArgs:EventArgs {
+
+            /// <summary>
+            /// Инициализирует новый экземпляр класса.
+            /// </summary>
+            /// <param name="image"></param>
+            internal EndXferEventArgs(Image image) {
+                this.Image=image;
+            }
+
+            /// <summary>
+            /// Возвращает изображение.
+            /// </summary>
+            public Image Image {
+                get;
+                private set;
+            }
+        }
 
         /// <summary>
         /// Диапазон значений.
