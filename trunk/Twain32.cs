@@ -61,6 +61,7 @@ namespace Saraff.Twain {
         private TwIdentity[] _sorces; //массив доступных источников данных.
         private ApplicationContext _context=null; //контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
         private Collection<Image> _images=new Collection<Image>();
+        private TwainStateFlag _twainState;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Twain32"/> class.
@@ -894,8 +895,17 @@ namespace Saraff.Twain {
         /// Возвращает или устанавливает значение флагов состояния.
         /// </summary>
         private TwainStateFlag _TwainState {
-            get;
-            set;
+            get {
+                return this._twainState;
+            }
+            set {
+                if(this._twainState!=value) {
+                    this._twainState=value;
+                    if(this.TwainStateChanged!=null) {
+                        this.TwainStateChanged(this,new TwainStateEventArgs(this._twainState));
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -1018,7 +1028,7 @@ namespace Saraff.Twain {
         /// Флаги состояния.
         /// </summary>
         [Flags]
-        private enum TwainStateFlag {
+        public enum TwainStateFlag {
             DSMOpen=0x1,
             DSOpen=0x2,
             DSEnabled=0x4
@@ -1039,6 +1049,13 @@ namespace Saraff.Twain {
         public event EventHandler<EndXferEventArgs> EndXfer;
 
         /// <summary>
+        /// Возникает в момент изменения состояния twain-устройства.
+        /// </summary>
+        [Category("Action")]
+        [Description("Возникает в момент изменения состояния twain-устройства.")]
+        public event EventHandler<TwainStateEventArgs> TwainStateChanged;
+
+        /// <summary>
         /// Аргументы события EndXfer.
         /// </summary>
         public sealed class EndXferEventArgs:EventArgs {
@@ -1046,7 +1063,7 @@ namespace Saraff.Twain {
             /// <summary>
             /// Инициализирует новый экземпляр класса.
             /// </summary>
-            /// <param name="image"></param>
+            /// <param name="image">Изображение.</param>
             internal EndXferEventArgs(Image image) {
                 this.Image=image;
             }
@@ -1055,6 +1072,28 @@ namespace Saraff.Twain {
             /// Возвращает изображение.
             /// </summary>
             public Image Image {
+                get;
+                private set;
+            }
+        }
+
+        /// <summary>
+        /// Аргументы события TwainStateChanged.
+        /// </summary>
+        public sealed class TwainStateEventArgs:EventArgs {
+
+            /// <summary>
+            /// Инициализирует новый экземпляр класса.
+            /// </summary>
+            /// <param name="flags">Флаги состояния.</param>
+            public TwainStateEventArgs(TwainStateFlag flags) {
+                this.TwainState=flags;
+            }
+
+            /// <summary>
+            /// Возвращает флаги состояния twain-устройства.
+            /// </summary>
+            public TwainStateFlag TwainState {
                 get;
                 private set;
             }
