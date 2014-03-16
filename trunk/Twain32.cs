@@ -27,6 +27,7 @@ using System.Windows.Forms;
 using System.ComponentModel;
 using System.Reflection;
 using System.Drawing;
+using System.Diagnostics;
 
 namespace Saraff.Twain {
 
@@ -46,6 +47,7 @@ namespace Saraff.Twain {
         private _DSstatus _DsStatus;
         private _DScap _DsCap;
         private _DSiinf _DsImageInfo;
+        private _DSextiinf _DsExtImageInfo;
         private _DSixfer _DsImageXfer;
         private _DSpxfer _DsPendingXfer;
         private _DSimagelayuot _DsImageLayuot;
@@ -55,8 +57,6 @@ namespace Saraff.Twain {
         private IntPtr _hwnd; //дескриптор родительского окна.
         private TwIdentity _appid; //идентификатор приложения.
         private TwIdentity _srcds; //идентификатор текущего источника данных.
-        private TwEvent _evtmsg;
-        private WINMSG _winmsg;
         private _MessageFilter _filter; //фильтр событий WIN32
         private TwIdentity[] _sorces; //массив доступных источников данных.
         private ApplicationContext _context=null; //контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
@@ -94,7 +94,6 @@ namespace Saraff.Twain {
 
             this._srcds=new TwIdentity();
             this._srcds.Id=IntPtr.Zero;
-            this._evtmsg.EventPtr=Marshal.AllocHGlobal(Marshal.SizeOf(this._winmsg));
             this._filter=new _MessageFilter(this);
             this.ShowUI=true;
             this.DisableAfterAcquire=true;
@@ -113,6 +112,7 @@ namespace Saraff.Twain {
                     this._DsStatus=(_DSstatus)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSstatus));
                     this._DsCap=(_DScap)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DScap));
                     this._DsImageInfo=(_DSiinf)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSiinf));
+                    this._DsExtImageInfo=(_DSextiinf)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSextiinf));
                     this._DsImageXfer=(_DSixfer)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSixfer));
                     this._DsPendingXfer=(_DSpxfer)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSpxfer));
                     this._DsImageLayuot=(_DSimagelayuot)Marshal.GetDelegateForFunctionPointer(_pDsmEntry,typeof(_DSimagelayuot));
@@ -141,10 +141,7 @@ namespace Saraff.Twain {
         protected override void Dispose(bool disposing) {
             if(disposing) {
                 this.CloseDSM();
-                if(this._evtmsg.EventPtr!=IntPtr.Zero) {
-                    Marshal.FreeHGlobal(this._evtmsg.EventPtr);
-                    this._evtmsg.EventPtr=IntPtr.Zero;
-                }
+                this._filter.Dispose();
                 if(this._hTwainDll!=IntPtr.Zero) {
                     FreeLibrary(this._hTwainDll);
                     this._hTwainDll=IntPtr.Zero;
@@ -624,7 +621,7 @@ namespace Saraff.Twain {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public void SetCap(TwCap capability,object value) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                using(TwCapability _cap=new TwCapability(capability,Twain32._Convert(value),Twain32._Convert(value.GetType()))) {
+                using(TwCapability _cap=new TwCapability(capability,Twain32._Convert(value),TwTypeHelper.TypeOf(value.GetType()))) {
                     TwRC _rc=this._DsCap(this._appid,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,_cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus());
@@ -646,7 +643,7 @@ namespace Saraff.Twain {
                 using(TwCapability _cap=new TwCapability(
                     capability,
                     new _TwArray() {
-                        ItemType=Twain32._Convert(capabilityValue[0].GetType()), NumItems=capabilityValue.Length
+                        ItemType=TwTypeHelper.TypeOf(capabilityValue[0].GetType()), NumItems=capabilityValue.Length
                     },
                     capabilityValue)) {
 
@@ -690,7 +687,7 @@ namespace Saraff.Twain {
                 using(TwCapability _cap=new TwCapability(
                     capability,
                     new _TwEnumeration() {
-                        ItemType=Twain32._Convert(capabilityValue.Items[0].GetType()),
+                        ItemType=TwTypeHelper.TypeOf(capabilityValue.Items[0].GetType()),
                         NumItems=capabilityValue.Count,
                         CurrentIndex=capabilityValue.CurrentIndex,
                         DefaultIndex=capabilityValue.DefaultIndex
@@ -737,45 +734,12 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Конвертирует экземпляр <see cref="System.Type"/> в значение перечисления <see cref="TwType"/>.
-        /// </summary>
-        /// <param name="type">Экземпляр <see cref="System.Type"/>.</param>
-        /// <returns>Значение перечисления <see cref="TwType"/></returns>
-        private static TwType _Convert(Type type) {
-            if(type==typeof(byte)) {
-                return TwType.UInt8;
-            }
-            if(type==typeof(ushort)) {
-                return TwType.UInt16;
-            }
-            if(type==typeof(uint)) {
-                return TwType.UInt32;
-            }
-            if(type==typeof(sbyte)) {
-                return TwType.Int8;
-            }
-            if(type==typeof(short)) {
-                return TwType.Int16;
-            }
-            if(type==typeof(int)) {
-                return TwType.Int32;
-            }
-            if(type==typeof(float)) {
-                return TwType.Fix32;
-            }
-            if(type==typeof(bool)) {
-                return TwType.Bool;
-            }
-            return 0;
-        }
-
-        /// <summary>
         /// Конвертирует указанный экземпляр в экземпляр Int32.
         /// </summary>
         /// <param name="item">Конвертируемый экземпляр.</param>
         /// <returns>Экземпляр Int32.</returns>
         private static int _Convert(object item) {
-            switch(Twain32._Convert(item.GetType())){
+            switch(TwTypeHelper.TypeOf(item.GetType())){
                 case TwType.Bool:
                     return (bool)item?1:0;
                 case TwType.Fix32:
@@ -787,13 +751,15 @@ namespace Saraff.Twain {
 
         #endregion
 
+        /// <summary>
+        /// Выполняет передачу изображения.
+        /// </summary>
         private void _TransferPictures() {
-            ArrayList _pics=new ArrayList();
             if(this._srcds.Id==IntPtr.Zero) {
                 return;
             }
             IntPtr _hBitmap=IntPtr.Zero;
-            TwPendingXfers _pxfr=new TwPendingXfers();
+            var _pxfr=new TwPendingXfers();
             Image _img=null;
             this._images.Clear();
 
@@ -801,9 +767,15 @@ namespace Saraff.Twain {
                 _pxfr.Count=0;
                 _hBitmap=IntPtr.Zero;
 
-                var _isXferDone=_DsImageXfer(this._appid,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap)==TwRC.XferDone;
+                var _isXferDone=this._DsImageXfer(this._appid,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap)==TwRC.XferDone;
 
-                if(_DsPendingXfer(this._appid,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)==TwRC.Success && _isXferDone) {
+                if(_isXferDone) {
+                    // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
+                    // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
+                    this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                }
+
+                if(this._DsPendingXfer(this._appid,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)==TwRC.Success&&_isXferDone) {
                     IntPtr _pBitmap=GlobalLock(_hBitmap);
                     try {
                         this._images.Add(_img=DibToImage.WithScan0(_pBitmap));
@@ -815,40 +787,8 @@ namespace Saraff.Twain {
                 } else {
                     break;
                 }
-            }
-            while(_pxfr.Count!=0);
-            var _rc=_DsPendingXfer(this._appid,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
-        }
-
-        private TwainCommand _PassMessage(ref Message m) {
-            if(this._srcds.Id==IntPtr.Zero)
-                return TwainCommand.Not;
-
-            int _pos=GetMessagePos();
-
-            this._winmsg.hwnd=m.HWnd;
-            this._winmsg.message=m.Msg;
-            this._winmsg.wParam=m.WParam;
-            this._winmsg.lParam=m.LParam;
-            this._winmsg.time=GetMessageTime();
-            this._winmsg.x=(short)_pos;
-            this._winmsg.y=(short)(_pos>>16);
-
-            Marshal.StructureToPtr(this._winmsg,this._evtmsg.EventPtr,false);
-            this._evtmsg.Message=0;
-            TwRC rc=this._DsEvent(this._appid,this._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
-            if(rc==TwRC.NotDSEvent)
-                return TwainCommand.Not;
-            if(this._evtmsg.Message==TwMSG.XFerReady)
-                return TwainCommand.TransferReady;
-            if(this._evtmsg.Message==TwMSG.CloseDSReq)
-                return TwainCommand.CloseRequest;
-            if(this._evtmsg.Message==TwMSG.CloseDSOK)
-                return TwainCommand.CloseOk;
-            if(this._evtmsg.Message==TwMSG.DeviceEvent)
-                return TwainCommand.DeviceEvent;
-
-            return TwainCommand.Null;
+            } while(_pxfr.Count!=0);
+            var _rc=this._DsPendingXfer(this._appid,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
         }
 
         private void _OnAcquireCompleted(EventArgs e) {
@@ -859,6 +799,12 @@ namespace Saraff.Twain {
             }
             if(this.AcquireCompleted!=null) {
                 this.AcquireCompleted(this,e);
+            }
+        }
+
+        private void _OnXferDone(XferDoneEventArgs e) {
+            if(this.XferDone!=null) {
+                this.XferDone(this,e);
             }
         }
 
@@ -918,6 +864,38 @@ namespace Saraff.Twain {
             return _status.ConditionCode;
         }
 
+        /// <summary>
+        /// Возвращает описание полученного изображения.
+        /// </summary>
+        /// <returns>Описание изображения.</returns>
+        private ImageInfo _GetImageInfo() {
+            var _imageInfo=new TwImageInfo();
+            var _rc=this._DsImageInfo(this._appid,this._srcds,TwDG.Image,TwDAT.ImageInfo,TwMSG.Get,_imageInfo);
+            if(_rc!=TwRC.Success) {
+                throw new TwainException(this._GetTwainStatus());
+            }
+            return ImageInfo.FromTwImageInfo(_imageInfo);
+        }
+
+        /// <summary>
+        /// Возвращает расширенного описание полученного изображения.
+        /// </summary>
+        /// <param name="extInfo">Набор кодов расширенного описания изображения для которых требуется получить описание.</param>
+        /// <returns>Расширенное описание изображения.</returns>
+        private ExtImageInfo _GetExtImageInfo(TwEI[] extInfo) {
+            var _info=new TwInfo[extInfo.Length];
+            for(int i=0; i<extInfo.Length; i++) {
+                _info[i]=new TwInfo {InfoId=extInfo[i]};
+            }
+            var _extImageInfo=TwExtImageInfo.ToPtr(_info);
+
+            var _rc=this._DsExtImageInfo(this._appid,this._srcds,TwDG.Image,TwDAT.ExtImageInfo,TwMSG.Get,_extImageInfo);
+            if(_rc!=TwRC.Success) {
+                throw new TwainException(this._GetTwainStatus());
+            }
+            return ExtImageInfo.FromPtr(_extImageInfo);
+        }
+
         #region import kernel32.dll
 
         [DllImport("kernel32.dll",ExactSpelling=true)]
@@ -954,18 +932,150 @@ namespace Saraff.Twain {
         #endregion
 
         /// <summary>
+        /// Флаги состояния.
+        /// </summary>
+        [Flags]
+        public enum TwainStateFlag {
+            DSMOpen=0x1,
+            DSOpen=0x2,
+            DSEnabled=0x4
+        }
+
+        #region Events
+
+        /// <summary>
+        /// Возникает в момент окончания сканирования.
+        /// </summary>
+        [Category("Action")]
+        [Description("Возникает в момент окончания сканирования.")]
+        public event EventHandler AcquireCompleted;
+
+        /// <summary>
+        /// Возникает в момент окончания получения изображения приложением.
+        /// </summary>
+        [Category("Action")]
+        [Description("Возникает в момент окончания получения изображения приложением.")]
+        public event EventHandler<EndXferEventArgs> EndXfer;
+
+        /// <summary>
+        /// Возникает в момент окончания получения изображения источником.
+        /// </summary>
+        [Category("Action")]
+        [Description("Возникает в момент окончания получения изображения источником.")]
+        public event EventHandler<XferDoneEventArgs> XferDone;
+
+        /// <summary>
+        /// Возникает в момент изменения состояния twain-устройства.
+        /// </summary>
+        [Category("Action")]
+        [Description("Возникает в момент изменения состояния twain-устройства.")]
+        public event EventHandler<TwainStateEventArgs> TwainStateChanged;
+
+        #endregion
+
+        #region Events Args
+
+        /// <summary>
+        /// Аргументы события EndXfer.
+        /// </summary>
+        public sealed class EndXferEventArgs:EventArgs {
+
+            /// <summary>
+            /// Инициализирует новый экземпляр класса.
+            /// </summary>
+            /// <param name="image">Изображение.</param>
+            internal EndXferEventArgs(Image image) {
+                this.Image=image;
+            }
+
+            /// <summary>
+            /// Возвращает изображение.
+            /// </summary>
+            public Image Image {
+                get;
+                private set;
+            }
+        }
+
+        /// <summary>
+        /// Аргументы события XferDone.
+        /// </summary>
+        public sealed class XferDoneEventArgs:EventArgs {
+            private GetImageInfoCallback _imageInfoMethod;
+            private GetExtImageInfoCallback _extImageInfoMethod;
+
+            /// <summary>
+            /// Инициализирует новый экземпляр класса <see cref="XferDoneEventArgs"/>.
+            /// </summary>
+            /// <param name="method1">Метод обратного вызова для получения описания изображения.</param>
+            /// <param name="method2">Метод обратного вызова для получения расширенного описания изображения.</param>
+            internal XferDoneEventArgs(GetImageInfoCallback method1,GetExtImageInfoCallback method2) {
+                this._imageInfoMethod=method1;
+                this._extImageInfoMethod=method2;
+            }
+
+            /// <summary>
+            /// Возвращает описание полученного изображения.
+            /// </summary>
+            /// <returns>Описание изображения.</returns>
+            public ImageInfo GetImageInfo() {
+                return this._imageInfoMethod();
+            }
+
+            /// <summary>
+            /// Возвращает расширенного описание полученного изображения.
+            /// </summary>
+            /// <param name="extInfo">Набор кодов расширенного описания изображения для которых требуется получить описание.</param>
+            /// <returns>Расширенное описание изображения.</returns>
+            public ExtImageInfo GetExtImageInfo(TwEI[] extInfo) {
+                return this._extImageInfoMethod(extInfo);
+            }
+        }
+
+        /// <summary>
+        /// Аргументы события TwainStateChanged.
+        /// </summary>
+        public sealed class TwainStateEventArgs:EventArgs {
+
+            /// <summary>
+            /// Инициализирует новый экземпляр класса.
+            /// </summary>
+            /// <param name="flags">Флаги состояния.</param>
+            public TwainStateEventArgs(TwainStateFlag flags) {
+                this.TwainState=flags;
+            }
+
+            /// <summary>
+            /// Возвращает флаги состояния twain-устройства.
+            /// </summary>
+            public TwainStateFlag TwainState {
+                get;
+                private set;
+            }
+        }
+
+        #endregion
+
+        #region Nested classes
+
+        /// <summary>
         /// Фильтр win32-сообщений.
         /// </summary>
-        private sealed class _MessageFilter:IMessageFilter {
+        private sealed class _MessageFilter:IMessageFilter,IDisposable {
             private Twain32 _twain;
             private bool _is_set_filter=false;
+            private TwEvent _evtmsg;
+            private WINMSG _winmsg;
 
             public _MessageFilter(Twain32 twain) {
                 this._twain=twain;
+                this._evtmsg.EventPtr=Marshal.AllocHGlobal(Marshal.SizeOf(this._winmsg));
             }
 
+            #region IMessageFilter
+
             public bool PreFilterMessage(ref Message m) {
-                TwainCommand _cmd=this._twain._PassMessage(ref m);
+                TwainCommand _cmd=this._PassMessage(ref m);
                 if(_cmd==TwainCommand.Not) {
                     return false;
                 }
@@ -991,6 +1101,50 @@ namespace Saraff.Twain {
                 return true;
             }
 
+            #endregion
+
+            #region IDisposable
+
+            public void Dispose() {
+                if(this._evtmsg.EventPtr!=IntPtr.Zero) {
+                    Marshal.FreeHGlobal(this._evtmsg.EventPtr);
+                    this._evtmsg.EventPtr=IntPtr.Zero;
+                }
+            }
+
+            #endregion
+
+            private TwainCommand _PassMessage(ref Message m) {
+                if(this._twain._srcds.Id==IntPtr.Zero)
+                    return TwainCommand.Not;
+
+                int _pos=GetMessagePos();
+
+                this._winmsg.hwnd=m.HWnd;
+                this._winmsg.message=m.Msg;
+                this._winmsg.wParam=m.WParam;
+                this._winmsg.lParam=m.LParam;
+                this._winmsg.time=GetMessageTime();
+                this._winmsg.x=(short)_pos;
+                this._winmsg.y=(short)(_pos>>16);
+
+                Marshal.StructureToPtr(this._winmsg,this._evtmsg.EventPtr,false);
+                this._evtmsg.Message=0;
+                TwRC rc=this._twain._DsEvent(this._twain._appid,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
+                if(rc==TwRC.NotDSEvent)
+                    return TwainCommand.Not;
+                if(this._evtmsg.Message==TwMSG.XFerReady)
+                    return TwainCommand.TransferReady;
+                if(this._evtmsg.Message==TwMSG.CloseDSReq)
+                    return TwainCommand.CloseRequest;
+                if(this._evtmsg.Message==TwMSG.CloseDSOK)
+                    return TwainCommand.CloseOk;
+                if(this._evtmsg.Message==TwMSG.DeviceEvent)
+                    return TwainCommand.DeviceEvent;
+
+                return TwainCommand.Null;
+            }
+
             public void SetFilter() {
                 if(!this._is_set_filter) {
                     this._is_set_filter=true;
@@ -1002,100 +1156,25 @@ namespace Saraff.Twain {
                 Application.RemoveMessageFilter(this);
                 this._is_set_filter=false;
             }
-        }
 
-        [StructLayout(LayoutKind.Sequential,Pack=4)]
-        internal struct WINMSG {
-            public IntPtr hwnd;
-            public int message;
-            public IntPtr wParam;
-            public IntPtr lParam;
-            public int time;
-            public int x;
-            public int y;
-        }
-
-        private enum TwainCommand {
-            Not=-1,
-            Null=0,
-            TransferReady=1,
-            CloseRequest=2,
-            CloseOk=3,
-            DeviceEvent=4
-        }
-
-        /// <summary>
-        /// Флаги состояния.
-        /// </summary>
-        [Flags]
-        public enum TwainStateFlag {
-            DSMOpen=0x1,
-            DSOpen=0x2,
-            DSEnabled=0x4
-        }
-
-        /// <summary>
-        /// Возникает в момент окончания сканирования.
-        /// </summary>
-        [Category("Action")]
-        [Description("Возникает в момент окончания сканирования.")]
-        public event EventHandler AcquireCompleted;
-
-        /// <summary>
-        /// Возникает в момент окончания получения изображения.
-        /// </summary>
-        [Category("Action")]
-        [Description("Возникает в момент окончания получения изображения.")]
-        public event EventHandler<EndXferEventArgs> EndXfer;
-
-        /// <summary>
-        /// Возникает в момент изменения состояния twain-устройства.
-        /// </summary>
-        [Category("Action")]
-        [Description("Возникает в момент изменения состояния twain-устройства.")]
-        public event EventHandler<TwainStateEventArgs> TwainStateChanged;
-
-        /// <summary>
-        /// Аргументы события EndXfer.
-        /// </summary>
-        public sealed class EndXferEventArgs:EventArgs {
-
-            /// <summary>
-            /// Инициализирует новый экземпляр класса.
-            /// </summary>
-            /// <param name="image">Изображение.</param>
-            internal EndXferEventArgs(Image image) {
-                this.Image=image;
+            [StructLayout(LayoutKind.Sequential,Pack=4)]
+            internal struct WINMSG {
+                public IntPtr hwnd;
+                public int message;
+                public IntPtr wParam;
+                public IntPtr lParam;
+                public int time;
+                public int x;
+                public int y;
             }
 
-            /// <summary>
-            /// Возвращает изображение.
-            /// </summary>
-            public Image Image {
-                get;
-                private set;
-            }
-        }
-
-        /// <summary>
-        /// Аргументы события TwainStateChanged.
-        /// </summary>
-        public sealed class TwainStateEventArgs:EventArgs {
-
-            /// <summary>
-            /// Инициализирует новый экземпляр класса.
-            /// </summary>
-            /// <param name="flags">Флаги состояния.</param>
-            public TwainStateEventArgs(TwainStateFlag flags) {
-                this.TwainState=flags;
-            }
-
-            /// <summary>
-            /// Возвращает флаги состояния twain-устройства.
-            /// </summary>
-            public TwainStateFlag TwainState {
-                get;
-                private set;
+            private enum TwainCommand {
+                Not=-1,
+                Null=0,
+                TransferReady=1,
+                CloseRequest=2,
+                CloseOk=3,
+                DeviceEvent=4
             }
         }
 
@@ -1192,7 +1271,7 @@ namespace Saraff.Twain {
             /// <returns>Экземпляр <see cref="_TwRange"/>.</returns>
             internal _TwRange ToTwRange() {
                 return new _TwRange() {
-                    ItemType=Twain32._Convert(this.CurrentValue.GetType()),
+                    ItemType=TwTypeHelper.TypeOf(this.CurrentValue.GetType()),
                     MinValue=Twain32._Convert(this.MinValue),
                     MaxValue=Twain32._Convert(this.MaxValue),
                     StepSize=Twain32._Convert(this.StepSize),
@@ -1328,7 +1407,227 @@ namespace Saraff.Twain {
             }
         }
 
-        #region private delegates
+        /// <summary>
+        /// Описание изображения.
+        /// </summary>
+        public sealed class ImageInfo {
+
+            private ImageInfo() {
+            }
+
+            /// <summary>
+            /// Создает и возвращает новый экземпляр класса ImageInfo на основе экземпляра класса TwImageInfo.
+            /// </summary>
+            /// <param name="info">Описание изображения.</param>
+            /// <returns>Экземпляр класса ImageInfo.</returns>
+            internal static ImageInfo FromTwImageInfo(TwImageInfo info) {
+                return new ImageInfo {
+                    BitsPerPixel=info.BitsPerPixel,
+                    BitsPerSample=info.BitsPerSample,
+                    Compression=info.Compression,
+                    ImageLength=info.ImageLength,
+                    ImageWidth=info.ImageWidth,
+                    PixelType=info.PixelType,
+                    Planar=info.Planar!=0,
+                    SamplesPerPixel=info.SamplesPerPixel,
+                    XResolution=info.XResolution,
+                    YResolution=info.YResolution
+                };
+            }
+
+            /// <summary>
+            /// Resolution in the horizontal
+            /// </summary>
+            public int XResolution {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Resolution in the vertical
+            /// </summary>
+            public int YResolution {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Columns in the image, -1 if unknown by DS
+            /// </summary>
+            public int ImageWidth {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Rows in the image, -1 if unknown by DS
+            /// </summary>
+            public int ImageLength {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Number of samples per pixel, 3 for RGB
+            /// </summary>
+            public short SamplesPerPixel {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Number of bits for each sample
+            /// </summary>
+            public short[] BitsPerSample {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Number of bits for each padded pixel
+            /// </summary>
+            public short BitsPerPixel {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// True if Planar, False if chunky
+            /// </summary>
+            public bool Planar {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// How to interp data; photo interp
+            /// </summary>
+            public TwPixelType PixelType {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// How the data is compressed
+            /// </summary>
+            public TwCompression Compression {
+                get;
+                private set;
+            }
+        }
+
+        /// <summary>
+        /// Расширенное описание изображения.
+        /// </summary>
+        public sealed class ExtImageInfo:Collection<ExtImageInfo.InfoItem> {
+
+            private ExtImageInfo() {
+            }
+
+            /// <summary>
+            /// Создает и возвращает экземпляр класса ExtImageInfo из блока неуправляемой памяти.
+            /// </summary>
+            /// <param name="ptr">Указатель на блок неуправляемой памяти.</param>
+            /// <returns>Экземпляр класса ExtImageInfo.</returns>
+            internal static ExtImageInfo FromPtr(IntPtr ptr) {
+                var _twExtImageInfoSize=Marshal.SizeOf(typeof(TwExtImageInfo));
+                var _twInfoSize=Marshal.SizeOf(typeof(TwInfo));
+                var _extImageInfo=Marshal.PtrToStructure(ptr,typeof(TwExtImageInfo)) as TwExtImageInfo;
+                var _result=new ExtImageInfo();
+                for(int i=0; i<_extImageInfo.NumInfos; i++) {
+                    using(var _item=Marshal.PtrToStructure((IntPtr)(ptr.ToInt32()+_twExtImageInfoSize+(_twInfoSize*i)),typeof(TwInfo)) as TwInfo) {
+                        _result.Add(InfoItem.FromTwInfo(_item));
+                    }
+                }
+                return _result;
+            }
+
+            /// <summary>
+            /// Возвращает элемент описания расширенной информации о изображении по его коду.
+            /// </summary>
+            /// <param name="infoId">Код элемента описания расширенной информации о изображении.</param>
+            /// <returns>Элемент описания расширенной информации о изображении.</returns>
+            /// <exception cref="System.Collections.Generic.KeyNotFoundException">Для указанного кода отсутствует соответствующий элемент.</exception>
+            public InfoItem this[TwEI infoId] {
+                get {
+                    foreach(var _item in this) {
+                        if(_item.InfoId==infoId) {
+                            return _item;
+                        }
+                    }
+                    throw new KeyNotFoundException();
+                }
+            }
+
+            /// <summary>
+            /// Элемент описания расширенной информации о изображении.
+            /// </summary>
+            [DebuggerDisplay("InfoId = {InfoId}, IsSuccess = {IsSuccess}, Value = {Value}")]
+            public sealed class InfoItem {
+
+                private InfoItem() {
+                }
+
+                /// <summary>
+                /// Создает и возвращает экземпляр класса элемента описания расширенной информации о изображении из внутреннего экземпляра класса элемента описания расширенной информации о изображении.
+                /// </summary>
+                /// <param name="info">Внутрений экземпляр класса элемента описания расширенной информации о изображении.</param>
+                /// <returns>Экземпляр класса элемента описания расширенной информации о изображении.</returns>
+                internal static InfoItem FromTwInfo(TwInfo info) {
+                    return new InfoItem {
+                        InfoId=info.InfoId,
+                        IsNotSupported=info.ReturnCode==TwRC.InfoNotSupported,
+                        IsNotAvailable=info.ReturnCode==TwRC.DataNotAvailable,
+                        IsSuccess=info.ReturnCode==TwRC.Success,
+                        Value=info.GetValue()
+                    };
+                }
+
+                /// <summary>
+                /// Возвращает код расширенной информации о изображении.
+                /// </summary>
+                public TwEI InfoId {
+                    get;
+                    private set;
+                }
+
+                /// <summary>
+                /// Возвращает true, если запрошенная информация не поддерживается источником данных; иначе, false.
+                /// </summary>
+                public bool IsNotSupported {
+                    get;
+                    private set;
+                }
+
+                /// <summary>
+                /// Возвращает true, если запрошенная информация поддерживается источником данных, но в данный момент недоступна; иначе, false.
+                /// </summary>
+                public bool IsNotAvailable {
+                    get;
+                    private set;
+                }
+
+                /// <summary>
+                /// Возвращает true, если запрошенная информация была успешно извлечена; иначе, false.
+                /// </summary>
+                public bool IsSuccess {
+                    get;
+                    private set;
+                }
+
+                /// <summary>
+                /// Возвращает значение элемента.
+                /// </summary>
+                public object Value {
+                    get;
+                    private set;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Delegates
 
         #region DSM delegates DAT_ variants
 
@@ -1350,7 +1649,9 @@ namespace Saraff.Twain {
 
         private delegate TwRC _DScap([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwCapability capa);
 
-        private delegate TwRC _DSiinf([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwImageInfo imginf);
+        private delegate TwRC _DSiinf([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwImageInfo imgInf);
+
+        private delegate TwRC _DSextiinf([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,/*[In,Out] TwExtImageInfo*/ IntPtr extImgInf);
 
         private delegate TwRC _DSimagelayuot([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwImageLayout imageLayuot);
 
@@ -1359,6 +1660,10 @@ namespace Saraff.Twain {
         private delegate TwRC _DSpxfer([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwPendingXfers pxfr);
 
         #endregion
+
+        internal delegate ImageInfo GetImageInfoCallback();
+
+        internal delegate ExtImageInfo GetExtImageInfoCallback(TwEI[] extInfo);
 
         #endregion
     }

@@ -340,7 +340,82 @@ namespace Saraff.Twain {
         Str128=0x000b,
         Str255=0x000c,
         Str1024=0x000d,
-        Str512=0x000e
+        Uni512=0x000e,
+        Handle=0x000f
+    }
+
+    /// <summary>
+    /// Вспомогательный класс для типов twain.
+    /// </summary>
+    internal sealed class TwTypeHelper {
+        private static Dictionary<TwType,Type> _typeof=new Dictionary<TwType,Type> {
+            {TwType.Int8,typeof(sbyte)},
+            {TwType.Int16,typeof(short)},
+            {TwType.Int32,typeof(int)},
+            {TwType.UInt8,typeof(byte)},
+            {TwType.UInt16,typeof(ushort)},
+            {TwType.UInt32,typeof(uint)},
+            {TwType.Bool,typeof(bool)},
+            {TwType.Fix32,typeof(float)},
+            {TwType.Frame,typeof(System.Drawing.RectangleF)},
+            {TwType.Str32,typeof(TwStr32)},
+            {TwType.Str64,typeof(TwStr64)},
+            {TwType.Str128,typeof(TwStr128)},
+            {TwType.Str255,typeof(TwStr255)},
+            {TwType.Str1024,typeof(TwStr1024)},
+            {TwType.Uni512,typeof(TwUni512)},
+            {TwType.Handle,typeof(IntPtr)}
+        };
+        private static Dictionary<TwType,int> _sizeof=new Dictionary<TwType,int> {
+            {TwType.Int8,Marshal.SizeOf(typeof(sbyte))},
+            {TwType.Int16,Marshal.SizeOf(typeof(short))},
+            {TwType.Int32,Marshal.SizeOf(typeof(int))},
+            {TwType.UInt8,Marshal.SizeOf(typeof(byte))},
+            {TwType.UInt16,Marshal.SizeOf(typeof(ushort))},
+            {TwType.UInt32,Marshal.SizeOf(typeof(uint))},
+            {TwType.Bool,Marshal.SizeOf(typeof(short))},
+            {TwType.Fix32,Marshal.SizeOf(typeof(TwFix32))},
+            {TwType.Frame,Marshal.SizeOf(typeof(TwFrame))},
+            {TwType.Str32,Marshal.SizeOf(typeof(TwStr32))},
+            {TwType.Str64,Marshal.SizeOf(typeof(TwStr64))},
+            {TwType.Str128,Marshal.SizeOf(typeof(TwStr128))},
+            {TwType.Str255,Marshal.SizeOf(typeof(TwStr255))},
+            {TwType.Str1024,Marshal.SizeOf(typeof(TwStr1024))},
+            {TwType.Uni512,Marshal.SizeOf(typeof(TwUni512))},
+            {TwType.Handle,IntPtr.Size}
+        };
+
+        /// <summary>
+        /// Возвращает соответствующий twain-типу управляемый тип.
+        /// </summary>
+        /// <param name="type">Код типа данный twain.</param>
+        /// <returns>Управляемый тип.</returns>
+        public static Type TypeOf(TwType type) {
+            return TwTypeHelper._typeof[type];
+        }
+
+        /// <summary>
+        /// Возвращает управляемому типу соответствующий twain-тип.
+        /// </summary>
+        /// <param name="type">Управляемый тип.</param>
+        /// <returns>Код типа данный twain.</returns>
+        public static TwType TypeOf(Type type) {
+            foreach(var _item in TwTypeHelper._typeof) {
+                if(_item.Value==type) {
+                    return _item.Key;
+                }
+            }
+            throw new KeyNotFoundException();
+        }
+
+        /// <summary>
+        /// Возвращает размер twain-типа в неуправляемом блоке памяти.
+        /// </summary>
+        /// <param name="type">Код типа данный twain.</param>
+        /// <returns>Размер в байтах.</returns>
+        public static int SizeOf(TwType type) {
+            return TwTypeHelper._sizeof[type];
+        }
     }
 
     /// <summary>
@@ -757,7 +832,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Compression values
     /// </summary>
-    internal enum TwCompression:short { //ICAP_COMPRESSION values (CP_ means ComPression )
+    public enum TwCompression:short { //ICAP_COMPRESSION values (CP_ means ComPression )
         None=0,
         PackBits=1,
 
@@ -803,7 +878,173 @@ namespace Saraff.Twain {
         BitFields=12
     }
 
+    /// <summary>
+    /// Extended Image Info Attributes.
+    /// </summary>
+    public enum TwEI:short { //TWEI_xxxx
+        BarCodeX=0x1200,
+        BarCodeY=0x1201,
+        BarCodeText=0x1202,
+        BarCodeType=0x1203,
+        DeshadeTop=0x1204,
+        DeshadeLeft=0x1205,
+        DeshadeHeight=0x1206,
+        DeshadeWidth=0x1207,
+        DeshadeSize=0x1208,
+        SpecklesRemoved=0x1209,
+        HorzLineXCoord=0x120A,
+        HorzLineYCoord=0x120B,
+        HorzLineLength=0x120C,
+        HorzLineThickness=0x120D,
+        VertLineXCoord=0x120E,
+        VertLinEYCoord=0x120F,
+        VertLineLength=0x1210,
+        VertLineThickness=0x1211,
+        PatchCode=0x1212,
+        EndOrSedText=0x1213,
+        FormConfidence=0x1214,
+        FormTemplateMatch=0x1215,
+        FormTemplatePageMatch=0x1216,
+        FormHorzDocOffset=0x1217,
+        FormVertDocOffset=0x1218,
+        BarCodeCount=0x1219,
+        BarCodeConfidence=0x121A,
+        BarCodeRotation=0x121B,
+        BarCodeTextLength=0x121C,
+        DeshadeCount=0x121D,
+        DeshadeBlackCountOld=0x121E,
+        DeshadeBlackCountNew=0x121F,
+        DeshadeBlackRLMin=0x1220,
+        DeshadeBlackRLMax=0x1221,
+        DeshadeWhiteCountOld=0x1222,
+        DeshadeWhiteCountNew=0x1223,
+        DeshadeWhiteRLMin=0x1224,
+        DeshadeWhiteRLAve=0x1225,
+        DeshadeWhiteRLMax=0x1226,
+        BlackSpecklesRemoved=0x1227,
+        WhiteSpecklesRemoved=0x1228,
+        HorzLineCount=0x1229,
+        VertLineCount=0x122A,
+        DeskewStatus=0x122B,
+        SkewOriginalAngle=0x122C,
+        SkewFinalAngle=0x122D,
+        SkewConfidence=0x122E,
+        SkewWindowX1=0x122F,
+        SkewWindowY1=0x1230,
+        SkewWindowX2=0x1231,
+        SkewWindowY2=0x1232,
+        SkewWindowX3=0x1233,
+        SkewWindowY3=0x1234,
+        SkewWindowX4=0x1235,
+        SkewWindowY4=0x1236,
+        BookName=0x1238,  /* added 1.9 */
+        ChapterNumber=0x1239,  /* added 1.9 */
+        DocumentNumber=0x123A,  /* added 1.9 */
+        PageNumber=0x123B,  /* added 1.9 */
+        Camera=0x123C,  /* added 1.9 */
+        FrameNumber=0x123D,  /* added 1.9 */
+        Frame=0x123E,  /* added 1.9 */
+        PixelFlavor=0x123F,  /* added 1.9 */
+        IccProFile=0x1240,  /* added 1.91 */
+        LastSegment=0x1241,  /* added 1.91 */
+        SegmentNumber=0x1242,  /* added 1.91 */
+        //MagData=0x1243,  /* added 2.0 */
+        //MagType=0x1244,  /* added 2.0 */
+        PageSide=0x1245,
+        FileSystemSource=0x1246    
+    }
+
     // ------------------- STRUCTS --------------------------------------------
+
+    /// <summary>
+    /// Строка фиксированной длинны 32 символа.
+    /// </summary>
+    [DebuggerDisplay("{Value}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
+    public sealed class TwStr32 {
+
+        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=34)]
+        public string Value;
+
+        public override string ToString() {
+            return this.Value;
+        }
+    }
+
+    /// <summary>
+    /// Строка фиксированной длинны 64 символа.
+    /// </summary>
+    [DebuggerDisplay("{Value}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
+    public sealed class TwStr64 {
+
+        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=66)]
+        public string Value;
+
+        public override string ToString() {
+            return this.Value;
+        }
+    }
+
+    /// <summary>
+    /// Строка фиксированной длинны 128 символов.
+    /// </summary>
+    [DebuggerDisplay("{Value}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
+    public sealed class TwStr128 {
+
+        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=130)]
+        public string Value;
+
+        public override string ToString() {
+            return this.Value;
+        }
+    }
+
+    /// <summary>
+    /// Строка фиксированной длинны 255 символов.
+    /// </summary>
+    [DebuggerDisplay("{Value}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
+    public sealed class TwStr255 {
+
+        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=256)]
+        public string Value;
+
+        public override string ToString() {
+            return this.Value;
+        }
+    }
+
+    /// <summary>
+    /// Строка юникода фиксированной длинны 512 символов.
+    /// </summary>
+    [DebuggerDisplay("{Value}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Unicode)]
+    public sealed class TwUni512 {
+
+        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=512)]
+        public string Value;
+
+        public override string ToString() {
+            return this.Value;
+        }
+    }
+
+    /// <summary>
+    /// Строка фиксированной длинны 1024 символов.
+    /// </summary>
+    [DebuggerDisplay("{Value}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
+    public sealed class TwStr1024 {
+
+        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=1026)]
+        public string Value;
+
+        public override string ToString() {
+            return this.Value;
+        }
+    }
 
     /// <summary>
     /// Identifies the program/library/code resource.
@@ -1034,6 +1275,120 @@ namespace Saraff.Twain {
     }
 
     /// <summary>
+    /// This structure is used to pass specific information between the data source and the application.
+    /// </summary>
+    [DebuggerDisplay("InfoId = {InfoId}, ItemType = {ItemType}, ReturnCode = {ReturnCode}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwInfo:IDisposable {
+
+        /// <summary>
+        /// Tag identifying an information.
+        /// </summary>
+        public TwEI InfoId;
+
+        /// <summary>
+        /// Item data type.
+        /// </summary>
+        [MarshalAs(UnmanagedType.I2)]
+        public TwType ItemType;
+
+        /// <summary>
+        /// Number of items for this field.
+        /// </summary>
+        public short NumItems;
+
+        /// <summary>
+        /// This is the return code of availability of data for extended image attribute requested.
+        /// </summary>
+        [MarshalAs(UnmanagedType.I2)]
+        public TwRC ReturnCode;
+
+        /// <summary>
+        /// Contains either data or a handle to data.
+        /// </summary>
+        public IntPtr Item;
+
+        /// <summary>
+        /// Возвращает true, если значение элемента является дескриптором неуправляемой памяти; иначе, false.
+        /// </summary>
+        private bool _IsValue {
+            get {
+                return this.ItemType!=TwType.Handle&&TwTypeHelper.SizeOf(this.ItemType)*this.NumItems<=TwTypeHelper.SizeOf(TwType.Handle);
+            }
+        }
+
+        /// <summary>
+        /// Возвращает значение элемента.
+        /// </summary>
+        /// <returns>Значение элемента.</returns>
+        public object GetValue() {
+            var _result=new object[this.NumItems];
+            if(this._IsValue) {
+                for(long i=0,_data=this.Item.ToInt64(),_mask=((1L<<TwTypeHelper.SizeOf(this.ItemType)*7)<<TwTypeHelper.SizeOf(this.ItemType))-1; i<this.NumItems; i++,_data>>=TwTypeHelper.SizeOf(this.ItemType)*8) {
+                    _result[i]=Convert.ChangeType(_data&_mask,TwTypeHelper.TypeOf(this.ItemType));
+                }
+            } else {
+                IntPtr _data=Twain32.GlobalLock(this.Item);
+                try {
+                    for(int i=0; i<this.NumItems; i++) {
+                        if(this.ItemType!=TwType.Handle) {
+                            _result[i]=Marshal.PtrToStructure((IntPtr)((long)_data+(TwTypeHelper.SizeOf(this.ItemType)*i)),TwTypeHelper.TypeOf(this.ItemType));
+                        } else {
+                            _result[i]=Marshal.PtrToStringAnsi(_data);
+                            _data=(IntPtr)((long)_data+_result[i].ToString().Length+1);
+                        }
+                    }
+                } finally {
+                    Twain32.GlobalUnlock(this.Item);
+                }
+            }
+            return _result.Length==1?_result[0]:_result;
+        }
+
+        #region IDisposable
+
+        public void Dispose() {
+            if(this.Item!=IntPtr.Zero&&!this._IsValue) {
+                Twain32.GlobalFree(this.Item);
+                this.Item=IntPtr.Zero;
+            }
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// This structure is used to pass extended image information from the Data Source to the Application at the end of State 7.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwExtImageInfo {
+
+        /// <summary>
+        /// Количество элементов расширенного описания изображения.
+        /// </summary>
+        public int NumInfos;
+
+        //[MarshalAs(UnmanagedType.ByValArray,SizeConst=1)]
+        //public TwInfo[] Info;
+
+        /// <summary>
+        /// Выполняет преображование в неуправляемый блок памяти.
+        /// </summary>
+        /// <param name="info">Набор элементов расширенного описания изображения.</param>
+        /// <returns>Указатель на блок неуправляемой памяти.</returns>
+        public static IntPtr ToPtr(TwInfo[] info) {
+            var _twExtImageInfoSize=Marshal.SizeOf(typeof(TwExtImageInfo));
+            var _twInfoSize=Marshal.SizeOf(typeof(TwInfo));
+            var _data=Marshal.AllocHGlobal(_twExtImageInfoSize+(_twInfoSize*info.Length));
+            Marshal.StructureToPtr(new TwExtImageInfo {NumInfos=info.Length},_data,true);
+            for(int i=0; i<info.Length; i++) {
+                Marshal.StructureToPtr(info[i],(IntPtr)(_data.ToInt32()+_twExtImageInfoSize+(_twInfoSize*i)),true);
+            }
+            return _data;
+        }
+    }
+
+    /// <summary>
     /// Provides image layout information in current units.
     /// </summary>
     [StructLayout(LayoutKind.Sequential,Pack=2)]
@@ -1203,8 +1558,11 @@ namespace Saraff.Twain {
             };
             this.Handle=Twain32.GlobalAlloc(0x42,Marshal.SizeOf(typeof(_TwOneValue)));
             IntPtr _pTwOneValue=Twain32.GlobalLock(Handle);
-            Marshal.StructureToPtr(_value,_pTwOneValue,true);
-            Twain32.GlobalUnlock(Handle);
+            try {
+                Marshal.StructureToPtr(_value,_pTwOneValue,true);
+            } finally {
+                Twain32.GlobalUnlock(Handle);
+            }
         }
 
         /// <summary>
@@ -1217,8 +1575,11 @@ namespace Saraff.Twain {
             this.ConType=TwOn.Range;
             this.Handle=Twain32.GlobalAlloc(0x42,Marshal.SizeOf(typeof(_TwRange)));
             IntPtr _pTwRange=Twain32.GlobalLock(Handle);
-            Marshal.StructureToPtr(range,_pTwRange,true);
-            Twain32.GlobalUnlock(Handle);
+            try {
+                Marshal.StructureToPtr(range,_pTwRange,true);
+            } finally {
+                Twain32.GlobalUnlock(Handle);
+            }
         }
 
         /// <summary>
@@ -1232,11 +1593,14 @@ namespace Saraff.Twain {
             this.ConType=TwOn.Array;
             this.Handle=Twain32.GlobalAlloc(0x42,Marshal.SizeOf(typeof(_TwArray))+(Marshal.SizeOf(arrayValue[0])*arrayValue.Length));
             IntPtr _pTwArray=Twain32.GlobalLock(Handle);
-            Marshal.StructureToPtr(array,_pTwArray,true);
-            for(int i=0,_ptr=_pTwArray.ToInt32()+Marshal.SizeOf(typeof(_TwArray));i<arrayValue.Length;i++,_ptr+=Marshal.SizeOf(arrayValue[0])) {
-                Marshal.StructureToPtr(arrayValue[i],(IntPtr)_ptr,true);
+            try {
+                Marshal.StructureToPtr(array,_pTwArray,true);
+                for(int i=0,_ptr=_pTwArray.ToInt32()+Marshal.SizeOf(typeof(_TwArray)); i<arrayValue.Length; i++,_ptr+=Marshal.SizeOf(arrayValue[0])) {
+                    Marshal.StructureToPtr(arrayValue[i],(IntPtr)_ptr,true);
+                }
+            } finally {
+                Twain32.GlobalUnlock(Handle);
             }
-            Twain32.GlobalUnlock(Handle);
         }
 
         /// <summary>
@@ -1250,11 +1614,14 @@ namespace Saraff.Twain {
             this.ConType=TwOn.Enum;
             this.Handle=Twain32.GlobalAlloc(0x42,Marshal.SizeOf(typeof(_TwEnumeration))+(Marshal.SizeOf(enumerationValue[0])*enumerationValue.Length));
             IntPtr _pTwEnumeration=Twain32.GlobalLock(Handle);
-            Marshal.StructureToPtr(enumeration,_pTwEnumeration,true);
-            for(int i=0,_ptr=_pTwEnumeration.ToInt32()+Marshal.SizeOf(typeof(_TwEnumeration));i<enumerationValue.Length;i++,_ptr+=Marshal.SizeOf(enumerationValue[0])) {
-                Marshal.StructureToPtr(enumerationValue[i],(IntPtr)_ptr,true);
+            try {
+                Marshal.StructureToPtr(enumeration,_pTwEnumeration,true);
+                for(int i=0,_ptr=_pTwEnumeration.ToInt32()+Marshal.SizeOf(typeof(_TwEnumeration)); i<enumerationValue.Length; i++,_ptr+=Marshal.SizeOf(enumerationValue[0])) {
+                    Marshal.StructureToPtr(enumerationValue[i],(IntPtr)_ptr,true);
+                }
+            } finally {
+                Twain32.GlobalUnlock(Handle);
             }
-            Twain32.GlobalUnlock(Handle);
         }
 
         /// <summary>
@@ -1322,7 +1689,7 @@ namespace Saraff.Twain {
                 }
                 return null;
             } finally {
-                IntPtr _res2=Twain32.GlobalFree(_handle);
+                Twain32.GlobalUnlock(this.Handle);
             }
         }
 
