@@ -26,14 +26,6 @@ using System.Diagnostics;
 namespace Saraff.Twain {
 
     /// <summary>
-    /// TWAIN Version.
-    /// </summary>
-    internal class TwProtocol {									// TWON_PROTOCOL...
-        public const short Major=1;
-        public const short Minor=9;
-    }
-
-    /// <summary>
     /// Data Groups.
     /// </summary>
     [Flags]
@@ -53,6 +45,28 @@ namespace Saraff.Twain {
         /// Data pertaining to audio.
         /// </summary>
         Audio=0x0004
+    }
+
+    /// <summary>
+    /// These are for items that need to be determined before DS is opened.
+    /// </summary>
+    [Flags]
+    internal enum TwDF:int {
+
+        /// <summary>
+        /// added to the identity by the DSM.
+        /// </summary>
+        DSM2=0x10000000,
+
+        /// <summary>
+        /// Set by the App to indicate it would prefer to use DSM2.
+        /// </summary>
+        APP2=0x20000000,
+
+        /// <summary>
+        /// Set by the DS to indicate it would prefer to use DSM2.
+        /// </summary>
+        DS2=0x40000000
     }
 
     /// <summary>
@@ -88,7 +102,10 @@ namespace Saraff.Twain {
         Palette8=0x010a,
         ExtImageInfo=0x010b,
 
-        SetupFileXfer2=0x0301
+        SetupFileXfer2=0x0301,
+
+        /* 2.0 */
+        EntryPoint=0x0403
     }
 
     /// <summary>
@@ -264,7 +281,9 @@ namespace Saraff.Twain {
         XferDone=0x0006,
         EndOfList=0x0007,
         InfoNotSupported=0x0008,
-        DataNotAvailable=0x0009
+        DataNotAvailable=0x0009,
+        Busy=10,
+        ScannerLocked=11
     }
 
     /// <summary>
@@ -292,7 +311,13 @@ namespace Saraff.Twain {
         PaperJam=0x0014,
         PaperDoubleFeed=0x0015,
         FileWriteError=0x0016,
-        CheckDeviceOnline=0x0017
+        CheckDeviceOnline=0x0017,
+        InterLock=24,
+        DamagedCorner=25,
+        FocusError=26,
+        DocTooLight=27,
+        DocTooDark=28,
+        NoMedia=29,
     }
 
     /// <summary>
@@ -497,6 +522,20 @@ namespace Saraff.Twain {
         AutomaticDeskew=0x1151,  /* Added 1.8 */
         AutomaticRotate=0x1152,  /* Added 1.8 */
         JpegQuality=0x1153,  /* Added 1.9 */
+        FeederType=0x1154,
+        IccProfile=0x1155,
+        AutoSize=0x1156,
+        AutomaticCropUsesFrame=0x1157,
+        AutomaticLengthDetection=0x1158,
+        AutomaticColorEnabled=0x1159,
+        AutomaticColorNonColorPixelType=0x115a,
+        ColorManagementEnabled=0x115b,
+        ImageMerge=0x115c,
+        ImageMergeHeightThreshold=0x115d,
+        SupportedExtimageInfo=0x115e,
+        FilmType=0x115f,
+        Mirror=0x1160,
+        JpegSubSampling=0x1161,
 
         /* all data sources MAY support these caps */
         Author=0x1000,
@@ -546,7 +585,34 @@ namespace Saraff.Twain {
         FeederOrder=0x102e,   /* Added 1.8 */
         ReacquireAllowed=0x1030,   /* Added 1.8 */
         BatteryMinutes=0x1032,   /* Added 1.8 */
-        BatteryPercentage=0x1033   /* Added 1.8 */
+        BatteryPercentage=0x1033,   /* Added 1.8 */
+        CameraSide=0x1034,
+        Segmented=0x1035,
+        CameraEnabled=0x1036,
+        CameraOrder=0x1037,
+        MicrEnabled=0x1038,
+        FeederPrep=0x1039,
+        FeederPocket=0x103a,
+        AutomaticSenseMedium=0x103b,
+        CustomInterfaceGuid=0x103c,
+        SupportedCapsSegmentUnique=0x103d,
+        SupportedDats=0x103e,
+        DoubleFeedDetection=0x103f,
+        DoubleFeedDetectionLength=0x1040,
+        DoubleFeedDetectionSensitivity=0x1041,
+        DoubleFeedDetectionResponse=0x1042,
+        PaperHandling=0x1043,
+        IndicatorsMode=0x1044,
+        PrinterVerticalOffset=0x1045,
+        PowerSaveTime=0x1046,
+        PrinterCharRotation=0x1047,
+        PrinterFontStyle=0x1048,
+        PrinterIndexLeadChar=0x1049,
+        PrinterIndexMaxValue=0x104A,
+        PrinterIndexNumDigits=0x104B,
+        PrinterIndexStep=0x104C,
+        PrinterIndexTrigger=0x104D,
+        PrinterStringPreview=0x104E
     }
 
     /// <summary>
@@ -558,7 +624,12 @@ namespace Saraff.Twain {
         Set=0x0002,
         GetDefault=0x0004,
         GetCurrent=0x0008,
-        Reset=0x0010
+        Reset=0x0010,
+        SetConstraint=0x0020,
+        ConstrainAble=0x0040,
+        GetHelp=0x0100,
+        GetLabel=0x0200,
+        GetLabelEnum=0x0400
     }
 
     /// <summary>
@@ -806,7 +877,8 @@ namespace Saraff.Twain {
         Picas=2,
         Points=3,
         Twips=4,
-        Pixels=5
+        Pixels=5,
+        Millimeters=6
     }
 
     /// <summary>
@@ -826,7 +898,10 @@ namespace Saraff.Twain {
         YUV=6,
         YUVK=7,
         CIEXYZ=8,
-        LAB=9
+        LAB=9,
+        SRGB=10,
+        SCRGB=11,
+        INFRARED=16    
     }
 
     /// <summary>
@@ -875,7 +950,9 @@ namespace Saraff.Twain {
         Png=9,
         Rle4=10,
         Rle8=11,
-        BitFields=12
+        BitFields=12,
+        Zip=13,
+        Jpeg2000=14    
     }
 
     /// <summary>
@@ -948,10 +1025,14 @@ namespace Saraff.Twain {
         IccProFile=0x1240,  /* added 1.91 */
         LastSegment=0x1241,  /* added 1.91 */
         SegmentNumber=0x1242,  /* added 1.91 */
-        //MagData=0x1243,  /* added 2.0 */
-        //MagType=0x1244,  /* added 2.0 */
+        MagData=0x1243,  /* added 2.0 */
+        MagType=0x1244,  /* added 2.0 */
         PageSide=0x1245,
-        FileSystemSource=0x1246    
+        FileSystemSource=0x1246, 
+        ImageMerged=0x1247,
+        MagDataLength=0x1248,
+        PaperCount=0x1249,
+        PrinterText=0x124A     
     }
 
     // ------------------- STRUCTS --------------------------------------------
@@ -1055,7 +1136,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Unique number.  In Windows, application hWnd.
         /// </summary>
-        public IntPtr Id;
+        public uint Id;
 
         /// <summary>
         /// Identifies the piece of code
@@ -1328,7 +1409,7 @@ namespace Saraff.Twain {
                     _result[i]=Convert.ChangeType(_data&_mask,TwTypeHelper.TypeOf(this.ItemType));
                 }
             } else {
-                IntPtr _data=Twain32.GlobalLock(this.Item);
+                IntPtr _data=Twain32._Memory.Lock(this.Item);
                 try {
                     for(int i=0; i<this.NumItems; i++) {
                         if(this.ItemType!=TwType.Handle) {
@@ -1339,7 +1420,7 @@ namespace Saraff.Twain {
                         }
                     }
                 } finally {
-                    Twain32.GlobalUnlock(this.Item);
+                    Twain32._Memory.Unlock(this.Item);
                 }
             }
             return _result.Length==1?_result[0]:_result;
@@ -1349,7 +1430,7 @@ namespace Saraff.Twain {
 
         public void Dispose() {
             if(this.Item!=IntPtr.Zero&&!this._IsValue) {
-                Twain32.GlobalFree(this.Item);
+                Twain32._Memory.Free(this.Item);
                 this.Item=IntPtr.Zero;
             }
         }
@@ -1382,7 +1463,7 @@ namespace Saraff.Twain {
             var _data=Marshal.AllocHGlobal(_twExtImageInfoSize+(_twInfoSize*info.Length));
             Marshal.StructureToPtr(new TwExtImageInfo {NumInfos=info.Length},_data,true);
             for(int i=0; i<info.Length; i++) {
-                Marshal.StructureToPtr(info[i],(IntPtr)(_data.ToInt32()+_twExtImageInfoSize+(_twInfoSize*i)),true);
+                Marshal.StructureToPtr(info[i],(IntPtr)(_data.ToInt64()+_twExtImageInfoSize+(_twInfoSize*i)),true);
             }
             return _data;
         }
@@ -1556,12 +1637,12 @@ namespace Saraff.Twain {
                 ItemType=type,
                 Item=value
             };
-            this.Handle=Twain32.GlobalAlloc(0x42,Marshal.SizeOf(typeof(_TwOneValue)));
-            IntPtr _pTwOneValue=Twain32.GlobalLock(Handle);
+            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(_TwOneValue)));
+            IntPtr _pTwOneValue=Twain32._Memory.Lock(Handle);
             try {
                 Marshal.StructureToPtr(_value,_pTwOneValue,true);
             } finally {
-                Twain32.GlobalUnlock(Handle);
+                Twain32._Memory.Unlock(Handle);
             }
         }
 
@@ -1573,12 +1654,12 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,_TwRange range) {
             this.Cap=cap;
             this.ConType=TwOn.Range;
-            this.Handle=Twain32.GlobalAlloc(0x42,Marshal.SizeOf(typeof(_TwRange)));
-            IntPtr _pTwRange=Twain32.GlobalLock(Handle);
+            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(_TwRange)));
+            IntPtr _pTwRange=Twain32._Memory.Lock(Handle);
             try {
                 Marshal.StructureToPtr(range,_pTwRange,true);
             } finally {
-                Twain32.GlobalUnlock(Handle);
+                Twain32._Memory.Unlock(Handle);
             }
         }
 
@@ -1591,15 +1672,15 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,_TwArray array,object[] arrayValue) {
             this.Cap=cap;
             this.ConType=TwOn.Array;
-            this.Handle=Twain32.GlobalAlloc(0x42,Marshal.SizeOf(typeof(_TwArray))+(Marshal.SizeOf(arrayValue[0])*arrayValue.Length));
-            IntPtr _pTwArray=Twain32.GlobalLock(Handle);
+            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(_TwArray))+(Marshal.SizeOf(arrayValue[0])*arrayValue.Length));
+            IntPtr _pTwArray=Twain32._Memory.Lock(Handle);
             try {
                 Marshal.StructureToPtr(array,_pTwArray,true);
-                for(int i=0,_ptr=_pTwArray.ToInt32()+Marshal.SizeOf(typeof(_TwArray)); i<arrayValue.Length; i++,_ptr+=Marshal.SizeOf(arrayValue[0])) {
+                for(long i=0,_ptr=_pTwArray.ToInt64()+Marshal.SizeOf(typeof(_TwArray)); i<arrayValue.Length; i++,_ptr+=Marshal.SizeOf(arrayValue[0])) {
                     Marshal.StructureToPtr(arrayValue[i],(IntPtr)_ptr,true);
                 }
             } finally {
-                Twain32.GlobalUnlock(Handle);
+                Twain32._Memory.Unlock(Handle);
             }
         }
 
@@ -1612,15 +1693,15 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,_TwEnumeration enumeration,object[] enumerationValue) {
             this.Cap=cap;
             this.ConType=TwOn.Enum;
-            this.Handle=Twain32.GlobalAlloc(0x42,Marshal.SizeOf(typeof(_TwEnumeration))+(Marshal.SizeOf(enumerationValue[0])*enumerationValue.Length));
-            IntPtr _pTwEnumeration=Twain32.GlobalLock(Handle);
+            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(_TwEnumeration))+(Marshal.SizeOf(enumerationValue[0])*enumerationValue.Length));
+            IntPtr _pTwEnumeration=Twain32._Memory.Lock(Handle);
             try {
                 Marshal.StructureToPtr(enumeration,_pTwEnumeration,true);
-                for(int i=0,_ptr=_pTwEnumeration.ToInt32()+Marshal.SizeOf(typeof(_TwEnumeration)); i<enumerationValue.Length; i++,_ptr+=Marshal.SizeOf(enumerationValue[0])) {
+                for(long i=0,_ptr=_pTwEnumeration.ToInt64()+Marshal.SizeOf(typeof(_TwEnumeration)); i<enumerationValue.Length; i++,_ptr+=Marshal.SizeOf(enumerationValue[0])) {
                     Marshal.StructureToPtr(enumerationValue[i],(IntPtr)_ptr,true);
                 }
             } finally {
-                Twain32.GlobalUnlock(Handle);
+                Twain32._Memory.Unlock(Handle);
             }
         }
 
@@ -1629,7 +1710,7 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Экземпляр TwArray, TwEnumeration, _TwRange или _TwOneValue.</returns>
         public object GetValue() {
-            IntPtr _handle=Twain32.GlobalLock(this.Handle);
+            IntPtr _handle=Twain32._Memory.Lock(this.Handle);
             try {
                 switch(this.ConType) {
                     case TwOn.Array:
@@ -1638,21 +1719,21 @@ namespace Saraff.Twain {
                             case TwType.Int8:
                             case TwType.UInt8: {
                                     byte[] _array=new byte[_res.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt32()+Marshal.SizeOf(typeof(_TwArray))),_array,0,_array.Length);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwArray))),_array,0,_array.Length);
                                     return new TwArray<byte>(_res,_array);
                                 }
                             case TwType.Int16:
                             case TwType.UInt16:
                             case TwType.Bool: {
                                     short[] _array=new short[_res.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt32()+Marshal.SizeOf(typeof(_TwArray))),_array,0,_array.Length);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwArray))),_array,0,_array.Length);
                                     return new TwArray<short>(_res,_array);
                                 }
                             case TwType.Int32:
                             case TwType.UInt32:
                             case TwType.Fix32: {
                                     int[] _array=new int[_res.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt32()+Marshal.SizeOf(typeof(_TwArray))),_array,0,_array.Length);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwArray))),_array,0,_array.Length);
                                     return new TwArray<int>(_res,_array);
                                 }
                         }
@@ -1663,21 +1744,21 @@ namespace Saraff.Twain {
                             case TwType.Int8:
                             case TwType.UInt8: {
                                     byte[] _array=new byte[_res2.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt32()+Marshal.SizeOf(typeof(_TwEnumeration))),_array,0,_array.Length);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwEnumeration))),_array,0,_array.Length);
                                     return new TwEnumeration<byte>(_res2,_array);
                                 }
                             case TwType.Int16:
                             case TwType.UInt16:
                             case TwType.Bool: {
                                     short[] _array=new short[_res2.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt32()+Marshal.SizeOf(typeof(_TwEnumeration))),_array,0,_array.Length);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwEnumeration))),_array,0,_array.Length);
                                     return new TwEnumeration<short>(_res2,_array);
                                 }
                             case TwType.Int32:
                             case TwType.UInt32:
                             case TwType.Fix32: {
                                     int[] _array=new int[_res2.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt32()+Marshal.SizeOf(typeof(_TwEnumeration))),_array,0,_array.Length);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwEnumeration))),_array,0,_array.Length);
                                     return new TwEnumeration<int>(_res2,_array);
                                 }
                         }
@@ -1689,7 +1770,7 @@ namespace Saraff.Twain {
                 }
                 return null;
             } finally {
-                Twain32.GlobalUnlock(this.Handle);
+                Twain32._Memory.Unlock(this.Handle);
             }
         }
 
@@ -1700,7 +1781,7 @@ namespace Saraff.Twain {
         /// </summary>
         public void Dispose() {
             if(this.Handle!=IntPtr.Zero) {
-                Twain32.GlobalFree(this.Handle);
+                Twain32._Memory.Free(this.Handle);
                 this.Handle=IntPtr.Zero;
             }
         }
@@ -1833,4 +1914,60 @@ namespace Saraff.Twain {
         public int DefaultValue; /* Power-up value.                        */
         public int CurrentValue; /* The value that is currently in effect. */
     }
+
+    /// <summary>
+    /// DAT_ENTRYPOINT. returns essential entry points.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class _TwEntryPoint {
+
+        public _TwEntryPoint() {
+            this.Size=Marshal.SizeOf(this);
+        }
+
+        /// <summary>
+        /// Size of the structure in bytes. 
+        /// The application must set this before calling MSG_GET. 
+        /// The Source should examine this when processing a MSG_SET.
+        /// </summary>
+        public int Size;
+
+        /// <summary>
+        /// A pointer to the DSM_Entry function. 
+        /// TWAIN 2.0 Sources must use this value instead of getting it themselves.
+        /// </summary>
+        public IntPtr DSM_Entry;
+
+        /// <summary>
+        /// A pointer to the memory allocation function, taking the form TW_HANDLE PASCAL DSM_MemAllocate (TW_UINT32).
+        /// </summary>
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public DSM_MemoryAllocate MemoryAllocate;
+
+        /// <summary>
+        /// A pointer to the memory free function, taking the form void PASCAL DSM_MemAllocate (TW_HANDLE).
+        /// </summary>
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public DSM_MemoryFree MemoryFree;
+
+        /// <summary>
+        /// A pointer to the memory lock function, taking the form TW_MEMREF PASCAL DSM_MemAllocate (TW_HANDLE).
+        /// </summary>
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public DSM_MemoryLock MemoryLock;
+
+        /// <summary>
+        /// A pointer to the memory unlock function, taking the form void PASCAL DSM_MemUnlock (TW_HANDLE).
+        /// </summary>
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public DSM_MemoryUnlock MemoryUnlock;
+    }
+
+    internal delegate IntPtr DSM_MemoryAllocate(int size);
+
+    internal delegate void DSM_MemoryFree(IntPtr handle);
+
+    internal delegate IntPtr DSM_MemoryLock(IntPtr handle);
+
+    internal delegate void DSM_MemoryUnlock(IntPtr handle);
 }
