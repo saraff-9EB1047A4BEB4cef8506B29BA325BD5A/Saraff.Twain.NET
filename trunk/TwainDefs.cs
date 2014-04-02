@@ -1304,12 +1304,12 @@ namespace Saraff.Twain {
         /// <summary>
         /// Resolution in the horizontal
         /// </summary>
-        public int XResolution;
+        public TwFix32 XResolution;
 
         /// <summary>
         /// Resolution in the vertical
         /// </summary>
-        public int YResolution;
+        public TwFix32 YResolution;
 
         /// <summary>
         /// Columns in the image, -1 if unknown by DS

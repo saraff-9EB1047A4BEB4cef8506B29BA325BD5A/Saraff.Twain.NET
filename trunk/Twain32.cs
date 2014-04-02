@@ -794,7 +794,6 @@ namespace Saraff.Twain {
             }
             IntPtr _hBitmap=IntPtr.Zero;
             var _pxfr=new TwPendingXfers();
-            Image _img=null;
             this._images.Clear();
 
             do {
@@ -808,10 +807,11 @@ namespace Saraff.Twain {
                     // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
                     this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
                 }
-
+                
                 if(this._dsmEntry.DSPendingXfer(this._appid,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)==TwRC.Success&&_isXferDone) {
                     IntPtr _pBitmap=_Memory.Lock(_hBitmap);
                     try {
+                        Image _img=null;
                         this._images.Add(_img=DibToImage.WithScan0(_pBitmap));
                         this._OnEndXfer(new EndXferEventArgs(_img));
                     } finally {
@@ -1628,15 +1628,15 @@ namespace Saraff.Twain {
                     PixelType=info.PixelType,
                     Planar=info.Planar!=0,
                     SamplesPerPixel=info.SamplesPerPixel,
-                    XResolution=info.XResolution,
-                    YResolution=info.YResolution
+                    XResolution=info.XResolution.ToFloat(),
+                    YResolution=info.YResolution.ToFloat()
                 };
             }
 
             /// <summary>
             /// Resolution in the horizontal
             /// </summary>
-            public int XResolution {
+            public float XResolution {
                 get;
                 private set;
             }
@@ -1644,7 +1644,7 @@ namespace Saraff.Twain {
             /// <summary>
             /// Resolution in the vertical
             /// </summary>
-            public int YResolution {
+            public float YResolution {
                 get;
                 private set;
             }
