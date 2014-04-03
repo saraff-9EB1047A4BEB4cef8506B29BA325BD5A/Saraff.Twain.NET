@@ -1849,7 +1849,7 @@ namespace Saraff.Twain {
 
         private delegate TwRC _DScap([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwCapability capa);
 
-        private delegate TwRC _DSiinf([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwImageInfo imgInf);
+        private delegate TwRC _DSiinf([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[Out] TwImageInfo imgInf);
 
         private delegate TwRC _DSextiinf([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,/*[In,Out] TwExtImageInfo*/ IntPtr extImgInf);
 

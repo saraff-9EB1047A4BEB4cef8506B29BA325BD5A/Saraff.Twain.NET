@@ -1130,6 +1130,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Identifies the program/library/code resource.
     /// </summary>
+    [DebuggerDisplay("{ProductName}, Version = {Version.Info}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
     internal class TwIdentity {									// TW_IDENTITY
 
@@ -1186,15 +1187,12 @@ namespace Saraff.Twain {
         public override int GetHashCode() {
             return this.Id.GetHashCode();
         }
-
-        public override string ToString() {
-            return string.Format("{0} {1}",this.ProductName,this.Version);
-        }
     }
 
     /// <summary>
     /// Describes version of software currently running.
     /// </summary>
+    [DebuggerDisplay("{Info}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
     internal struct TwVersion {									// TW_VERSION
 
@@ -1225,16 +1223,6 @@ namespace Saraff.Twain {
         /// </summary>
         [MarshalAs(UnmanagedType.ByValTStr,SizeConst=34)]
         public string Info;
-
-        /// <summary>
-        /// Returns a <see cref="System.String"/> that represents this instance.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="System.String"/> that represents this instance.
-        /// </returns>
-        public override string ToString() {
-            return this.Info;
-        }
     }
 
     /// <summary>
@@ -1365,6 +1353,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Tag identifying an information.
         /// </summary>
+        [MarshalAs(UnmanagedType.I2)]
         public TwEI InfoId;
 
         /// <summary>
