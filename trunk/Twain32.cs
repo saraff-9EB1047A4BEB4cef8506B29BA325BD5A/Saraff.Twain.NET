@@ -330,7 +330,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Возвращает или устанавливает значение, указывающее на необходимость использования TWAIN 2.0.
         /// </summary>
-        [DefaultValue(true)]
+        [DefaultValue(false)]
         [Category("Behavior")]
         [Description("Возвращает или устанавливает значение, указывающее на необходимость использования TWAIN 2.0.")]
         public bool IsTwain2Enable {
@@ -341,7 +341,7 @@ namespace Saraff.Twain {
                 if((this._TwainState&TwainStateFlag.DSMOpen)!=0) {
                     throw new InvalidOperationException("DSM already opened.");
                 }
-                if(IntPtr.Size!=4) {
+                if(IntPtr.Size!=4&&value==false) {
                     throw new InvalidOperationException("In x64 mode only TWAIN 2.0 enabled.");
                 }
                 if(this._isTwain2Enable=value) {
@@ -426,6 +426,26 @@ namespace Saraff.Twain {
         /// <returns>Истина, если указанный источник поддерживает TWAIN 2.0; иначе лож.</returns>
         public bool GetIsSourceTwain2Compatible(int index) {
             return (this._sources[index].SupportedGroups&(int)TwDF.DS2)!=0;
+        }
+
+        /// <summary>
+        /// Устанавливает указанный источник данных в качестве источника данных по умолчанию.
+        /// </summary>
+        /// <param name="index">Индекс.</param>
+        public void SetDefaultSource(int index) {
+            if((this._TwainState&TwainStateFlag.DSMOpen)!=0) {
+                if((this._TwainState&TwainStateFlag.DSOpen)==0) {
+                    TwIdentity _src=this._sources[index];
+                    TwRC _rc=this._dsmEntry.DsmIdent(this._appid,IntPtr.Zero,TwDG.Control,TwDAT.Identity,TwMSG.Set,_src);
+                    if(_rc!=TwRC.Success) {
+                        throw new TwainException(this._GetTwainStatus());
+                    }
+                } else {
+                    throw new TwainException("Источник данных уже открыт. Необходимо сперва закрыть источник данных.");
+                }
+            } else {
+                throw new TwainException("DSM не открыт.");
+            }
         }
 
         #endregion
@@ -604,12 +624,13 @@ namespace Saraff.Twain {
         /// Возвращает значение для указанного capability (возможность).
         /// </summary>
         /// <param name="capability">Значение перечисления TwCap.</param>
+        /// <param name="msg">Значение перечисления TwMSG.</param>
         /// <returns>В зависимости от значение capability, могут быть возвращены: тип-значение, массив, <see cref="Twain32.Range">диапазон</see>, <see cref="Twain32.Enumeration">перечисление</see>.</returns>
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
-        public object GetCap(TwCap capability) {
+        private object _GetCapCore(TwCap capability,TwMSG msg) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 using(TwCapability _cap=new TwCapability(capability)) {
-                    TwRC _rc=this._dsmEntry.DSCap(this._appid,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Get,_cap);
+                    TwRC _rc=this._dsmEntry.DSCap(this._appid,this._srcds,TwDG.Control,TwDAT.Capability,msg,_cap);
                     if(_rc==TwRC.Success) {
                         switch(_cap.ConType) {
                             case TwOn.One:
@@ -623,8 +644,8 @@ namespace Saraff.Twain {
                                 TwType _item_type=(TwType)_val.GetType().GetProperty("ItemType").GetValue(_val,null);
                                 object[] _result_array=new object[(int)_val.GetType().GetProperty("NumItems").GetValue(_val,null)];
                                 object _items=_val.GetType().GetProperty("ItemList").GetValue(_val,null);
-                                MethodInfo _items_getter=_items.GetType().GetMethod("GetValue",new Type[]{typeof(int)});
-                                for(int i=0;i<_result_array.Length;i++) {
+                                MethodInfo _items_getter=_items.GetType().GetMethod("GetValue",new Type[] { typeof(int) });
+                                for(int i=0; i<_result_array.Length; i++) {
                                     _result_array[i]=Twain32._Convert(_items_getter.Invoke(_items,new object[] { i }),_item_type);
                                 }
                                 if(_cap.ConType==TwOn.Array) {
@@ -635,10 +656,58 @@ namespace Saraff.Twain {
                                         (int)_val.GetType().GetProperty("CurrentIndex").GetValue(_val,null),
                                         (int)_val.GetType().GetProperty("DefaultIndex").GetValue(_val,null));
                                 }
-                                
+
                         }
                         return _cap.GetValue();
                     } else {
+                        throw new TwainException(this._GetTwainStatus());
+                    }
+                }
+            } else {
+                throw new TwainException("Источник данных не открыт.");
+            }
+        }
+
+        /// <summary>
+        /// Возвращает значение для указанного capability (возможность).
+        /// </summary>
+        /// <param name="capability">Значение перечисления TwCap.</param>
+        /// <returns>В зависимости от значение capability, могут быть возвращены: тип-значение, массив, <see cref="Twain32.Range">диапазон</see>, <see cref="Twain32.Enumeration">перечисление</see>.</returns>
+        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        public object GetCap(TwCap capability) {
+            return this._GetCapCore(capability,TwMSG.Get);
+        }
+
+        /// <summary>
+        /// Возвращает текущее значение для указанного capability (возможность).
+        /// </summary>
+        /// <param name="capability">Значение перечисления TwCap.</param>
+        /// <returns>В зависимости от значение capability, могут быть возвращены: тип-значение, массив, <see cref="Twain32.Range">диапазон</see>, <see cref="Twain32.Enumeration">перечисление</see>.</returns>
+        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        public object GetCurrentCap(TwCap capability) {
+            return this._GetCapCore(capability,TwMSG.GetCurrent);
+        }
+
+        /// <summary>
+        /// Возвращает значение по умолчанию для указанного capability (возможность).
+        /// </summary>
+        /// <param name="capability">Значение перечисления TwCap.</param>
+        /// <returns>В зависимости от значение capability, могут быть возвращены: тип-значение, массив, <see cref="Twain32.Range">диапазон</see>, <see cref="Twain32.Enumeration">перечисление</see>.</returns>
+        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        public object GetDefaultCap(TwCap capability) {
+            return this._GetCapCore(capability,TwMSG.GetDefault);
+        }
+
+        /// <summary>
+        /// Сбрасывает текущее значение для указанного <see cref="TwCap">capability</see> в значение по умолчанию.
+        /// </summary>
+        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
+        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        public void ResetCap(TwCap capability) {
+            if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
+                using(TwCapability _cap=new TwCapability(capability)) {
+                    TwRC _rc=this._dsmEntry.DSCap(this._appid,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Reset,_cap);
+                    if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus());
                     }
                 }
