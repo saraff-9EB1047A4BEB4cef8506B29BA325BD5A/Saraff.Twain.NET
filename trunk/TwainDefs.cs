@@ -22,14 +22,17 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Drawing;
 
 namespace Saraff.Twain {
+
+    #region Generic Constants
 
     /// <summary>
     /// Data Groups.
     /// </summary>
     [Flags]
-    internal enum TwDG:short {									// DG_.....
+    internal enum TwDG:uint {									// DG_.....
 
         /// <summary>
         /// Data pertaining to control.
@@ -44,14 +47,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Data pertaining to audio.
         /// </summary>
-        Audio=0x0004
-    }
-
-    /// <summary>
-    /// These are for items that need to be determined before DS is opened.
-    /// </summary>
-    [Flags]
-    internal enum TwDF:int {
+        Audio=0x0004,
 
         /// <summary>
         /// added to the identity by the DSM.
@@ -72,7 +68,10 @@ namespace Saraff.Twain {
     /// <summary>
     /// Data codes.
     /// </summary>
-    internal enum TwDAT:short {									// DAT_....
+    internal enum TwDAT:ushort {									// DAT_....
+
+        #region Data Argument Types for the DG_CONTROL Data Group.
+
         Null=0x0000,
         Capability=0x0001,
         Event=0x0002,
@@ -89,6 +88,12 @@ namespace Saraff.Twain {
         DeviceEvent=0x000d,
         FileSystem=0x000e,
         PassThru=0x000f,
+        Callback=0x0010,   /* TW_CALLBACK        Added 2.0         */
+        StatusUtf8=0x0011, /* TW_STATUSUTF8      Added 2.1         */
+
+        #endregion
+
+        #region Data Argument Types for the DG_IMAGE Data Group.
 
         ImageInfo=0x0101,
         ImageLayout=0x0102,
@@ -102,16 +107,21 @@ namespace Saraff.Twain {
         Palette8=0x010a,
         ExtImageInfo=0x010b,
 
-        SetupFileXfer2=0x0301,
+        #endregion
 
-        /* 2.0 */
-        EntryPoint=0x0403
+        #region misplaced
+
+        IccProfile=0x0401,       /* TW_MEMORY        Added 1.91  This Data Argument is misplaced but belongs to the DG_IMAGE Data Group */
+        ImageMemFileXfer=0x0402, /* TW_IMAGEMEMXFER  Added 1.91  This Data Argument is misplaced but belongs to the DG_IMAGE Data Group */
+        EntryPoint=0x0403,       /* TW_ENTRYPOINT    Added 2.0   This Data Argument is misplaced but belongs to the DG_CONTROL Data Group */
+        
+        #endregion
     }
 
     /// <summary>
     /// Messages.
     /// </summary>
-    internal enum TwMSG:short {									// MSG_.....
+    internal enum TwMSG:ushort {									// MSG_.....
 
         #region Generic messages may be used with any of several DATs.
 
@@ -271,7 +281,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Return Codes
     /// </summary>
-    internal enum TwRC:short {									// TWRC_....
+    internal enum TwRC:ushort {									// TWRC_....
         Success=0x0000,
         Failure=0x0001,
         CheckStatus=0x0002,
@@ -289,7 +299,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Condition Codes
     /// </summary>
-    internal enum TwCC:short {									// TWCC_....
+    internal enum TwCC:ushort {									// TWCC_....
         Success=0x0000,
         Bummer=0x0001,
         LowMemory=0x0002,
@@ -323,7 +333,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Generic Constants
     /// </summary>
-    internal enum TwOn:short {									// TWON_....
+    internal enum TwOn:ushort {									// TWON_....
 
         /// <summary>
         /// Indicates TW_ARRAY container
@@ -344,13 +354,13 @@ namespace Saraff.Twain {
         /// Indicates TW_RANGE container
         /// </summary>
         Range=0x0006,
-        DontCare=-1
+        DontCare=0xffff
     }
 
     /// <summary>
     /// Data Types
     /// </summary>
-    internal enum TwType:short {									// TWTY_....
+    internal enum TwType:ushort {									// TWTY_....
         Int8=0x0000,
         Int16=0x0001,
         Int32=0x0002,
@@ -425,8 +435,9 @@ namespace Saraff.Twain {
         /// <param name="type">Управляемый тип.</param>
         /// <returns>Код типа данный twain.</returns>
         public static TwType TypeOf(Type type) {
+            Type _type=type.IsEnum?Enum.GetUnderlyingType(type):type;
             foreach(var _item in TwTypeHelper._typeof) {
-                if(_item.Value==type) {
+                if(_item.Value==_type) {
                     return _item.Key;
                 }
             }
@@ -446,7 +457,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Capability Constants
     /// </summary>
-    public enum TwCap:short {
+    public enum TwCap:ushort {
         /* image data sources MAY support these caps */
         XferCount=0x0001,			// all data sources are REQUIRED to support these caps
         ICompression=0x0100,		// ICAP_...
@@ -619,7 +630,7 @@ namespace Saraff.Twain {
     /// Bit patterns: for query the operation that are supported by the data source on a capability
     /// </summary>
     [Flags]
-    public enum TwQC:short { //TWQC_...
+    public enum TwQC:ushort { //TWQC_...
         Get=0x0001,
         Set=0x0002,
         GetDefault=0x0004,
@@ -635,27 +646,128 @@ namespace Saraff.Twain {
     /// <summary>
     /// Language Constants
     /// </summary>
-    internal enum TwLanguage:short {
-        DAN=0,  /* Danish                 */
-        DUT=1,  /* Dutch                  */
-        ENG=2,  /* International English  */
-        FCF=3,  /* French Canadian        */
-        FIN=4,  /* Finnish                */
-        FRN=5,  /* French                 */
-        GER=6,  /* German                 */
-        ICE=7,  /* Icelandic              */
-        ITN=8,  /* Italian                */
-        NOR=9,  /* Norwegian              */
-        POR=10, /* Portuguese             */
-        SPA=11, /* Spanish                */
-        SWE=12, /* Swedish                */
-        USA=13  /* U.S. English           */
+    internal enum TwLanguage:ushort {
+        DANISH=0,             /* Danish                 */
+        DUTCH=1,              /* Dutch                  */
+        ENGLISH=2,            /* International English  */
+        FRENCH_CANADIAN=3,    /* French Canadian        */
+        FINNISH=4,            /* Finnish                */
+        FRENCH=5,             /* French                 */
+        GERMAN=6,             /* German                 */
+        ICELANDIC=7,          /* Icelandic              */
+        ITALIAN=8,            /* Italian                */
+        NORWEGIAN=9,          /* Norwegian              */
+        PORTUGUESE=10,        /* Portuguese             */
+        SPANISH=11,           /* Spanish                */
+        SWEDISH=12,           /* Swedish                */
+        ENGLISH_USA=13,       /* U.S. English           */
+        AFRIKAANS=14,
+        ALBANIA=15,
+        ARABIC=16,
+        ARABIC_ALGERIA=17,
+        ARABIC_BAHRAIN=18,
+        ARABIC_EGYPT=19,
+        ARABIC_IRAQ=20,
+        ARABIC_JORDAN=21,
+        ARABIC_KUWAIT=22,
+        ARABIC_LEBANON=23,
+        ARABIC_LIBYA=24,
+        ARABIC_MOROCCO=25,
+        ARABIC_OMAN=26,
+        ARABIC_QATAR=27,
+        ARABIC_SAUDIARABIA=28,
+        ARABIC_SYRIA=29,
+        ARABIC_TUNISIA=30,
+        ARABIC_UAE=31, /* United Arabic Emirates */
+        ARABIC_YEMEN=32,
+        BASQUE=33,
+        BYELORUSSIAN=34,
+        BULGARIAN=35,
+        CATALAN=36,
+        CHINESE=37,
+        CHINESE_HONGKONG=38,
+        CHINESE_PRC=39, /* People's Republic of China */
+        CHINESE_SINGAPORE=40,
+        CHINESE_SIMPLIFIED=41,
+        CHINESE_TAIWAN=42,
+        CHINESE_TRADITIONAL=43,
+        CROATIA=44,
+        CZECH=45,
+        DUTCH_BELGIAN=46,
+        ENGLISH_AUSTRALIAN=47,
+        ENGLISH_CANADIAN=48,
+        ENGLISH_IRELAND=49,
+        ENGLISH_NEWZEALAND=50,
+        ENGLISH_SOUTHAFRICA=51,
+        ENGLISH_UK=52,
+        ESTONIAN=53,
+        FAEROESE=54,
+        FARSI=55,
+        FRENCH_BELGIAN=56,
+        FRENCH_LUXEMBOURG=57,
+        FRENCH_SWISS=58,
+        GERMAN_AUSTRIAN=59,
+        GERMAN_LUXEMBOURG=60,
+        GERMAN_LIECHTENSTEIN=61,
+        GERMAN_SWISS=62,
+        GREEK=63,
+        HEBREW=64,
+        HUNGARIAN=65,
+        INDONESIAN=66,
+        ITALIAN_SWISS=67,
+        JAPANESE=68,
+        KOREAN=69,
+        KOREAN_JOHAB=70,
+        LATVIAN=71,
+        LITHUANIAN=72,
+        NORWEGIAN_BOKMAL=73,
+        NORWEGIAN_NYNORSK=74,
+        POLISH=75,
+        PORTUGUESE_BRAZIL=76,
+        ROMANIAN=77,
+        RUSSIAN=78,
+        SERBIAN_LATIN=79,
+        SLOVAK=80,
+        SLOVENIAN=81,
+        SPANISH_MEXICAN=82,
+        SPANISH_MODERN=83,
+        THAI=84,
+        TURKISH=85,
+        UKRANIAN=86,
+        /* More stuff added for 1.8 */
+        ASSAMESE=87,
+        BENGALI=88,
+        BIHARI=89,
+        BODO=90,
+        DOGRI=91,
+        GUJARATI=92,
+        HARYANVI=93,
+        HINDI=94,
+        KANNADA=95,
+        KASHMIRI=96,
+        MALAYALAM=97,
+        MARATHI=98,
+        MARWARI=99,
+        MEGHALAYAN=100,
+        MIZO=101,
+        NAGA=102,
+        ORISSI=103,
+        PUNJABI=104,
+        PUSHTU=105,
+        SERBIAN_CYRILLIC=106,
+        SIKKIMI=107,
+        SWEDISH_FINLAND=108,
+        TAMIL=109,
+        TELUGU=110,
+        TRIPURI=111,
+        URDU=112,
+        VIETNAMESE=113
     }
 
     /// <summary>
     /// Country Constantsz
     /// </summary>
-    internal enum TwCountry:short {
+    internal enum TwCountry:ushort {
         AFGHANISTAN=1001,
         ALGERIA=213,
         AMERICANSAMOA=684,
@@ -865,13 +977,43 @@ namespace Saraff.Twain {
         YUGOSLAVIA=38,
         ZAIRE=243,
         ZAMBIA=260,
-        ZIMBABWE=263
+        ZIMBABWE=263,
+        /* Added for 1.8 */
+        ALBANIA=355,
+        ARMENIA=374,
+        AZERBAIJAN=994,
+        BELARUS=375,
+        BOSNIAHERZGO=387,
+        CAMBODIA=855,
+        CROATIA=385,
+        CZECHREPUBLIC=420,
+        DIEGOGARCIA=246,
+        ERITREA=291,
+        ESTONIA=372,
+        GEORGIA=995,
+        LATVIA=371,
+        LESOTHO=266,
+        LITHUANIA=370,
+        MACEDONIA=389,
+        MAYOTTEIS=269,
+        MOLDOVA=373,
+        MYANMAR=95,
+        NORTHKOREA=850,
+        PUERTORICO=787,
+        RUSSIA=7,
+        SERBIA=381,
+        SLOVAKIA=421,
+        SLOVENIA=386,
+        SOUTHKOREA=82,
+        UKRAINE=380,
+        USVIRGINIS=340,
+        VIETNAM=84
     }
 
     /// <summary>
     /// Unit of measure
     /// </summary>
-    public enum TwUnits:short { //ICAP_UNITS values (UN_ means UNits)
+    public enum TwUnits:ushort { //ICAP_UNITS values (UN_ means UNits)
         Inches=0,
         Centimeters=1,
         Picas=2,
@@ -884,7 +1026,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Pixel types
     /// </summary>
-    public enum TwPixelType:short { //ICAP_PIXELTYPE values (PT_ means Pixel Type)
+    public enum TwPixelType:ushort { //ICAP_PIXELTYPE values (PT_ means Pixel Type)
 
         /// <summary>
         /// Black and white
@@ -907,7 +1049,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Compression values
     /// </summary>
-    public enum TwCompression:short { //ICAP_COMPRESSION values (CP_ means ComPression )
+    public enum TwCompression:ushort { //ICAP_COMPRESSION values (CP_ means ComPression )
         None=0,
         PackBits=1,
 
@@ -958,7 +1100,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Extended Image Info Attributes.
     /// </summary>
-    public enum TwEI:short { //TWEI_xxxx
+    public enum TwEI:ushort { //TWEI_xxxx
         BarCodeX=0x1200,
         BarCodeY=0x1201,
         BarCodeText=0x1202,
@@ -1035,20 +1177,205 @@ namespace Saraff.Twain {
         PrinterText=0x124A     
     }
 
-    // ------------------- STRUCTS --------------------------------------------
+    /// <summary>
+    /// ICAP_XFERMECH values (SX_ means Setup XFer)
+    /// </summary>
+    public enum TwSX:ushort {
+        Native=0,
+        File=1,
+        Memory=2,
+        MemFile=4    /* added 1.91 */
+    }
+
+    /// <summary>
+    /// Flags used in TW_MEMORY structure.
+    /// </summary>
+    [Flags]
+    internal enum TwMF:uint {
+        AppOwns=0x1,
+        DsmOwns=0x2,
+        DSOwns=0x4,
+        Pointer=0x8,
+        Handle=0x10
+    }
+
+    /// <summary>
+    /// ICAP_SUPPORTEDSIZES values (SS_ means Supported Sizes).
+    /// </summary>
+    public enum TwSS:ushort {
+        None=0,
+        A4Letter=1,
+        B5Letter=2,
+        USLetter=3,
+        USLegal=4,
+        /* Added 1.5 */
+        A5=5,
+        B4=6,
+        B6=7,
+        /* Added 1.7 */
+        USLedger=9,
+        USExecutive=10,
+        A3=11,
+        B3=12,
+        A6=13,
+        C4=14,
+        C5=15,
+        C6=16,
+        /* Added 1.8 */
+        _4A0=17,
+        _2A0=18,
+        A0=19,
+        A1=20,
+        A2=21,
+        A4=A4Letter,
+        A7=22,
+        A8=23,
+        A9=24,
+        A10=25,
+        ISOB0=26,
+        ISOB1=27,
+        ISOB2=28,
+        ISOB3=B3,
+        ISOB4=B4,
+        ISOB5=29,
+        ISOB6=B6,
+        ISOB7=30,
+        ISOB8=31,
+        ISOB9=32,
+        ISOB10=33,
+        JISB0=34,
+        JISB1=35,
+        JISB2=36,
+        JISB3=37,
+        JISB4=38,
+        JISB5=B5Letter,
+        JISB6=39,
+        JISB7=40,
+        JISB8=41,
+        JISB9=42,
+        JISB10=43,
+        C0=44,
+        C1=45,
+        C2=46,
+        C3=47,
+        C7=48,
+        C8=49,
+        C9=50,
+        C10=51,
+        USStatement=52,
+        BusinessCard=53
+    }
+
+    /// <summary>
+    /// ICAP_IMAGEFILEFORMAT values (FF_means File Format).
+    /// </summary>
+    public enum TwFF:ushort {
+
+        /// <summary>
+        /// Tagged Image File Format.
+        /// </summary>
+        Tiff=0,
+
+        /// <summary>
+        /// Macintosh PICT.
+        /// </summary>
+        Pict=1,
+
+        /// <summary>
+        /// Windows Bitmap.
+        /// </summary>
+        Bmp=2,
+
+        /// <summary>
+        /// X-Windows Bitmap.
+        /// </summary>
+        Xbm=3,
+
+        /// <summary>
+        /// Jpeg File Interchange Format.
+        /// </summary>
+        Jfif=4,
+
+        /// <summary>
+        /// Flash Pix.
+        /// </summary>
+        Fpx=5,
+
+        /// <summary>
+        /// Multi-page tiff file.
+        /// </summary>
+        TiffMulti=6,
+
+        Png=7,
+        Spiff=8,
+        Exif=9,
+
+        /// <summary>
+        /// 1.91 NB: this is not PDF/A
+        /// </summary>
+        Pdf=10,
+
+        /// <summary>
+        /// 1.91
+        /// </summary>
+        Jp2=11,
+
+        /// <summary>
+        /// 1.91
+        /// </summary>
+        Jpx=13,
+
+        /// <summary>
+        /// 1.91
+        /// </summary>
+        Dejavu=14,
+
+        /// <summary>
+        /// 2.0 Adobe PDF/A, Version 1.
+        /// </summary>
+        PdfA=15,
+
+        /// <summary>
+        /// 2.1 Adobe PDF/A, Version.
+        /// </summary>
+        PdfA2=16
+    }
+
+    /// <summary>
+    /// Palette types for TW_PALETTE8.
+    /// </summary>
+    public enum TwPA:ushort {
+        RGB=0,
+        Gray=1,
+        CMY=2
+    }
+
+    #endregion
+
+    #region Type Definitions
 
     /// <summary>
     /// Строка фиксированной длинны 32 символа.
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
-    public sealed class TwStr32 {
+    internal sealed class TwStr32 {
 
         [MarshalAs(UnmanagedType.ByValTStr,SizeConst=34)]
         public string Value;
 
         public override string ToString() {
             return this.Value;
+        }
+
+        public static implicit operator string(TwStr32 value) {
+            return value.Value;
+        }
+
+        public static implicit operator TwStr32(string value) {
+            return new TwStr32 {
+                Value=value
+            };
         }
     }
 
@@ -1057,13 +1384,23 @@ namespace Saraff.Twain {
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
-    public sealed class TwStr64 {
+    internal sealed class TwStr64 {
 
         [MarshalAs(UnmanagedType.ByValTStr,SizeConst=66)]
         public string Value;
 
         public override string ToString() {
             return this.Value;
+        }
+
+        public static implicit operator string(TwStr64 value) {
+            return value.Value;
+        }
+
+        public static implicit operator TwStr64(string value) {
+            return new TwStr64 {
+                Value=value
+            };
         }
     }
 
@@ -1072,13 +1409,23 @@ namespace Saraff.Twain {
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
-    public sealed class TwStr128 {
+    internal sealed class TwStr128 {
 
         [MarshalAs(UnmanagedType.ByValTStr,SizeConst=130)]
         public string Value;
 
         public override string ToString() {
             return this.Value;
+        }
+
+        public static implicit operator string(TwStr128 value) {
+            return value.Value;
+        }
+
+        public static implicit operator TwStr128(string value) {
+            return new TwStr128 {
+                Value=value
+            };
         }
     }
 
@@ -1087,13 +1434,23 @@ namespace Saraff.Twain {
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
-    public sealed class TwStr255 {
+    internal sealed class TwStr255 {
 
         [MarshalAs(UnmanagedType.ByValTStr,SizeConst=256)]
         public string Value;
 
         public override string ToString() {
             return this.Value;
+        }
+
+        public static implicit operator string(TwStr255 value) {
+            return value.Value;
+        }
+
+        public static implicit operator TwStr255(string value) {
+            return new TwStr255 {
+                Value=value
+            };
         }
     }
 
@@ -1102,13 +1459,23 @@ namespace Saraff.Twain {
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Unicode)]
-    public sealed class TwUni512 {
+    internal sealed class TwUni512 {
 
         [MarshalAs(UnmanagedType.ByValTStr,SizeConst=512)]
         public string Value;
 
         public override string ToString() {
             return this.Value;
+        }
+
+        public static implicit operator string(TwUni512 value) {
+            return value.Value;
+        }
+
+        public static implicit operator TwUni512(string value) {
+            return new TwUni512 {
+                Value=value
+            };
         }
     }
 
@@ -1117,7 +1484,7 @@ namespace Saraff.Twain {
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
-    public sealed class TwStr1024 {
+    internal sealed class TwStr1024 {
 
         [MarshalAs(UnmanagedType.ByValTStr,SizeConst=1026)]
         public string Value;
@@ -1125,7 +1492,163 @@ namespace Saraff.Twain {
         public override string ToString() {
             return this.Value;
         }
+
+        public static implicit operator string(TwStr1024 value) {
+            return value.Value;
+        }
+
+        public static implicit operator TwStr1024(string value) {
+            return new TwStr1024 {
+                Value=value
+            };
+        }
     }
+
+    /// <summary>
+    /// Boolean value.
+    /// </summary>
+    [DebuggerDisplay("{ToBool()}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal struct TwBool {
+
+        public ushort Value;
+
+        private bool ToBool() {
+            return this.Value!=0;
+        }
+
+        public static implicit operator bool(TwBool value) {
+            return value.ToBool();
+        }
+
+        public static implicit operator TwBool(bool value) {
+            return new TwBool {
+                Value=(ushort)(value?1:0)
+            };
+        }
+    }
+
+    /// <summary>
+    /// Fixed point structure type.
+    /// </summary>
+    [DebuggerDisplay("{ToFloat()}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal struct TwFix32 {									// TW_FIX32
+
+        /// <summary>
+        /// Целая часть.
+        /// </summary>
+        public short Whole;
+
+        /// <summary>
+        /// Дробная часть.
+        /// </summary>
+        public ushort Frac;
+
+        /// <summary>
+        /// Приводит тип к числу с плавающей запятой.
+        /// </summary>
+        /// <returns>Число с плавающей точкой.</returns>
+        private float ToFloat() {
+            return (float)this.Whole+((float)this.Frac/65536.0f);
+        }
+
+        /// <summary>
+        /// Создает экземпляр TwFix32 из числа с плавающей точкой.
+        /// </summary>
+        /// <param name="f">Число с плавающей точкой.</param>
+        /// <returns>Экземпляр TwFix32.</returns>
+        public static implicit operator TwFix32(float f) {
+            int i=(int)((f*65536.0f)+0.5f);
+            return new TwFix32() {
+                Whole=(short)(i>>16),
+                Frac=(ushort)(i&0x0000ffff)
+            };
+        }
+
+        /// <summary>
+        /// Создает экземпляр TwFix32 из целого числа.
+        /// </summary>
+        /// <param name="f">Целое число.</param>
+        /// <returns>Экземпляр TwFix32.</returns>
+        public static explicit operator TwFix32(uint value) {
+            return new TwFix32() {
+                Whole=(short)(value&0x0000ffff),
+                Frac=(ushort)(value>>16)
+            };
+        }
+
+        /// <summary>
+        /// Приводит тип к числу с плавающей запятой.
+        /// </summary>
+        /// <param name="value">Экземпляр TwFix32.</param>
+        /// <returns>Число с плавающей точкой.</returns>
+        public static implicit operator float(TwFix32 value) {
+            return value.ToFloat();
+        }
+
+        /// <summary>
+        /// Приводит тип к целому числу.
+        /// </summary>
+        /// <param name="value">Экземпляр TwFix32.</param>
+        /// <returns>Целое число.</returns>
+        public static explicit operator uint(TwFix32 value) {
+            return (uint)(ushort)value.Whole+((uint)value.Frac<<16);
+        }
+    }
+
+    /// <summary>
+    /// Defines a frame rectangle in ICAP_UNITS coordinates.
+    /// </summary>
+    [DebuggerDisplay("{ToRectangle()}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal struct TwFrame {
+
+        /// <summary>
+        /// Gets or sets the x-coordinate of the left edge.
+        /// </summary>
+        public TwFix32 Left;
+
+        /// <summary>
+        /// Gets or sets the y-coordinate of the top edge.
+        /// </summary>
+        public TwFix32 Top;
+
+        /// <summary>
+        /// Gets or sets the x-coordinate that is the sum of TwFrame.Left and width of image.
+        /// </summary>
+        public TwFix32 Right;
+
+        /// <summary>
+        /// Gets or sets the y-coordinate that is the sum of TwFrame.Top and length of image.
+        /// </summary>
+        public TwFix32 Bottom;
+
+        private RectangleF ToRectangle() {
+            return new RectangleF(
+                this.Left,
+                this.Top,
+                this.Right-this.Left,
+                this.Bottom-this.Top);
+        }
+
+        public static implicit operator RectangleF(TwFrame value) {
+            return value.ToRectangle();
+        }
+
+        public static implicit operator TwFrame(RectangleF value) {
+            return new TwFrame() {
+                Left=value.Left,
+                Top=value.Top,
+                Right=value.Right,
+                Bottom=value.Bottom
+            };
+        }
+    }
+
+    #endregion
+
+    #region Structure Definitions
 
     /// <summary>
     /// Identifies the program/library/code resource.
@@ -1147,35 +1670,33 @@ namespace Saraff.Twain {
         /// <summary>
         /// Application and DS must set to TWON_PROTOCOLMAJOR
         /// </summary>
-        public short ProtocolMajor;
+        public ushort ProtocolMajor;
 
         /// <summary>
         /// Application and DS must set to TWON_PROTOCOLMINOR
         /// </summary>
-        public short ProtocolMinor;
+        public ushort ProtocolMinor;
 
         /// <summary>
         /// Bit field OR combination of DG_ constants
         /// </summary>
-        public int SupportedGroups;
+        [MarshalAs(UnmanagedType.U4)]
+        public TwDG SupportedGroups;
 
         /// <summary>
         /// Manufacturer name, e.g. "Hewlett-Packard"
         /// </summary>
-        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=34)]
-        public string Manufacturer;
+        public TwStr32 Manufacturer;
 
         /// <summary>
         /// Product family name, e.g. "ScanJet"
         /// </summary>
-        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=34)]
-        public string ProductFamily;
+        public TwStr32 ProductFamily;
 
         /// <summary>
         /// Product name, e.g. "ScanJet Plus"
         /// </summary>
-        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=34)]
-        public string ProductName;
+        public TwStr32 ProductName;
 
         public override bool Equals(object obj) {
             if(obj is TwIdentity) {
@@ -1199,30 +1720,29 @@ namespace Saraff.Twain {
         /// <summary>
         /// Major revision number of the software.
         /// </summary>
-        public short MajorNum;
+        public ushort MajorNum;
 
         /// <summary>
         /// Incremental revision number of the software.
         /// </summary>
-        public short MinorNum;
+        public ushort MinorNum;
 
         /// <summary>
         /// e.g. TWLG_SWISSFRENCH
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwLanguage Language;
 
         /// <summary>
         /// e.g. TWCY_SWITZERLAND
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwCountry Country;
 
         /// <summary>
         /// e.g. "1.0b3 Beta release"
         /// </summary>
-        [MarshalAs(UnmanagedType.ByValTStr,SizeConst=34)]
-        public string Info;
+        public TwStr32 Info;
     }
 
     /// <summary>
@@ -1234,12 +1754,12 @@ namespace Saraff.Twain {
         /// <summary>
         /// TRUE if DS should bring up its UI
         /// </summary>
-        public short ShowUI;				// bool is strictly 32 bit, so use short
+        public TwBool ShowUI;				// bool is strictly 32 bit, so use short
 
         /// <summary>
         /// For Mac only - true if the DS's UI is modal
         /// </summary>
-        public short ModalUI;
+        public TwBool ModalUI;
 
         /// <summary>
         /// For windows only - Application window handle
@@ -1256,13 +1776,13 @@ namespace Saraff.Twain {
         /// <summary>
         /// Any TwCC constant
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwCC ConditionCode;		// TwCC
 
         /// <summary>
         /// Future expansion space
         /// </summary>
-        public short Reserved;
+        public ushort Reserved;
     }
 
     /// <summary>
@@ -1279,7 +1799,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// TwMSG from data source, e.g. TwMSG.XFerReady
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwMSG Message;
     }
 
@@ -1328,18 +1848,18 @@ namespace Saraff.Twain {
         /// <summary>
         /// True if Planar, False if chunky
         /// </summary>
-        public short Planar;
+        public TwBool Planar;
 
         /// <summary>
         /// How to interp data; photo interp
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwPixelType PixelType;
 
         /// <summary>
         /// How the data is compressed
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwCompression Compression;
     }
 
@@ -1353,24 +1873,24 @@ namespace Saraff.Twain {
         /// <summary>
         /// Tag identifying an information.
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwEI InfoId;
 
         /// <summary>
         /// Item data type.
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwType ItemType;
 
         /// <summary>
         /// Number of items for this field.
         /// </summary>
-        public short NumItems;
+        public ushort NumItems;
 
         /// <summary>
         /// This is the return code of availability of data for extended image attribute requested.
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwRC ReturnCode;
 
         /// <summary>
@@ -1436,7 +1956,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Количество элементов расширенного описания изображения.
         /// </summary>
-        public int NumInfos;
+        public uint NumInfos;
 
         //[MarshalAs(UnmanagedType.ByValArray,SizeConst=1)]
         //public TwInfo[] Info;
@@ -1450,7 +1970,7 @@ namespace Saraff.Twain {
             var _twExtImageInfoSize=Marshal.SizeOf(typeof(TwExtImageInfo));
             var _twInfoSize=Marshal.SizeOf(typeof(TwInfo));
             var _data=Marshal.AllocHGlobal(_twExtImageInfoSize+(_twInfoSize*info.Length));
-            Marshal.StructureToPtr(new TwExtImageInfo {NumInfos=info.Length},_data,true);
+            Marshal.StructureToPtr(new TwExtImageInfo {NumInfos=(uint)info.Length},_data,true);
             for(int i=0; i<info.Length; i++) {
                 Marshal.StructureToPtr(info[i],(IntPtr)(_data.ToInt64()+_twExtImageInfoSize+(_twInfoSize*i)),true);
             }
@@ -1467,7 +1987,6 @@ namespace Saraff.Twain {
         /// <summary>
         /// Frame coords within larger document.
         /// </summary>
-        [DebuggerDisplay("Left = {Frame.Left.ToFloat()}, Top = {Frame.Top.ToFloat()}, Right = {Frame.Right.ToFloat()}, Bottom = {Frame.Bottom.ToFloat()}")]
         public TwFrame Frame;
 
         /// <summary>
@@ -1491,94 +2010,8 @@ namespace Saraff.Twain {
     /// </summary>
     [StructLayout(LayoutKind.Sequential,Pack=2)]
     internal class TwPendingXfers {								// TW_PENDINGXFERS
-        public short Count;
-        public int EOJ;
-    }
-
-    /// <summary>
-    /// Fixed point structure type.
-    /// </summary>
-    [DebuggerDisplay("Whole = {Whole}, Frac = {Frac}")]
-    [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal struct TwFix32 {									// TW_FIX32
-
-        /// <summary>
-        /// Целая часть.
-        /// </summary>
-        public short Whole;
-
-        /// <summary>
-        /// Дробная часть.
-        /// </summary>
-        public ushort Frac;
-
-        /// <summary>
-        /// Приводит тип к числу с плавающей запятой.
-        /// </summary>
-        /// <returns>Число с плавающей точкой.</returns>
-        public float ToFloat() {
-            return (float)this.Whole+((float)this.Frac/65536.0f);
-        }
-
-        /// <summary>
-        /// Приводит тип целому числу со знаком.
-        /// </summary>
-        /// <returns>Целое число со знаком.</returns>
-        public int ToInt32() {
-            return (int)this.Whole+((int)this.Frac<<16);
-        }
-
-        /// <summary>
-        /// Создает экземпляр TwFix32 из числа с плавающей точкой.
-        /// </summary>
-        /// <param name="f">Число с плавающей точкой.</param>
-        /// <returns>Экземпляр TwFix32.</returns>
-        public static TwFix32 FromFloat(float f) {
-            int i=(int)((f*65536.0f)+0.5f);
-            return new TwFix32() {
-                Whole=(short)(i>>16),
-                Frac=(ushort)(i&0x0000ffff)
-            };
-        }
-
-        /// <summary>
-        /// Создает экземпляр TwFix32 из целого числа со знаком.
-        /// </summary>
-        /// <param name="i">Целое число со знаком.</param>
-        /// <returns>Экземпляр TwFix32.</returns>
-        public static TwFix32 FromInt32(int i) {
-            return new TwFix32() {
-                Whole=(short)(i&0x0000ffff),
-                Frac=(ushort)(i>>16)
-            };
-        }
-    }
-
-    /// <summary>
-    /// Defines a frame rectangle in ICAP_UNITS coordinates.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal struct TwFrame {
-
-        /// <summary>
-        /// Gets or sets the x-coordinate of the left edge.
-        /// </summary>
-        public TwFix32 Left;
-
-        /// <summary>
-        /// Gets or sets the y-coordinate of the top edge.
-        /// </summary>
-        public TwFix32 Top;
-
-        /// <summary>
-        /// Gets or sets the x-coordinate that is the sum of TwFrame.Left and width of image.
-        /// </summary>
-        public TwFix32 Right;
-
-        /// <summary>
-        /// Gets or sets the y-coordinate that is the sum of TwFrame.Top and length of image.
-        /// </summary>
-        public TwFix32 Bottom;
+        public ushort Count;
+        public uint EOJ;
     }
 
     /// <summary>
@@ -1590,13 +2023,13 @@ namespace Saraff.Twain {
         /// <summary>
         /// Id of capability to set or get, e.g. TwCap.Brightness
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwCap Cap;
 
         /// <summary>
         /// TwOn.One, TwOn.Range, TwOn.Array or TwOn.Enum
         /// </summary>
-        [MarshalAs(UnmanagedType.I2)]
+        [MarshalAs(UnmanagedType.U2)]
         public TwOn ConType;
 
         /// <summary>
@@ -1619,14 +2052,14 @@ namespace Saraff.Twain {
         /// <param name="cap">The cap.</param>
         /// <param name="value">The value.</param>
         /// <param name="type">The type.</param>
-        public TwCapability(TwCap cap,int value,TwType type) {
+        public TwCapability(TwCap cap,uint value,TwType type) {
             this.Cap=cap;
             this.ConType=TwOn.One;
-            _TwOneValue _value=new _TwOneValue() {
+            TwOneValue _value=new TwOneValue() {
                 ItemType=type,
                 Item=value
             };
-            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(_TwOneValue)));
+            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwOneValue)));
             IntPtr _pTwOneValue=Twain32._Memory.Lock(Handle);
             try {
                 Marshal.StructureToPtr(_value,_pTwOneValue,true);
@@ -1640,10 +2073,10 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="cap">The cap.</param>
         /// <param name="range">The range.</param>
-        public TwCapability(TwCap cap,_TwRange range) {
+        public TwCapability(TwCap cap,TwRange range) {
             this.Cap=cap;
             this.ConType=TwOn.Range;
-            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(_TwRange)));
+            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwRange)));
             IntPtr _pTwRange=Twain32._Memory.Lock(Handle);
             try {
                 Marshal.StructureToPtr(range,_pTwRange,true);
@@ -1658,14 +2091,14 @@ namespace Saraff.Twain {
         /// <param name="cap">The cap.</param>
         /// <param name="array">The array.</param>
         /// <param name="arrayValue">The array value.</param>
-        public TwCapability(TwCap cap,_TwArray array,object[] arrayValue) {
+        public TwCapability(TwCap cap,TwArray array,object[] arrayValue) {
             this.Cap=cap;
             this.ConType=TwOn.Array;
-            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(_TwArray))+(Marshal.SizeOf(arrayValue[0])*arrayValue.Length));
+            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwArray))+(Marshal.SizeOf(arrayValue[0])*arrayValue.Length));
             IntPtr _pTwArray=Twain32._Memory.Lock(Handle);
             try {
                 Marshal.StructureToPtr(array,_pTwArray,true);
-                for(long i=0,_ptr=_pTwArray.ToInt64()+Marshal.SizeOf(typeof(_TwArray)); i<arrayValue.Length; i++,_ptr+=Marshal.SizeOf(arrayValue[0])) {
+                for(long i=0,_ptr=_pTwArray.ToInt64()+Marshal.SizeOf(typeof(TwArray)); i<arrayValue.Length; i++,_ptr+=Marshal.SizeOf(arrayValue[0])) {
                     Marshal.StructureToPtr(arrayValue[i],(IntPtr)_ptr,true);
                 }
             } finally {
@@ -1679,14 +2112,14 @@ namespace Saraff.Twain {
         /// <param name="cap">The cap.</param>
         /// <param name="enumeration">The enumeration.</param>
         /// <param name="enumerationValue">The enumeration value.</param>
-        public TwCapability(TwCap cap,_TwEnumeration enumeration,object[] enumerationValue) {
+        public TwCapability(TwCap cap,TwEnumeration enumeration,object[] enumerationValue) {
             this.Cap=cap;
             this.ConType=TwOn.Enum;
-            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(_TwEnumeration))+(Marshal.SizeOf(enumerationValue[0])*enumerationValue.Length));
+            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwEnumeration))+(Marshal.SizeOf(enumerationValue[0])*enumerationValue.Length));
             IntPtr _pTwEnumeration=Twain32._Memory.Lock(Handle);
             try {
                 Marshal.StructureToPtr(enumeration,_pTwEnumeration,true);
-                for(long i=0,_ptr=_pTwEnumeration.ToInt64()+Marshal.SizeOf(typeof(_TwEnumeration)); i<enumerationValue.Length; i++,_ptr+=Marshal.SizeOf(enumerationValue[0])) {
+                for(long i=0,_ptr=_pTwEnumeration.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration)); i<enumerationValue.Length; i++,_ptr+=Marshal.SizeOf(enumerationValue[0])) {
                     Marshal.StructureToPtr(enumerationValue[i],(IntPtr)_ptr,true);
                 }
             } finally {
@@ -1703,59 +2136,59 @@ namespace Saraff.Twain {
             try {
                 switch(this.ConType) {
                     case TwOn.Array:
-                        _TwArray _res=Marshal.PtrToStructure(_handle,typeof(_TwArray)) as _TwArray;
+                        TwArray _res=Marshal.PtrToStructure(_handle,typeof(TwArray)) as TwArray;
                         switch(_res.ItemType) {
                             case TwType.Int8:
                             case TwType.UInt8: {
                                     byte[] _array=new byte[_res.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwArray))),_array,0,_array.Length);
-                                    return new TwArray<byte>(_res,_array);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwArray))),_array,0,_array.Length);
+                                    return new __TwArray<byte>(_res,_array);
                                 }
                             case TwType.Int16:
                             case TwType.UInt16:
                             case TwType.Bool: {
                                     short[] _array=new short[_res.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwArray))),_array,0,_array.Length);
-                                    return new TwArray<short>(_res,_array);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwArray))),_array,0,_array.Length);
+                                    return new __TwArray<short>(_res,_array);
                                 }
                             case TwType.Int32:
                             case TwType.UInt32:
                             case TwType.Fix32: {
                                     int[] _array=new int[_res.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwArray))),_array,0,_array.Length);
-                                    return new TwArray<int>(_res,_array);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwArray))),_array,0,_array.Length);
+                                    return new __TwArray<int>(_res,_array);
                                 }
                         }
                         break;
                     case TwOn.Enum:
-                        _TwEnumeration _res2=Marshal.PtrToStructure(_handle,typeof(_TwEnumeration)) as _TwEnumeration;
+                        TwEnumeration _res2=Marshal.PtrToStructure(_handle,typeof(TwEnumeration)) as TwEnumeration;
                         switch(_res2.ItemType) {
                             case TwType.Int8:
                             case TwType.UInt8: {
                                     byte[] _array=new byte[_res2.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwEnumeration))),_array,0,_array.Length);
-                                    return new TwEnumeration<byte>(_res2,_array);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))),_array,0,_array.Length);
+                                    return new __TwEnumeration<byte>(_res2,_array);
                                 }
                             case TwType.Int16:
                             case TwType.UInt16:
                             case TwType.Bool: {
                                     short[] _array=new short[_res2.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwEnumeration))),_array,0,_array.Length);
-                                    return new TwEnumeration<short>(_res2,_array);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))),_array,0,_array.Length);
+                                    return new __TwEnumeration<short>(_res2,_array);
                                 }
                             case TwType.Int32:
                             case TwType.UInt32:
                             case TwType.Fix32: {
                                     int[] _array=new int[_res2.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(_TwEnumeration))),_array,0,_array.Length);
-                                    return new TwEnumeration<int>(_res2,_array);
+                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))),_array,0,_array.Length);
+                                    return new __TwEnumeration<int>(_res2,_array);
                                 }
                         }
                         break;
                     case TwOn.Range:
-                        return Marshal.PtrToStructure(_handle,typeof(_TwRange));
+                        return Marshal.PtrToStructure(_handle,typeof(TwRange));
                     case TwOn.One:
-                        return Marshal.PtrToStructure(_handle,typeof(_TwOneValue));
+                        return Marshal.PtrToStructure(_handle,typeof(TwOneValue));
                 }
                 return null;
             } finally {
@@ -1782,23 +2215,290 @@ namespace Saraff.Twain {
     /// Container for array of values.
     /// </summary>
     [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal class _TwArray {                                    //TWON_ARRAY. Container for array of values (a simplified TW_ENUMERATION)
-        [MarshalAs(UnmanagedType.I2)]
+    internal class TwArray {                                    //TWON_ARRAY. Container for array of values (a simplified TW_ENUMERATION)
+        [MarshalAs(UnmanagedType.U2)]
         public TwType ItemType;
-        public int NumItems;    /* How many items in ItemList           */
+        public uint NumItems;    /* How many items in ItemList           */
         //[MarshalAs(UnmanagedType.ByValArray,SizeConst=1)]
         //public byte[] ItemList; /* Array of ItemType values starts here */
+    }
+
+    /// <summary>
+    /// Container for a collection of values.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwEnumeration {                              //TWON_ENUMERATION. Container for a collection of values.
+        [MarshalAs(UnmanagedType.U2)]
+        public TwType ItemType;
+        public uint NumItems;     /* How many items in ItemList                 */
+        public uint CurrentIndex; /* Current value is in ItemList[CurrentIndex] */
+        public uint DefaultIndex; /* Powerup value is in ItemList[DefaultIndex] */
+        //[MarshalAs(UnmanagedType.ByValArray,SizeConst=1)]
+        //public byte[] ItemList;  /* Array of ItemType values starts here       */
+    }
+
+    /// <summary>
+    /// Container for one value.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwOneValue {                                 //TW_ONEVALUE. Container for one value.
+        [MarshalAs(UnmanagedType.U2)]
+        public TwType ItemType;
+        public uint Item;
+    }
+
+    /// <summary>
+    /// Container for a range of values.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwRange {                                    //TWON_RANGE. Container for a range of values.
+        [MarshalAs(UnmanagedType.U2)]
+        public TwType ItemType;
+        public uint MinValue;     /* Starting value in the range.           */
+        public uint MaxValue;     /* Final value in the range.              */
+        public uint StepSize;     /* Increment from MinValue to MaxValue.   */
+        public uint DefaultValue; /* Power-up value.                        */
+        public uint CurrentValue; /* The value that is currently in effect. */
+    }
+
+    /// <summary>
+    /// Sets up DS to application data transfer via a memory buffer.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwSetupMemXfer {
+
+        /// <summary>
+        /// Minimum buffer size in bytes
+        /// </summary>
+        public uint MinBufSize;
+
+        /// <summary>
+        /// Maximum buffer size in bytes
+        /// </summary>
+        public uint MaxBufSize;
+
+        /// <summary>
+        /// Preferred buffer size in bytes
+        /// </summary>
+        public uint Preferred;
+    }
+
+    /// <summary>
+    /// Used to pass image data (e.g. in strips) from DS to application.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwImageMemXfer {
+
+        public TwImageMemXfer() {
+            this.Compression=(TwCompression)ushort.MaxValue;
+            this.BytesPerRow=this.BytesWritten=this.Columns=this.Rows=this.XOffset=this.YOffset=uint.MaxValue;
+        }
+
+        /// <summary>
+        /// How the data is compressed.
+        /// </summary>
+        [MarshalAs(UnmanagedType.U2)]
+        public TwCompression Compression;
+
+        /// <summary>
+        /// Number of bytes in a row of data.
+        /// </summary>
+        public uint BytesPerRow;
+
+        /// <summary>
+        /// How many columns.
+        /// </summary>
+        public uint Columns;
+
+        /// <summary>
+        /// How many rows.
+        /// </summary>
+        public uint Rows;
+
+        /// <summary>
+        /// How far from the side of the image.
+        /// </summary>
+        public uint XOffset;
+
+        /// <summary>
+        /// How far from the top of the image.
+        /// </summary>
+        public uint YOffset;
+
+        /// <summary>
+        /// How many bytes written in Memory.
+        /// </summary>
+        public uint BytesWritten;
+
+        /// <summary>
+        /// Mem struct used to pass actual image data.
+        /// </summary>
+        public TwMemory Memory;
+    }
+
+    /// <summary>
+    /// Used to manage memory buffers.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwMemory {
+
+        /// <summary>
+        /// Any combination of the TWMF_ constants.
+        /// </summary>
+        [MarshalAs(UnmanagedType.U4)]
+        public TwMF Flags;
+
+        /// <summary>
+        /// Number of bytes stored in buffer TheMem.
+        /// </summary>
+        public uint Length;
+
+        /// <summary>
+        /// Pointer or handle to the allocated memory buffer.
+        /// </summary>
+        public IntPtr TheMem;
+    }
+
+    /// <summary>
+    /// Sets up DS to application data transfer via a file.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwSetupFileXfer {
+
+        /// <summary>
+        /// File to contain data.
+        /// </summary>
+        public TwStr255 FileName;
+
+        /// <summary>
+        /// A TWFF_xxxx constant.
+        /// </summary>
+        [MarshalAs(UnmanagedType.U2)]
+        public TwFF Format;
+
+        /// <summary>
+        /// Used for Macintosh only.
+        /// </summary>
+        public IntPtr VrefNum;
+    }
+
+    /// <summary>
+    /// DAT_PALETTE8. Color palette when TWPT_PALETTE pixels xfer'd in mem buf.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwPalette8 {
+
+        /// <summary>
+        /// Number of colors in the color table.
+        /// </summary>
+        public ushort NumColors;
+
+        /// <summary>
+        /// TWPA_xxxx, specifies type of palette.
+        /// </summary>
+        [MarshalAs(UnmanagedType.U2)]
+        public TwPA PaletteType;
+
+        /// <summary>
+        /// Array of palette values starts here.
+        /// </summary>
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst=256)]
+        public TwElement8[] Colors;
+
+        public static implicit operator Twain32.ColorPalette(TwPalette8 palette) {
+            return Twain32.ColorPalette.Create(palette);
+        }
+
+        public static implicit operator TwPalette8(Twain32.ColorPalette palette) {
+            TwPalette8 _result=new TwPalette8 {
+                PaletteType=palette.PaletteType,
+                NumColors=(ushort)palette.Colors.Length,
+                Colors=new TwElement8[256]
+            };
+            for(int i=0; i<palette.Colors.Length; i++) {
+                _result.Colors[i]=palette.Colors[i];
+            }
+            return _result;
+        }
+    }
+
+    /// <summary>
+    /// No DAT needed.
+    /// </summary>
+    [DebuggerDisplay("RGB=({Channel1},{Channel2},{Channel3}), Index={Index}")]
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal struct TwElement8 {
+
+        /// <summary>
+        /// Value used to index into the color table.
+        /// </summary>
+        public byte Index;
+
+        /// <summary>
+        /// First  tri-stimulus value (e.g Red).
+        /// </summary>
+        public byte Channel1;
+
+        /// <summary>
+        /// Second tri-stimulus value (e.g Green).
+        /// </summary>
+        public byte Channel2;
+
+        /// <summary>
+        /// Third  tri-stimulus value (e.g Blue).
+        /// </summary>
+        public byte Channel3;
+
+        public static implicit operator Color(TwElement8 element) {
+            return Color.FromArgb(element.Channel1,element.Channel2,element.Channel3);
+        }
+
+        public static implicit operator TwElement8(Color color) {
+            return new TwElement8 {
+                Channel1=color.R,
+                Channel2=color.G,
+                Channel3=color.B
+            };
+        }
+    }
+
+    #endregion
+
+    #region Internal Type Definitions
+
+    internal interface ITwArray {
+
+        TwType ItemType {
+            get;
+        }
+
+        uint NumItems {
+            get;
+        }
+
+        object GetItem(int i);
+    }
+
+    internal interface ITwEnumeration:ITwArray {
+
+        int CurrentIndex {
+            get;
+        }
+
+        int DefaultIndex {
+            get;
+        }
     }
 
     /// <summary>
     /// Container for array of values.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class TwArray<T> {
-        private _TwArray _data;
+    internal class __TwArray<T>:ITwArray {
+        private TwArray _data;
         private T[] _data2;
 
-        internal TwArray(_TwArray data,T[] data2) {
+        internal __TwArray(TwArray data,T[] data2) {
             this._data=data;
             this._data2=data2;
         }
@@ -1809,7 +2509,7 @@ namespace Saraff.Twain {
             }
         }
 
-        public int NumItems {
+        public uint NumItems {
             get {
                 return this._data.NumItems;
             }
@@ -1820,31 +2520,21 @@ namespace Saraff.Twain {
                 return this._data2;
             }
         }
-    }
 
-    /// <summary>
-    /// Container for a collection of values.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal class _TwEnumeration {                              //TWON_ENUMERATION. Container for a collection of values.
-        [MarshalAs(UnmanagedType.I2)]
-        public TwType ItemType;
-        public int NumItems;     /* How many items in ItemList                 */
-        public int CurrentIndex; /* Current value is in ItemList[CurrentIndex] */
-        public int DefaultIndex; /* Powerup value is in ItemList[DefaultIndex] */
-        //[MarshalAs(UnmanagedType.ByValArray,SizeConst=1)]
-        //public byte[] ItemList;  /* Array of ItemType values starts here       */
+        public object GetItem(int i) {
+            return this._data2[i];
+        }
     }
 
     /// <summary>
     /// Container for a collection of values.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class TwEnumeration<T> {
-        private _TwEnumeration _data;
+    internal class __TwEnumeration<T>:ITwEnumeration {
+        private TwEnumeration _data;
         private T[] _data2;
 
-        internal TwEnumeration(_TwEnumeration data, T[] data2) {
+        internal __TwEnumeration(TwEnumeration data, T[] data2) {
             this._data=data;
             this._data2=data2;
         }
@@ -1855,7 +2545,7 @@ namespace Saraff.Twain {
             }
         }
 
-        public int NumItems {
+        public uint NumItems {
             get {
                 return this._data.NumItems;
             }
@@ -1863,13 +2553,13 @@ namespace Saraff.Twain {
 
         public int CurrentIndex {
             get {
-                return this._data.CurrentIndex;
+                return (int)this._data.CurrentIndex;
             }
         }
 
         public int DefaultIndex {
             get {
-                return this._data.DefaultIndex;
+                return (int)this._data.DefaultIndex;
             }
         }
 
@@ -1878,39 +2568,23 @@ namespace Saraff.Twain {
                 return this._data2;
             }
         }
+
+        public object GetItem(int i) {
+            return this._data2[i];
+        }
     }
 
-    /// <summary>
-    /// Container for one value.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal class _TwOneValue {                                 //TW_ONEVALUE. Container for one value.
-        [MarshalAs(UnmanagedType.I2)]
-        public TwType ItemType;
-        public int Item;
-    }
+    #endregion
 
-    /// <summary>
-    /// Container for a range of values.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal class _TwRange {                                    //TWON_RANGE. Container for a range of values.
-        [MarshalAs(UnmanagedType.I2)]
-        public TwType ItemType;
-        public int MinValue;     /* Starting value in the range.           */
-        public int MaxValue;     /* Final value in the range.              */
-        public int StepSize;     /* Increment from MinValue to MaxValue.   */
-        public int DefaultValue; /* Power-up value.                        */
-        public int CurrentValue; /* The value that is currently in effect. */
-    }
+    #region Entry Points
 
     /// <summary>
     /// DAT_ENTRYPOINT. returns essential entry points.
     /// </summary>
     [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal class _TwEntryPoint {
+    internal class TwEntryPoint {
 
-        public _TwEntryPoint() {
+        public TwEntryPoint() {
             this.Size=Marshal.SizeOf(this);
         }
 
@@ -1959,4 +2633,6 @@ namespace Saraff.Twain {
     internal delegate IntPtr DSM_MemoryLock(IntPtr handle);
 
     internal delegate void DSM_MemoryUnlock(IntPtr handle);
+    
+    #endregion
 }

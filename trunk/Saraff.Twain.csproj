@@ -49,6 +49,7 @@
     <Compile Include="Twain32.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="TwainCapabilities.cs" />
     <Compile Include="TwainDefs.cs" />
     <Compile Include="TwainException.cs" />
   </ItemGroup>
