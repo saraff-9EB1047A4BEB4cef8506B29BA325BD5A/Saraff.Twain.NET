@@ -246,6 +246,11 @@ namespace Saraff.Twain {
                 _rc=this._dsmEntry.DSUI(this._appid,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.DisableDS,_guif);
                 if(_rc==TwRC.Success) {
                     this._TwainState&=~TwainStateFlag.DSEnabled;
+                    if(this._context!=null) {
+                        this._context.ExitThread();
+                        this._context.Dispose();
+                        this._context=null;
+                    }
                 }
             }
             return _rc==TwRC.Success;
@@ -1014,11 +1019,6 @@ namespace Saraff.Twain {
         #region Raise events
 
         private void _OnAcquireCompleted(EventArgs e) {
-            if(this._context!=null) {
-                this._context.ExitThread();
-                this._context.Dispose();
-                this._context=null;
-            }
             if(this.AcquireCompleted!=null) {
                 this.AcquireCompleted(this,e);
             }
