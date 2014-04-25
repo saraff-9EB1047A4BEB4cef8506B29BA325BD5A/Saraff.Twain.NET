@@ -646,23 +646,14 @@ namespace Saraff.Twain {
                         switch(_cap.ConType) {
                             case TwOn.One:
                                 TwOneValue _value=(TwOneValue)_cap.GetValue();
-                                return Twain32._Convert(_value.Item,_value.ItemType);
+                                return TwTypeHelper.CastToCommon(_value.ItemType,TwTypeHelper.ValueToTw<uint>(_value.ItemType,_value.Item));
                             case TwOn.Range:
                                 return Range.CreateRange((TwRange)_cap.GetValue());
                             case TwOn.Array:
+                                return ((__ITwArray)_cap.GetValue()).Items;
                             case TwOn.Enum:
-                                ITwArray _array=_cap.GetValue() as ITwArray;
-                                object[] _result=new object[_array.NumItems];
-                                for(int i=0; i<_result.Length; i++) {
-                                    _result[i]=Twain32._Convert(_array.GetItem(i),_array.ItemType);
-                                }
-                                if(_cap.ConType==TwOn.Array) {
-                                    return _result;
-                                } else {
-                                    ITwEnumeration _enum=_array as ITwEnumeration;
-                                    return Enumeration.CreateEnumeration(_result,_enum.CurrentIndex,_enum.DefaultIndex);
-                                }
-
+                                __ITwEnumeration _enum=_cap.GetValue() as __ITwEnumeration;
+                                return Enumeration.CreateEnumeration(_enum.Items,_enum.CurrentIndex,_enum.DefaultIndex);
                         }
                         return _cap.GetValue();
                     } else {
@@ -730,7 +721,8 @@ namespace Saraff.Twain {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public void SetCap(TwCap capability,object value) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                using(TwCapability _cap=new TwCapability(capability,Twain32._Convert(value),TwTypeHelper.TypeOf(value.GetType()))) {
+                TwType _type=TwTypeHelper.TypeOf(value.GetType());
+                using(TwCapability _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type)) {
                     TwRC _rc=this._dsmEntry.DSCap(this._appid,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,_cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus());
@@ -810,51 +802,6 @@ namespace Saraff.Twain {
                 }
             } else {
                 throw new TwainException("Источник данных не открыт.");
-            }
-        }
-
-        /// <summary>
-        /// Конвертирует тип TWAIN в тип-значение
-        /// </summary>
-        /// <param name="item">Конвертируемое значение.</param>
-        /// <param name="itemType">Тип конвертируемого значения.</param>
-        /// <returns>Тип-значение.</returns>
-        private static object _Convert(object item,TwType itemType) {
-            switch(itemType) {
-                case TwType.Int8:
-                    return (sbyte)Convert.ToByte(item);
-                case TwType.Int16:
-                    return (short)Convert.ToUInt16(item);
-                case TwType.Int32:
-                    return (int)Convert.ToUInt32(item);
-                case TwType.UInt8:
-                    return Convert.ToByte(item);
-                case TwType.UInt16:
-                    return Convert.ToUInt16(item);
-                case TwType.UInt32:
-                    return Convert.ToUInt32(item);
-                case TwType.Bool:
-                    return Convert.ToUInt32(item)!=0;
-                case TwType.Fix32:
-                    return (float)(TwFix32)Convert.ToUInt32(item);
-                default:
-                    return null;
-            }
-        }
-
-        /// <summary>
-        /// Конвертирует указанный экземпляр в экземпляр Int32.
-        /// </summary>
-        /// <param name="item">Конвертируемый экземпляр.</param>
-        /// <returns>Экземпляр Int32.</returns>
-        private static uint _Convert(object item) {
-            switch(TwTypeHelper.TypeOf(item.GetType())){
-                case TwType.Bool:
-                    return (uint)((bool)item?1:0);
-                case TwType.Fix32:
-                    return (uint)(TwFix32)(float)item;
-                default:
-                    return Convert.ToUInt32(item);
             }
         }
 
@@ -1652,11 +1599,10 @@ namespace Saraff.Twain {
             private Twain32 _twain;
             private bool _is_set_filter=false;
             private TwEvent _evtmsg;
-            private WINMSG _winmsg;
 
             public _MessageFilter(Twain32 twain) {
                 this._twain=twain;
-                this._evtmsg.EventPtr=Marshal.AllocHGlobal(Marshal.SizeOf(this._winmsg));
+                this._evtmsg.EventPtr=Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WINMSG)));
             }
 
             #region IMessageFilter
@@ -1715,33 +1661,37 @@ namespace Saraff.Twain {
             #endregion
 
             private TwainCommand _PassMessage(ref Message m) {
-                if(this._twain._srcds.Id==0)
+                if(this._twain._srcds.Id==0) {
                     return TwainCommand.Not;
+                }
 
                 int _pos=GetMessagePos();
-
-                this._winmsg.hwnd=m.HWnd;
-                this._winmsg.message=m.Msg;
-                this._winmsg.wParam=m.WParam;
-                this._winmsg.lParam=m.LParam;
-                this._winmsg.time=GetMessageTime();
-                this._winmsg.x=(short)_pos;
-                this._winmsg.y=(short)(_pos>>16);
-
-                Marshal.StructureToPtr(this._winmsg,this._evtmsg.EventPtr,false);
+                WINMSG _winmsg=new WINMSG {
+                    hwnd=m.HWnd,
+                    message=m.Msg,
+                    wParam=m.WParam,
+                    lParam=m.LParam,
+                    time=GetMessageTime(),
+                    x=(short)_pos,
+                    y=(short)(_pos>>16)
+                };
+                Marshal.StructureToPtr(_winmsg,this._evtmsg.EventPtr,true);
                 this._evtmsg.Message=0;
-                TwRC rc=this._twain._dsmEntry.DSEvent(this._twain._appid,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
-                if(rc==TwRC.NotDSEvent)
-                    return TwainCommand.Not;
-                if(this._evtmsg.Message==TwMSG.XFerReady)
-                    return TwainCommand.TransferReady;
-                if(this._evtmsg.Message==TwMSG.CloseDSReq)
-                    return TwainCommand.CloseRequest;
-                if(this._evtmsg.Message==TwMSG.CloseDSOK)
-                    return TwainCommand.CloseOk;
-                if(this._evtmsg.Message==TwMSG.DeviceEvent)
-                    return TwainCommand.DeviceEvent;
 
+                TwRC rc=this._twain._dsmEntry.DSEvent(this._twain._appid,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
+                if(rc==TwRC.NotDSEvent) {
+                    return TwainCommand.Not;
+                }
+                switch(this._evtmsg.Message) {
+                    case TwMSG.XFerReady:
+                        return TwainCommand.TransferReady;
+                    case TwMSG.CloseDSReq:
+                        return TwainCommand.CloseRequest;
+                    case TwMSG.CloseDSOK:
+                        return TwainCommand.CloseOk;
+                    case TwMSG.DeviceEvent:
+                        return TwainCommand.DeviceEvent;
+                }
                 return TwainCommand.Null;
             }
 
@@ -1794,11 +1744,11 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="range">The range.</param>
             private Range(TwRange range) {
-                this.MinValue=Twain32._Convert(range.MinValue,range.ItemType);
-                this.MaxValue=Twain32._Convert(range.MaxValue,range.ItemType);
-                this.StepSize=Twain32._Convert(range.StepSize,range.ItemType);
-                this.CurrentValue=Twain32._Convert(range.CurrentValue,range.ItemType);
-                this.DefaultValue=Twain32._Convert(range.DefaultValue,range.ItemType);
+                this.MinValue=TwTypeHelper.CastToCommon(range.ItemType,TwTypeHelper.ValueToTw<uint>(range.ItemType,range.MinValue));
+                this.MaxValue=TwTypeHelper.CastToCommon(range.ItemType,TwTypeHelper.ValueToTw<uint>(range.ItemType,range.MaxValue));
+                this.StepSize=TwTypeHelper.CastToCommon(range.ItemType,TwTypeHelper.ValueToTw<uint>(range.ItemType,range.StepSize));
+                this.CurrentValue=TwTypeHelper.CastToCommon(range.ItemType,TwTypeHelper.ValueToTw<uint>(range.ItemType,range.CurrentValue));
+                this.DefaultValue=TwTypeHelper.CastToCommon(range.ItemType,TwTypeHelper.ValueToTw<uint>(range.ItemType,range.DefaultValue));
             }
 
             /// <summary>
@@ -1870,13 +1820,14 @@ namespace Saraff.Twain {
             /// </summary>
             /// <returns>Экземпляр <see cref="TwRange"/>.</returns>
             internal TwRange ToTwRange() {
+                TwType _type=TwTypeHelper.TypeOf(this.CurrentValue.GetType());
                 return new TwRange() {
-                    ItemType=TwTypeHelper.TypeOf(this.CurrentValue.GetType()),
-                    MinValue=Twain32._Convert(this.MinValue),
-                    MaxValue=Twain32._Convert(this.MaxValue),
-                    StepSize=Twain32._Convert(this.StepSize),
-                    DefaultValue=Twain32._Convert(this.DefaultValue),
-                    CurrentValue=Twain32._Convert(this.CurrentValue)
+                    ItemType=_type,
+                    MinValue=TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,this.MinValue)),
+                    MaxValue=TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,this.MaxValue)),
+                    StepSize=TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,this.StepSize)),
+                    DefaultValue=TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,this.DefaultValue)),
+                    CurrentValue=TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,this.CurrentValue))
                 };
             }
         }

@@ -390,9 +390,9 @@ namespace Saraff.Twain {
             {TwType.UInt8,typeof(byte)},
             {TwType.UInt16,typeof(ushort)},
             {TwType.UInt32,typeof(uint)},
-            {TwType.Bool,typeof(bool)},
-            {TwType.Fix32,typeof(float)},
-            {TwType.Frame,typeof(System.Drawing.RectangleF)},
+            {TwType.Bool,typeof(TwBool)},
+            {TwType.Fix32,typeof(TwFix32)},
+            {TwType.Frame,typeof(TwFrame)},
             {TwType.Str32,typeof(TwStr32)},
             {TwType.Str64,typeof(TwStr64)},
             {TwType.Str128,typeof(TwStr128)},
@@ -401,45 +401,36 @@ namespace Saraff.Twain {
             {TwType.Uni512,typeof(TwUni512)},
             {TwType.Handle,typeof(IntPtr)}
         };
-        private static Dictionary<TwType,int> _sizeof=new Dictionary<TwType,int> {
-            {TwType.Int8,Marshal.SizeOf(typeof(sbyte))},
-            {TwType.Int16,Marshal.SizeOf(typeof(short))},
-            {TwType.Int32,Marshal.SizeOf(typeof(int))},
-            {TwType.UInt8,Marshal.SizeOf(typeof(byte))},
-            {TwType.UInt16,Marshal.SizeOf(typeof(ushort))},
-            {TwType.UInt32,Marshal.SizeOf(typeof(uint))},
-            {TwType.Bool,Marshal.SizeOf(typeof(short))},
-            {TwType.Fix32,Marshal.SizeOf(typeof(TwFix32))},
-            {TwType.Frame,Marshal.SizeOf(typeof(TwFrame))},
-            {TwType.Str32,Marshal.SizeOf(typeof(TwStr32))},
-            {TwType.Str64,Marshal.SizeOf(typeof(TwStr64))},
-            {TwType.Str128,Marshal.SizeOf(typeof(TwStr128))},
-            {TwType.Str255,Marshal.SizeOf(typeof(TwStr255))},
-            {TwType.Str1024,Marshal.SizeOf(typeof(TwStr1024))},
-            {TwType.Uni512,Marshal.SizeOf(typeof(TwUni512))},
-            {TwType.Handle,IntPtr.Size}
-        };
 
         /// <summary>
         /// Возвращает соответствующий twain-типу управляемый тип.
         /// </summary>
         /// <param name="type">Код типа данный twain.</param>
         /// <returns>Управляемый тип.</returns>
-        public static Type TypeOf(TwType type) {
+        internal static Type TypeOf(TwType type) {
             return TwTypeHelper._typeof[type];
         }
 
         /// <summary>
-        /// Возвращает управляемому типу соответствующий twain-тип.
+        /// Возвращает соответствующий управляемому типу twain-тип.
         /// </summary>
         /// <param name="type">Управляемый тип.</param>
         /// <returns>Код типа данный twain.</returns>
-        public static TwType TypeOf(Type type) {
+        internal static TwType TypeOf(Type type) {
             Type _type=type.IsEnum?Enum.GetUnderlyingType(type):type;
             foreach(var _item in TwTypeHelper._typeof) {
                 if(_item.Value==_type) {
                     return _item.Key;
                 }
+            }
+            if(type==typeof(bool)) {
+                return TwType.Bool;
+            }
+            if(type==typeof(float)) {
+                return TwType.Fix32;
+            }
+            if(type==typeof(RectangleF)) {
+                return TwType.Frame;
             }
             throw new KeyNotFoundException();
         }
@@ -449,8 +440,96 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="type">Код типа данный twain.</param>
         /// <returns>Размер в байтах.</returns>
-        public static int SizeOf(TwType type) {
-            return TwTypeHelper._sizeof[type];
+        internal static int SizeOf(TwType type) {
+            return Marshal.SizeOf(TwTypeHelper._typeof[type]);
+        }
+
+        /// <summary>
+        /// Приводит внутренние типы компонента к общим типам среды.
+        /// </summary>
+        /// <param name="type">Код twain-типа.</param>
+        /// <param name="value">Экземпляр объекта.</param>
+        /// <returns>Экземпляр объекта.</returns>
+        internal static object CastToCommon(TwType type,object value) {
+            switch(type) {
+                case TwType.Bool:
+                    return (bool)(TwBool)value;
+                case TwType.Fix32:
+                    return (float)(TwFix32)value;
+                case TwType.Frame:
+                    return (RectangleF)(TwFrame)value;
+                case TwType.Str128:
+                case TwType.Str255:
+                case TwType.Str32:
+                case TwType.Str64:
+                case TwType.Uni512:
+                case TwType.Str1024:
+                    return value.ToString();
+            }
+            return value;
+        }
+
+        /// <summary>
+        /// Приводит общие типы среды к внутренним типам компонента.
+        /// </summary>
+        /// <param name="type">Код twain-типа.</param>
+        /// <param name="value">Экземпляр объекта.</param>
+        /// <returns>Экземпляр объекта.</returns>
+        internal static object CastToTw(TwType type,object value) {
+            switch(type) {
+                case TwType.Bool:
+                    return (TwBool)(bool)value;
+                case TwType.Fix32:
+                    return (TwFix32)(float)value;
+                case TwType.Frame:
+                    return (TwFrame)(RectangleF)value;
+                case TwType.Str32:
+                    return (TwStr32)value.ToString();
+                case TwType.Str64:
+                    return (TwStr64)value.ToString();
+                case TwType.Str128:
+                    return (TwStr128)value.ToString();
+                case TwType.Str255:
+                    return (TwStr255)value.ToString();
+                case TwType.Uni512:
+                    return (TwUni512)value.ToString();
+                case TwType.Str1024:
+                    return (TwStr1024)value.ToString();
+            }
+            return value;
+        }
+
+        /// <summary>
+        /// Выполняет преобразование значения в экземпляр внутреннего типа компонента.
+        /// </summary>
+        /// <typeparam name="T">Тип значения.</typeparam>
+        /// <param name="type">Код twain-типа.</param>
+        /// <param name="value">Значение.</param>
+        /// <returns>Экземпляр объекта.</returns>
+        internal static object ValueToTw<T>(TwType type,T value) {
+            IntPtr _mem=Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));
+            try {
+                Marshal.StructureToPtr(value,_mem,true);
+                return Marshal.PtrToStructure(_mem,TwTypeHelper.TypeOf(type));
+            } finally {
+                Marshal.FreeHGlobal(_mem);
+            }
+        }
+
+        /// <summary>
+        /// Выполняет преобразование экземпляра внутреннего типа компонента в значение.
+        /// </summary>
+        /// <typeparam name="T">Тип значения.</typeparam>
+        /// <param name="value">Экземпляр объекта.</param>
+        /// <returns>Значение.</returns>
+        internal static T ValueFromTw<T>(object value) {
+            IntPtr _mem=Marshal.AllocHGlobal(Math.Max(Marshal.SizeOf(typeof(T)),Marshal.SizeOf(value)));
+            try {
+                Marshal.StructureToPtr(value,_mem,true);
+                return (T)Marshal.PtrToStructure(_mem,typeof(T));
+            } finally {
+                Marshal.FreeHGlobal(_mem);
+            }
         }
     }
 
@@ -1915,14 +1994,14 @@ namespace Saraff.Twain {
             var _result=new object[this.NumItems];
             if(this._IsValue) {
                 for(long i=0,_data=this.Item.ToInt64(),_mask=((1L<<TwTypeHelper.SizeOf(this.ItemType)*7)<<TwTypeHelper.SizeOf(this.ItemType))-1; i<this.NumItems; i++,_data>>=TwTypeHelper.SizeOf(this.ItemType)*8) {
-                    _result[i]=Convert.ChangeType(_data&_mask,TwTypeHelper.TypeOf(this.ItemType));
+                    _result[i]=TwTypeHelper.CastToCommon(this.ItemType,TwTypeHelper.ValueToTw<long>(this.ItemType,_data&_mask));
                 }
             } else {
                 IntPtr _data=Twain32._Memory.Lock(this.Item);
                 try {
                     for(int i=0; i<this.NumItems; i++) {
                         if(this.ItemType!=TwType.Handle) {
-                            _result[i]=Marshal.PtrToStructure((IntPtr)((long)_data+(TwTypeHelper.SizeOf(this.ItemType)*i)),TwTypeHelper.TypeOf(this.ItemType));
+                            _result[i]=TwTypeHelper.CastToCommon(this.ItemType,Marshal.PtrToStructure((IntPtr)((long)_data+(TwTypeHelper.SizeOf(this.ItemType)*i)),TwTypeHelper.TypeOf(this.ItemType)));
                         } else {
                             _result[i]=Marshal.PtrToStringAnsi(_data);
                             _data=(IntPtr)((long)_data+_result[i].ToString().Length+1);
@@ -2136,55 +2215,9 @@ namespace Saraff.Twain {
             try {
                 switch(this.ConType) {
                     case TwOn.Array:
-                        TwArray _res=Marshal.PtrToStructure(_handle,typeof(TwArray)) as TwArray;
-                        switch(_res.ItemType) {
-                            case TwType.Int8:
-                            case TwType.UInt8: {
-                                    byte[] _array=new byte[_res.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwArray))),_array,0,_array.Length);
-                                    return new __TwArray<byte>(_res,_array);
-                                }
-                            case TwType.Int16:
-                            case TwType.UInt16:
-                            case TwType.Bool: {
-                                    short[] _array=new short[_res.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwArray))),_array,0,_array.Length);
-                                    return new __TwArray<short>(_res,_array);
-                                }
-                            case TwType.Int32:
-                            case TwType.UInt32:
-                            case TwType.Fix32: {
-                                    int[] _array=new int[_res.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwArray))),_array,0,_array.Length);
-                                    return new __TwArray<int>(_res,_array);
-                                }
-                        }
-                        break;
+                        return new __TwArray((TwArray)Marshal.PtrToStructure(_handle,typeof(TwArray)),(IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwArray))));
                     case TwOn.Enum:
-                        TwEnumeration _res2=Marshal.PtrToStructure(_handle,typeof(TwEnumeration)) as TwEnumeration;
-                        switch(_res2.ItemType) {
-                            case TwType.Int8:
-                            case TwType.UInt8: {
-                                    byte[] _array=new byte[_res2.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))),_array,0,_array.Length);
-                                    return new __TwEnumeration<byte>(_res2,_array);
-                                }
-                            case TwType.Int16:
-                            case TwType.UInt16:
-                            case TwType.Bool: {
-                                    short[] _array=new short[_res2.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))),_array,0,_array.Length);
-                                    return new __TwEnumeration<short>(_res2,_array);
-                                }
-                            case TwType.Int32:
-                            case TwType.UInt32:
-                            case TwType.Fix32: {
-                                    int[] _array=new int[_res2.NumItems];
-                                    Marshal.Copy((IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))),_array,0,_array.Length);
-                                    return new __TwEnumeration<int>(_res2,_array);
-                                }
-                        }
-                        break;
+                        return new __TwEnumeration((TwEnumeration)Marshal.PtrToStructure(_handle,typeof(TwEnumeration)),(IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))));
                     case TwOn.Range:
                         return Marshal.PtrToStructure(_handle,typeof(TwRange));
                     case TwOn.One:
@@ -2211,30 +2244,97 @@ namespace Saraff.Twain {
         #endregion
     }
 
+    internal interface ITwArray {
+
+        TwType ItemType {
+            get;
+            set;
+        }
+
+        uint NumItems {
+            get;
+            set;
+        }
+    }
+
     /// <summary>
     /// Container for array of values.
     /// </summary>
     [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal class TwArray {                                    //TWON_ARRAY. Container for array of values (a simplified TW_ENUMERATION)
+    internal class TwArray:ITwArray {                                    //TWON_ARRAY. Container for array of values (a simplified TW_ENUMERATION)
         [MarshalAs(UnmanagedType.U2)]
-        public TwType ItemType;
-        public uint NumItems;    /* How many items in ItemList           */
+        private TwType _itemType;
+        private uint _numItems;    /* How many items in ItemList           */
         //[MarshalAs(UnmanagedType.ByValArray,SizeConst=1)]
         //public byte[] ItemList; /* Array of ItemType values starts here */
+
+        public TwType ItemType {
+            get {
+                return this._itemType;
+            }
+            set {
+                this._itemType=value;
+            }
+        }
+
+        public uint NumItems {
+            get {
+                return this._numItems;
+            }
+            set {
+                this._numItems=value;
+            }
+        }
     }
 
     /// <summary>
     /// Container for a collection of values.
     /// </summary>
     [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal class TwEnumeration {                              //TWON_ENUMERATION. Container for a collection of values.
+    internal class TwEnumeration:ITwArray {                              //TWON_ENUMERATION. Container for a collection of values.
         [MarshalAs(UnmanagedType.U2)]
-        public TwType ItemType;
-        public uint NumItems;     /* How many items in ItemList                 */
-        public uint CurrentIndex; /* Current value is in ItemList[CurrentIndex] */
-        public uint DefaultIndex; /* Powerup value is in ItemList[DefaultIndex] */
+        private TwType _ItemType;
+        private uint _numItems;     /* How many items in ItemList                 */
+        private uint _currentIndex; /* Current value is in ItemList[CurrentIndex] */
+        private uint _defaultIndex; /* Powerup value is in ItemList[DefaultIndex] */
         //[MarshalAs(UnmanagedType.ByValArray,SizeConst=1)]
         //public byte[] ItemList;  /* Array of ItemType values starts here       */
+
+        public TwType ItemType {
+            get {
+                return this._ItemType;
+            }
+            set {
+                this._ItemType=value;
+            }
+        }
+
+        public uint NumItems {
+            get {
+                return this._numItems;
+            }
+            set {
+                this._numItems=value;
+            }
+        }
+
+        public uint CurrentIndex {
+            get {
+                return this._currentIndex;
+            }
+            set {
+                this._currentIndex=value;
+            }
+        }
+
+        public uint DefaultIndex {
+            get {
+                return this._defaultIndex;
+            }
+            set {
+                this._defaultIndex=value;
+            }
+        }
     }
 
     /// <summary>
@@ -2466,8 +2566,8 @@ namespace Saraff.Twain {
 
     #region Internal Type Definitions
 
-    internal interface ITwArray {
-
+    internal interface __ITwArray {
+        
         TwType ItemType {
             get;
         }
@@ -2476,10 +2576,12 @@ namespace Saraff.Twain {
             get;
         }
 
-        object GetItem(int i);
+        object[] Items {
+            get;
+        }
     }
 
-    internal interface ITwEnumeration:ITwArray {
+    internal interface __ITwEnumeration:__ITwArray {
 
         int CurrentIndex {
             get;
@@ -2494,13 +2596,16 @@ namespace Saraff.Twain {
     /// Container for array of values.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class __TwArray<T>:ITwArray {
-        private TwArray _data;
-        private T[] _data2;
+    internal class __TwArray:__ITwArray {
+        private ITwArray _data;
+        private object[] _items;
 
-        internal __TwArray(TwArray data,T[] data2) {
+        internal __TwArray(ITwArray data,IntPtr items) {
             this._data=data;
-            this._data2=data2;
+            this._items=new object[this._data.NumItems];
+            for(long i=0,_offset=0,_sizeof=TwTypeHelper.SizeOf(this._data.ItemType); i<this._data.NumItems; i++,_offset+=_sizeof) {
+                this._items[i]=TwTypeHelper.CastToCommon(this._data.ItemType,Marshal.PtrToStructure((IntPtr)(items.ToInt64()+_offset),TwTypeHelper.TypeOf(this._data.ItemType)));
+            }
         }
 
         public TwType ItemType {
@@ -2515,14 +2620,10 @@ namespace Saraff.Twain {
             }
         }
 
-        public T[] ItemList {
+        public object[] Items {
             get {
-                return this._data2;
+                return this._items;
             }
-        }
-
-        public object GetItem(int i) {
-            return this._data2[i];
         }
     }
 
@@ -2530,25 +2631,11 @@ namespace Saraff.Twain {
     /// Container for a collection of values.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class __TwEnumeration<T>:ITwEnumeration {
+    internal class __TwEnumeration:__TwArray,__ITwEnumeration {
         private TwEnumeration _data;
-        private T[] _data2;
 
-        internal __TwEnumeration(TwEnumeration data, T[] data2) {
+        internal __TwEnumeration(TwEnumeration data,IntPtr items):base(data,items) {
             this._data=data;
-            this._data2=data2;
-        }
-
-        public TwType ItemType {
-            get {
-                return this._data.ItemType;
-            }
-        }
-
-        public uint NumItems {
-            get {
-                return this._data.NumItems;
-            }
         }
 
         public int CurrentIndex {
@@ -2561,16 +2648,6 @@ namespace Saraff.Twain {
             get {
                 return (int)this._data.DefaultIndex;
             }
-        }
-
-        public T[] ItemList {
-            get {
-                return this._data2;
-            }
-        }
-
-        public object GetItem(int i) {
-            return this._data2[i];
         }
     }
 
