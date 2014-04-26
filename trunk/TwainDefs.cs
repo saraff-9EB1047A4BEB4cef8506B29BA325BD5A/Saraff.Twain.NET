@@ -496,6 +496,12 @@ namespace Saraff.Twain {
                 case TwType.Str1024:
                     return (TwStr1024)value.ToString();
             }
+
+            Type _type=value.GetType();
+            if(_type.IsEnum&&Enum.GetUnderlyingType(_type)==TwTypeHelper.TypeOf(type)) {
+                return Convert.ChangeType(value,Enum.GetUnderlyingType(_type));
+            }
+
             return value;
         }
 
@@ -1427,6 +1433,30 @@ namespace Saraff.Twain {
         RGB=0,
         Gray=1,
         CMY=2
+    }
+
+    /// <summary>
+    /// CAP_DEVICEEVENT values (DE_ means device event).
+    /// </summary>
+    public enum TwDE:ushort {
+        CustomEvents=0x8000,
+        CheckAutomaticCapture=0,
+        CheckBattery=1,
+        CheckDeviceOnline=2,
+        CheckFlash=3,
+        CheckPowerSupply=4,
+        CheckResolution=5,
+        DeviceAdded=6,
+        DeviceOffline=7,
+        DeviceReady=8,
+        DeviceRemoved=9,
+        ImageCaptured=10,
+        ImageDeleted=11,
+        PaperDoubleFeed=12,
+        PaperJam=13,
+        LampFailure=14,
+        PowerSave=15,
+        PowerSaveNotify=16
     }
 
     #endregion
@@ -2560,6 +2590,71 @@ namespace Saraff.Twain {
                 Channel3=color.B
             };
         }
+    }
+
+    /// <summary>
+    /// DAT_DEVICEEVENT, information about events.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwDeviceEvent {
+
+        /// <summary>
+        /// One of the TWDE_xxxx values.
+        /// </summary>
+        [MarshalAs(UnmanagedType.U2)]
+        public TwDE Event;
+
+        private ushort reserved;
+
+        /// <summary>
+        /// The name of the device that generated the event.
+        /// </summary>
+        public TwStr255 DeviceName;
+
+        /// <summary>
+        /// Battery Minutes Remaining.
+        /// </summary>
+        public uint BatteryMinutes;
+
+        /// <summary>
+        /// Battery Percentage Remaining.
+        /// </summary>
+        public short BatteryPercentAge;
+
+        /// <summary>
+        /// Power Supply.
+        /// </summary>
+        public int PowerSupply;
+
+        /// <summary>
+        /// Resolution.
+        /// </summary>
+        public TwFix32 XResolution;
+
+        /// <summary>
+        /// Resolution.
+        /// </summary>
+        public TwFix32 YResolution;
+
+        /// <summary>
+        /// Flash Used2.
+        /// </summary>
+        public uint FlashUsed2;
+
+        /// <summary>
+        /// Automatic Capture.
+        /// </summary>
+        public uint AutomaticCapture;
+
+        /// <summary>
+        /// Automatic Capture.
+        /// </summary>
+        public uint TimeBeforeFirstCapture;
+
+        /// <summary>
+        /// Automatic Capture.
+        /// </summary>
+        public uint TimeBetweenCaptures;
     }
 
     #endregion

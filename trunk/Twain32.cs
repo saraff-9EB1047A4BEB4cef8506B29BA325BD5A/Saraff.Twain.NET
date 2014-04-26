@@ -963,6 +963,17 @@ namespace Saraff.Twain {
 
         #endregion
 
+        #region Device Event
+
+        private void _DeviceEventObtain() {
+            TwDeviceEvent _deviceEvent=new TwDeviceEvent();
+            if(this._dsmEntry.DSdeviceevent(this._appid,this._srcds,TwDG.Control,TwDAT.DeviceEvent,TwMSG.Get,_deviceEvent)==TwRC.Success) {
+                this._OnDeviceEvent(new DeviceEventEventArgs(_deviceEvent));
+            }
+        }
+
+        #endregion
+
         #region Raise events
 
         private void _OnAcquireCompleted(EventArgs e) {
@@ -1004,6 +1015,12 @@ namespace Saraff.Twain {
         private void _OnFileXfer(FileXferEventArgs e) {
             if(this.FileXferEvent!=null) {
                 this.FileXferEvent(this,e);
+            }
+        }
+
+        private void _OnDeviceEvent(DeviceEventEventArgs e) {
+            if(this.DeviceEvent!=null) {
+                this.DeviceEvent(this,e);
             }
         }
 
@@ -1182,9 +1199,16 @@ namespace Saraff.Twain {
         /// <summary>
         /// Возникает в момент изменения состояния twain-устройства. Occurs when TWAIN state was changed.
         /// </summary>
-        [Category("Action")]
+        [Category("Behavior")]
         [Description("Возникает в момент изменения состояния twain-устройства. Occurs when TWAIN state was changed.")]
         public event EventHandler<TwainStateEventArgs> TwainStateChanged;
+
+        /// <summary>
+        /// Возникает в момент, когда источник уведомляет приложение о произошедшем событии. Occurs when enabled the source sends this message to the Application to alert it that some event has taken place.
+        /// </summary>
+        [Category("Behavior")]
+        [Description("Возникает в момент, когда источник уведомляет приложение о произошедшем событии. Occurs when enabled the source sends this message to the Application to alert it that some event has taken place.")]
+        public event EventHandler<DeviceEventEventArgs> DeviceEvent;
 
         #endregion
 
@@ -1362,7 +1386,7 @@ namespace Saraff.Twain {
             /// Инициализирует новый экземпляр класса.
             /// </summary>
             /// <param name="flags">Флаги состояния.</param>
-            public TwainStateEventArgs(TwainStateFlag flags) {
+            internal TwainStateEventArgs(TwainStateFlag flags) {
                 this.TwainState=flags;
             }
 
@@ -1372,6 +1396,116 @@ namespace Saraff.Twain {
             public TwainStateFlag TwainState {
                 get;
                 private set;
+            }
+        }
+
+        /// <summary>
+        /// Аргументы события DeviceEvent.
+        /// </summary>
+        public sealed class DeviceEventEventArgs:EventArgs {
+            private TwDeviceEvent _deviceEvent;
+
+            internal DeviceEventEventArgs(TwDeviceEvent deviceEvent) {
+                this._deviceEvent=deviceEvent;
+            }
+
+            /// <summary>
+            /// One of the TWDE_xxxx values.
+            /// </summary>
+            public TwDE Event {
+                get {
+                    return this._deviceEvent.Event;
+                }
+            }
+
+            /// <summary>
+            /// The name of the device that generated the event.
+            /// </summary>
+            public string DeviceName {
+                get {
+                    return this._deviceEvent.DeviceName;
+                }
+            }
+
+            /// <summary>
+            /// Battery Minutes Remaining.
+            /// </summary>
+            public uint BatteryMinutes {
+                get {
+                    return this._deviceEvent.BatteryMinutes;
+                }
+            }
+
+            /// <summary>
+            /// Battery Percentage Remaining.
+            /// </summary>
+            public short BatteryPercentAge {
+                get {
+                    return this._deviceEvent.BatteryPercentAge;
+                }
+            }
+
+            /// <summary>
+            /// Power Supply.
+            /// </summary>
+            public int PowerSupply {
+                get {
+                    return this._deviceEvent.PowerSupply;
+                }
+            }
+
+            /// <summary>
+            /// Resolution.
+            /// </summary>
+            public float XResolution {
+                get {
+                    return this._deviceEvent.XResolution;
+                }
+            }
+
+            /// <summary>
+            /// Resolution.
+            /// </summary>
+            public float YResolution {
+                get {
+                    return this._deviceEvent.YResolution;
+                }
+            }
+
+            /// <summary>
+            /// Flash Used2.
+            /// </summary>
+            public uint FlashUsed2 {
+                get {
+                    return this._deviceEvent.FlashUsed2;
+                }
+            }
+
+            /// <summary>
+            /// Automatic Capture.
+            /// </summary>
+            public uint AutomaticCapture {
+                get {
+                    return this._deviceEvent.AutomaticCapture;
+                }
+            }
+
+            /// <summary>
+            /// Automatic Capture.
+            /// </summary>
+            public uint TimeBeforeFirstCapture {
+                get {
+                    return this._deviceEvent.TimeBeforeFirstCapture;
+                }
+            }
+
+            /// <summary>
+            /// Automatic Capture.
+            /// </summary>
+            public uint TimeBetweenCaptures {
+                get {
+                    return this._deviceEvent.TimeBetweenCaptures;
+                }
             }
         }
 
@@ -1506,6 +1640,11 @@ namespace Saraff.Twain {
                 private set;
             }
 
+            public _DSdeviceevent DSdeviceevent {
+                get;
+                private set;
+            }
+
             #endregion
         }
 
@@ -1624,6 +1763,7 @@ namespace Saraff.Twain {
                         _end();
                         break;
                     case TwainCommand.DeviceEvent:
+                        this._twain._DeviceEventObtain();
                         break;
                     case TwainCommand.TransferReady:
                         switch(this._twain.Capabilities.XferMech.GetCurrent()) {
@@ -2462,6 +2602,8 @@ namespace Saraff.Twain {
         private delegate TwRC TwDSFuncPtr([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,IntPtr arg);
 
         private delegate TwRC _DSpalette([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwPalette8 palette);
+        
+        private delegate TwRC _DSdeviceevent([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[Out] TwDeviceEvent deveceEvent);
 
         #endregion
 
