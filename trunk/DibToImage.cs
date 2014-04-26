@@ -63,11 +63,22 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
+using System.Collections.Generic;
 
 
 namespace Saraff.Twain {
 
     internal sealed class DibToImage {
+        private static Dictionary<short,PixelFormat> _pixels=new Dictionary<short,PixelFormat> {
+            {1,PixelFormat.Format1bppIndexed},
+            {4,PixelFormat.Format4bppIndexed},
+            {8,PixelFormat.Format8bppIndexed},
+            {16,PixelFormat.Format16bppRgb555},
+            {24,PixelFormat.Format24bppRgb},
+            {32,PixelFormat.Format32bppRgb},
+            {48,PixelFormat.Format48bppRgb},
+            {64,PixelFormat.Format64bppArgb}
+        };
 
         /// <summary>
         /// Get .NET 'Bitmap' object from memory DIB via 'scan0' constructor.
@@ -80,25 +91,8 @@ namespace Saraff.Twain {
             }
 
             PixelFormat _fmt=PixelFormat.Undefined;
-            switch(_bmi.biBitCount) {
-                case 32:
-                    _fmt=PixelFormat.Format32bppRgb;
-                    break;
-                case 24:
-                    _fmt=PixelFormat.Format24bppRgb;
-                    break;
-                case 16:
-                    _fmt=PixelFormat.Format16bppRgb555;
-                    break;
-                case 8:
-                    _fmt=PixelFormat.Format8bppIndexed;
-                    break;
-                case 4:
-                    _fmt=PixelFormat.Format4bppIndexed;
-                    break;
-                case 1:
-                    _fmt=PixelFormat.Format1bppIndexed;
-                    break;
+            if(DibToImage._pixels.ContainsKey(_bmi.biBitCount)) {
+                _fmt=DibToImage._pixels[_bmi.biBitCount];
             }
 
             long _scan0=(dibPtr.ToInt64())+_bmi.biSize+(_bmi.biClrUsed*4);	// pointer to pixels
