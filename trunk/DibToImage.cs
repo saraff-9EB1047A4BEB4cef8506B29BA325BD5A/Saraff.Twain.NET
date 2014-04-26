@@ -114,15 +114,42 @@ namespace Saraff.Twain {
             }
         }
 
-        [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Ansi,Pack=1)]
-        private class BITMAPFILEHEADER {
-            [MarshalAs(UnmanagedType.ByValArray,SizeConst=2)]
-            public Char[] Type;
-            public Int32 Size;
-            public Int16 reserved1;
-            public Int16 reserved2;
-            public Int32 OffBits;
+        public static Image WithStream(IntPtr dibPtr) {
+            using(MemoryStream _stream=new MemoryStream()) {
+                BinaryWriter _writer=new BinaryWriter(_stream);
+
+                BITMAPINFOHEADER _bmi=(BITMAPINFOHEADER)Marshal.PtrToStructure(dibPtr,typeof(BITMAPINFOHEADER));
+
+                #region BITMAPFILEHEADER
+
+                _writer.Write((ushort)0x4d42);
+                _writer.Write(14+_bmi.biSize+_bmi.biSizeImage+(_bmi.biClrUsed*4));
+                _writer.Write(0);
+                _writer.Write(14+_bmi.biSize);
+
+                #endregion
+
+                #region BITMAPINFO and pixel data
+
+                byte[] _data=new byte[_bmi.biSize+_bmi.biSizeImage+(_bmi.biClrUsed*4)];
+                Marshal.Copy(dibPtr,_data,0,_data.Length);
+                _writer.Write(_data);
+
+                #endregion
+
+                return Image.FromStream(_stream);
+            }
         }
+
+        //[StructLayout(LayoutKind.Sequential,CharSet=CharSet.Ansi,Pack=1)]
+        //private class BITMAPFILEHEADER {
+        //    [MarshalAs(UnmanagedType.ByValArray,SizeConst=2)]
+        //    public Char[] Type;
+        //    public Int32 Size;
+        //    public Int16 reserved1;
+        //    public Int16 reserved2;
+        //    public Int32 OffBits;
+        //}
 
         [StructLayout(LayoutKind.Sequential,Pack=2)]
         private class BITMAPINFOHEADER {

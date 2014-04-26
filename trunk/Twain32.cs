@@ -832,7 +832,7 @@ namespace Saraff.Twain {
                     IntPtr _pBitmap=_Memory.Lock(_hBitmap);
                     try {
                         Image _img=null;
-                        this._images.Add(_img=DibToImage.WithScan0(_pBitmap));
+                        this._images.Add(_img=DibToImage.WithStream(_pBitmap));
                         this._OnEndXfer(new EndXferEventArgs(_img));
                     } finally {
                         _Memory.Unlock(_hBitmap);
