@@ -32,29 +32,33 @@ namespace Saraff.Twain {
         /// <summary>
         /// Initializes a new instance of the <see cref="TwainException"/> class.
         /// </summary>
-        public TwainException():base() {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TwainException"/> class.
-        /// </summary>
-        /// <param name="code">The code.</param>
-        internal TwainException(TwCC code):this(TwainException._CodeToMessage(code)) {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TwainException"/> class.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        public TwainException(string message) : base(message) {
+        /// <param name="cc">The code.</param>
+        internal TwainException(TwCC cc,TwRC rc):this(TwainException._CodeToMessage(cc)) {
+            this.ConditionCode=cc;
+            this.ReturnCode=rc;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TwainException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        /// <param name="innerException">The inner exception.</param>
-        public TwainException(string message,Exception innerException) : base(message,innerException) {
+        internal TwainException(string message) : base(message) {
+        }
+
+        /// <summary>
+        /// Возвращает код состояния операции. Get condition code.
+        /// </summary>
+        public TwCC ConditionCode {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        /// Возвращает код результата операции. Get return code.
+        /// </summary>
+        public TwRC ReturnCode {
+            get;
+            private set;
         }
 
         private static string _CodeToMessage(TwCC code) {

@@ -281,7 +281,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Return Codes
     /// </summary>
-    internal enum TwRC:ushort {									// TWRC_....
+    public enum TwRC:ushort {									// TWRC_....
         Success=0x0000,
         Failure=0x0001,
         CheckStatus=0x0002,
@@ -299,7 +299,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Condition Codes
     /// </summary>
-    internal enum TwCC:ushort {									// TWCC_....
+    public enum TwCC:ushort {									// TWCC_....
         Success=0x0000,
         Bummer=0x0001,
         LowMemory=0x0002,
