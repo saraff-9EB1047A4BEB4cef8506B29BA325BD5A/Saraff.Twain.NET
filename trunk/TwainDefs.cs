@@ -594,6 +594,7 @@ namespace Saraff.Twain {
         ExtImageInfo=0x112f,  /* Added 1.7 */
         MinimumHeight=0x1130,  /* Added 1.7 */
         MinimumWidth=0x1131,  /* Added 1.7 */
+        AutoDiscardBlankPages=0x1134,  /* Added 2.0 */
         FlipRotation=0x1136,  /* Added 1.8 */
         BarCodeDetectionEnabled=0x1137,  /* Added 1.8 */
         SupportedBarCodeTypes=0x1138,  /* Added 1.8 */
