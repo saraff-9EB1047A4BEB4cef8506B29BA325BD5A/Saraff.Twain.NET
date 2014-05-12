@@ -513,7 +513,9 @@ namespace Saraff.Twain {
         /// <param name="value">Значение.</param>
         /// <returns>Экземпляр объекта.</returns>
         internal static object ValueToTw<T>(TwType type,T value) {
-            IntPtr _mem=Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));
+            int _size=Marshal.SizeOf(typeof(T));
+            IntPtr _mem=Marshal.AllocHGlobal(_size);
+            Twain32._Memory.ZeroMemory(_mem,(IntPtr)_size);
             try {
                 Marshal.StructureToPtr(value,_mem,true);
                 return Marshal.PtrToStructure(_mem,TwTypeHelper.TypeOf(type));
@@ -529,7 +531,9 @@ namespace Saraff.Twain {
         /// <param name="value">Экземпляр объекта.</param>
         /// <returns>Значение.</returns>
         internal static T ValueFromTw<T>(object value) {
-            IntPtr _mem=Marshal.AllocHGlobal(Math.Max(Marshal.SizeOf(typeof(T)),Marshal.SizeOf(value)));
+            int _size=Math.Max(Marshal.SizeOf(typeof(T)),Marshal.SizeOf(value));
+            IntPtr _mem=Marshal.AllocHGlobal(_size);
+            Twain32._Memory.ZeroMemory(_mem,(IntPtr)_size);
             try {
                 Marshal.StructureToPtr(value,_mem,true);
                 return (T)Marshal.PtrToStructure(_mem,typeof(T));
