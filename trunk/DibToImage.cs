@@ -36,7 +36,13 @@ namespace Saraff.Twain {
 
             BITMAPINFOHEADER _bmi=(BITMAPINFOHEADER)Marshal.PtrToStructure(dibPtr,typeof(BITMAPINFOHEADER));
 
-            int _dibSize=_bmi.biSize+_bmi.biSizeImage+(_bmi.biClrUsed<<2);
+            int _extra=0;
+            if(_bmi.biCompression==0) {
+                int _bytesPerRow=((_bmi.biWidth*_bmi.biBitCount)>>3);
+                _extra=Math.Max(_bmi.biHeight*(_bytesPerRow+((_bytesPerRow&0x3)!=0?4-_bytesPerRow&0x3:0))-_bmi.biSizeImage,0);
+            }
+
+            int _dibSize=_bmi.biSize+_bmi.biSizeImage+_extra+(_bmi.biClrUsed<<2);
 
             #region BITMAPFILEHEADER
 
@@ -54,7 +60,7 @@ namespace Saraff.Twain {
             _writer.Write(_data);
 
             #endregion
-
+            
             return Image.FromStream(_stream);
         }
 
