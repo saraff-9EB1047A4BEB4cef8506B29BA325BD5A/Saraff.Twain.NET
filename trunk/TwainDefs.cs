@@ -736,7 +736,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Language Constants
     /// </summary>
-    internal enum TwLanguage:ushort {
+    public enum TwLanguage:ushort {
         DANISH=0,             /* Danish                 */
         DUTCH=1,              /* Dutch                  */
         ENGLISH=2,            /* International English  */
@@ -857,7 +857,7 @@ namespace Saraff.Twain {
     /// <summary>
     /// Country Constantsz
     /// </summary>
-    internal enum TwCountry:ushort {
+    public enum TwCountry:ushort {
         AFGHANISTAN=1001,
         ALGERIA=213,
         AMERICANSAMOA=684,
