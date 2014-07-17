@@ -60,27 +60,6 @@ namespace Saraff.Twain {
             Form _window=new Form();
             this._components.Add(_window);
             this._hwnd=_window.Handle;
-
-            //Assembly _asm=Assembly.GetExecutingAssembly();
-            //AssemblyName _asm_name=new AssemblyName(_asm.FullName);
-            //Version _version=new Version(((AssemblyFileVersionAttribute)_asm.GetCustomAttributes(typeof(AssemblyFileVersionAttribute),false)[0]).Version);
-
-            //this._appid=new TwIdentity() {
-            //    Id=0,
-            //    Version=new TwVersion() {
-            //        MajorNum=(ushort)_version.Major,
-            //        MinorNum=(ushort)_version.Minor,
-            //        Language=(this.Language=TwLanguage.RUSSIAN),
-            //        Country=(this.Country=TwCountry.BELARUS),
-            //        Info=_asm_name.Version.ToString()
-            //    },
-            //    ProtocolMajor=(ushort)(this._isTwain2Enable?2:1),
-            //    ProtocolMinor=(ushort)(this._isTwain2Enable?3:9),
-            //    SupportedGroups=TwDG.Image|TwDG.Control|(this._isTwain2Enable?TwDG.APP2:0),
-            //    Manufacturer=((AssemblyCompanyAttribute)_asm.GetCustomAttributes(typeof(AssemblyCompanyAttribute),false)[0]).Company,
-            //    ProductFamily="TWAIN Class Library",
-            //    ProductName=((AssemblyProductAttribute)_asm.GetCustomAttributes(typeof(AssemblyProductAttribute),false)[0]).Product
-            //};
             this._srcds=new TwIdentity();
             this._srcds.Id=0;
             this._filter=new _MessageFilter(this);
@@ -220,13 +199,14 @@ namespace Saraff.Twain {
         /// Получает изображение с источника данных.
         /// </summary>
         public void Acquire() {
-            this._filter.SetFilter();
 
             if(this.OpenDSM()) {
                 if(this.OpenDataSource()) {
-                    this._EnableDataSource();
-                    if(!Application.MessageLoop) {
-                        Application.Run(this._context=new ApplicationContext());
+                    if(this._EnableDataSource()) {
+                        this._filter.SetFilter();
+                        if(!Application.MessageLoop) {
+                            Application.Run(this._context=new ApplicationContext());
+                        }
                     }
                 }
             }
