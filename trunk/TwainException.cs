@@ -46,6 +46,14 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="TwainException"/> class.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="innerException">Inner exception.</param>
+        internal TwainException(string message,Exception innerException):base(message,innerException) {
+        }
+
+        /// <summary>
         /// Возвращает код состояния операции. Get condition code.
         /// </summary>
         public TwCC ConditionCode {

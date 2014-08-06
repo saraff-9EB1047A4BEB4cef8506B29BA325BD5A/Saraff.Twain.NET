@@ -861,34 +861,37 @@ namespace Saraff.Twain {
             }
             IntPtr _hBitmap=IntPtr.Zero;
             TwPendingXfers _pxfr=new TwPendingXfers();
-            this._images.Clear();
+            try {
+                this._images.Clear();
 
-            do {
-                _pxfr.Count=0;
-                _hBitmap=IntPtr.Zero;
+                do {
+                    _pxfr.Count=0;
+                    _hBitmap=IntPtr.Zero;
 
-                if(this._dsmEntry.DSImageXfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap)==TwRC.XferDone) {
-                    // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                    // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                    this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                    if(this._dsmEntry.DSImageXfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap)==TwRC.XferDone) {
+                        // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
+                        // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
+                        this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
 
-                    IntPtr _pBitmap=_Memory.Lock(_hBitmap);
-                    try {
-                        Image _img=null;
-                        this._images.Add(_img=DibToImage.WithStream(_pBitmap));
-                        this._OnEndXfer(new EndXferEventArgs(_img));
-                    } finally {
-                        _Memory.Unlock(_hBitmap);
-                        _Memory.Free(_hBitmap);
-                    }
-                    if(this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)!=TwRC.Success) {
+                        IntPtr _pBitmap=_Memory.Lock(_hBitmap);
+                        try {
+                            Image _img=null;
+                            this._images.Add(_img=DibToImage.WithStream(_pBitmap));
+                            this._OnEndXfer(new EndXferEventArgs(_img));
+                        } finally {
+                            _Memory.Unlock(_hBitmap);
+                            _Memory.Free(_hBitmap);
+                        }
+                        if(this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)!=TwRC.Success) {
+                            break;
+                        }
+                    } else {
                         break;
                     }
-                } else {
-                    break;
-                }
-            } while(_pxfr.Count!=0);
-            TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+                } while(_pxfr.Count!=0);
+            } finally {
+                TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+            }
         }
 
         /// <summary>
@@ -900,38 +903,44 @@ namespace Saraff.Twain {
             }
 
             TwPendingXfers _pxfr=new TwPendingXfers();
-            this._images.Clear();
-            do {
-                _pxfr.Count=0;
-                ImageInfo _info=this._GetImageInfo();
+            try {
+                this._images.Clear();
+                do {
+                    _pxfr.Count=0;
+                    ImageInfo _info=this._GetImageInfo();
 
-                TwSetupFileXfer _fileXfer=new TwSetupFileXfer {Format=TwFF.Bmp,FileName=Path.GetTempFileName()};
-                SetupFileXferEventArgs _args=new SetupFileXferEventArgs();
-                this._OnSetupFileXfer(_args);
-                if(!string.IsNullOrEmpty(_args.FileName)) {
-                    _fileXfer.FileName=_args.FileName;
-                }
-                if((this.Capabilities.ImageFileFormat.IsSupported()&TwQC.GetCurrent)!=0) {
-                    _fileXfer.Format=this.Capabilities.ImageFileFormat.GetCurrent();
-                }
-                TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer);
-                if(_rc!=TwRC.Success) {
-                    throw new TwainException(this._GetTwainStatus(),_rc);
-                }
+                    TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
+                        Format=TwFF.Bmp,
+                        FileName=Path.GetTempFileName()
+                    };
+                    SetupFileXferEventArgs _args=new SetupFileXferEventArgs();
+                    this._OnSetupFileXfer(_args);
+                    if(!string.IsNullOrEmpty(_args.FileName)) {
+                        _fileXfer.FileName=_args.FileName;
+                    }
+                    if((this.Capabilities.ImageFileFormat.IsSupported()&TwQC.GetCurrent)!=0) {
+                        _fileXfer.Format=this.Capabilities.ImageFileFormat.GetCurrent();
+                    }
+                    TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer);
+                    if(_rc!=TwRC.Success) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
+                    }
 
-                if(this._dsmEntry.DSifxfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageFileXfer,TwMSG.Get,IntPtr.Zero)==TwRC.XferDone) {
-                    // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                    // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                    this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
-                }
-                if(this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)!=TwRC.Success) {
-                    break;
-                }
-                if(this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Get,_fileXfer)==TwRC.Success) {
-                    this._OnFileXfer(new FileXferEventArgs(ImageFileXfer.Create(_fileXfer)));
-                }
-            } while(_pxfr.Count!=0);
-            TwRC _rc2=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+                    if(this._dsmEntry.DSifxfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageFileXfer,TwMSG.Get,IntPtr.Zero)==TwRC.XferDone) {
+                        // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
+                        // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
+                        this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                    }
+                    if(this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)!=TwRC.Success) {
+                        break;
+                    }
+                    if(this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Get,_fileXfer)==TwRC.Success) {
+                        this._OnFileXfer(new FileXferEventArgs(ImageFileXfer.Create(_fileXfer)));
+                    }
+                } while(_pxfr.Count!=0);
+            } finally {
+                TwRC _rc2=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+            }
         }
 
         /// <summary>
@@ -943,67 +952,70 @@ namespace Saraff.Twain {
             }
 
             TwPendingXfers _pxfr=new TwPendingXfers();
-            this._images.Clear();
-            do {
-                _pxfr.Count=0;
-                ImageInfo _info=this._GetImageInfo();
+            try {
+                this._images.Clear();
+                do {
+                    _pxfr.Count=0;
+                    ImageInfo _info=this._GetImageInfo();
 
-                if(isMemFile) {
-                    if((this.Capabilities.ImageFileFormat.IsSupported()&TwQC.GetCurrent)!=0) {
-                        TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
-                            Format=this.Capabilities.ImageFileFormat.GetCurrent()
-                        };
-                        TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer);
-                        if(_rc!=TwRC.Success) {
-                            throw new TwainException(this._GetTwainStatus(),_rc);
+                    if(isMemFile) {
+                        if((this.Capabilities.ImageFileFormat.IsSupported()&TwQC.GetCurrent)!=0) {
+                            TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
+                                Format=this.Capabilities.ImageFileFormat.GetCurrent()
+                            };
+                            TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer);
+                            if(_rc!=TwRC.Success) {
+                                throw new TwainException(this._GetTwainStatus(),_rc);
+                            }
                         }
                     }
-                }
 
-                TwSetupMemXfer _memBufSize=new TwSetupMemXfer();
-                TwRC _rc1=this._dsmEntry.DSsmxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupMemXfer,TwMSG.Get,_memBufSize);
-                if(_rc1!=TwRC.Success) {
-                    throw new TwainException(this._GetTwainStatus(),_rc1);
-                }
-                this._OnSetupMemXfer(new SetupMemXferEventArgs(_info,_memBufSize.Preferred));
+                    TwSetupMemXfer _memBufSize=new TwSetupMemXfer();
+                    TwRC _rc1=this._dsmEntry.DSsmxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupMemXfer,TwMSG.Get,_memBufSize);
+                    if(_rc1!=TwRC.Success) {
+                        throw new TwainException(this._GetTwainStatus(),_rc1);
+                    }
+                    this._OnSetupMemXfer(new SetupMemXferEventArgs(_info,_memBufSize.Preferred));
 
-                IntPtr _hMem=_Memory.Alloc((int)_memBufSize.Preferred);
-                if(_hMem==IntPtr.Zero) {
-                    throw new TwainException("Ошибка выделениия памяти.");
-                }
-                try {
-                    TwMemory _mem=new TwMemory {
-                        Flags=TwMF.AppOwns|TwMF.Pointer,
-                        Length=_memBufSize.Preferred,
-                        TheMem=_Memory.Lock(_hMem)
-                    };
+                    IntPtr _hMem=_Memory.Alloc((int)_memBufSize.Preferred);
+                    if(_hMem==IntPtr.Zero) {
+                        throw new TwainException("Ошибка выделениия памяти.");
+                    }
+                    try {
+                        TwMemory _mem=new TwMemory {
+                            Flags=TwMF.AppOwns|TwMF.Pointer,
+                            Length=_memBufSize.Preferred,
+                            TheMem=_Memory.Lock(_hMem)
+                        };
 
-                    do {
-                        TwImageMemXfer _memXferBuf=new TwImageMemXfer {Memory=_mem};
-                        _Memory.ZeroMemory(_memXferBuf.Memory.TheMem,(IntPtr)_memXferBuf.Memory.Length);
-                        
-                        TwRC _rc=this._dsmEntry.DSimxfer(this.AppId,this._srcds,TwDG.Image,isMemFile?TwDAT.ImageMemFileXfer:TwDAT.ImageMemXfer,TwMSG.Get,_memXferBuf);
-                        if(_rc==TwRC.Success||_rc==TwRC.XferDone) {
-                            this._OnMemXfer(new MemXferEventArgs(_info,ImageMemXfer.Create(_memXferBuf)));
-                            if(_rc==TwRC.XferDone) {
-                                // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                                // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                                this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                        do {
+                            TwImageMemXfer _memXferBuf=new TwImageMemXfer {Memory=_mem};
+                            _Memory.ZeroMemory(_memXferBuf.Memory.TheMem,(IntPtr)_memXferBuf.Memory.Length);
+
+                            TwRC _rc=this._dsmEntry.DSimxfer(this.AppId,this._srcds,TwDG.Image,isMemFile?TwDAT.ImageMemFileXfer:TwDAT.ImageMemXfer,TwMSG.Get,_memXferBuf);
+                            if(_rc==TwRC.Success||_rc==TwRC.XferDone) {
+                                this._OnMemXfer(new MemXferEventArgs(_info,ImageMemXfer.Create(_memXferBuf)));
+                                if(_rc==TwRC.XferDone) {
+                                    // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
+                                    // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
+                                    this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                                    break;
+                                }
+                            } else {
                                 break;
                             }
-                        } else {
-                            break;
-                        }
-                    } while(true);
-                } finally {
-                    _Memory.Unlock(_hMem);
-                    _Memory.Free(_hMem);
-                }
-                if(this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)!=TwRC.Success) {
-                    break;
-                }
-            } while(_pxfr.Count!=0);
-            TwRC _rc2=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+                        } while(true);
+                    } finally {
+                        _Memory.Unlock(_hMem);
+                        _Memory.Free(_hMem);
+                    }
+                    if(this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)!=TwRC.Success) {
+                        break;
+                    }
+                } while(_pxfr.Count!=0);
+            } finally {
+                TwRC _rc2=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+            }
         }
 
         #endregion
@@ -1024,6 +1036,12 @@ namespace Saraff.Twain {
         private void _OnAcquireCompleted(EventArgs e) {
             if(this.AcquireCompleted!=null) {
                 this.AcquireCompleted(this,e);
+            }
+        }
+
+        private void _OnAcquireError(AcquireErrorEventArgs e) {
+            if(this.AcquireError!=null) {
+                this.AcquireError(this,e);
             }
         }
 
@@ -1198,6 +1216,13 @@ namespace Saraff.Twain {
         [Category("Action")]
         [Description("Возникает в момент окончания сканирования. Occurs when the acquire is completed.")]
         public event EventHandler AcquireCompleted;
+
+        /// <summary>
+        /// Возникает в момент получения ошибки в процессе сканирования. Occurs when error received during acquire.
+        /// </summary>
+        [Category("Action")]
+        [Description("Возникает в момент получения ошибки в процессе сканирования. Occurs when error received during acquire.")]
+        public event EventHandler<AcquireErrorEventArgs> AcquireError;
 
         /// <summary>
         /// Возникает в момент окончания получения изображения приложением. Occurs when the transfer into application was completed (Native Mode Transfer).
@@ -1554,6 +1579,28 @@ namespace Saraff.Twain {
             }
         }
 
+        /// <summary>
+        /// Аргументы события AcquireError.
+        /// </summary>
+        public sealed class AcquireErrorEventArgs:EventArgs {
+
+            /// <summary>
+            /// Инициализирует новый экземпляр класса.
+            /// </summary>
+            /// <param name="ex">Экземпляр класса исключения.</param>
+            internal AcquireErrorEventArgs(TwainException ex) {
+                this.Exception=ex;
+            }
+
+            /// <summary>
+            /// Возвращает экземпляр класса исключения.
+            /// </summary>
+            public TwainException Exception {
+                get;
+                private set;
+            }
+        }
+
         #endregion
 
         #region Nested classes
@@ -1792,42 +1839,50 @@ namespace Saraff.Twain {
             #region IMessageFilter
 
             public bool PreFilterMessage(ref Message m) {
-                TwainCommand _cmd=this._PassMessage(ref m);
-                if(_cmd==TwainCommand.Not) {
-                    return false;
-                }
-                MethodInvoker _end=()=>{
-                    this.RemoveFilter();
-                    if(this._twain.DisableAfterAcquire) {
-                        this._twain._DisableDataSource();
+                try {
+                    TwainCommand _cmd=this._PassMessage(ref m);
+                    if(_cmd==TwainCommand.Not) {
+                        return false;
                     }
-                };
-                switch(_cmd) {
-                    case TwainCommand.CloseRequest:
-                    case TwainCommand.CloseOk:
-                        _end();
-                        break;
-                    case TwainCommand.DeviceEvent:
-                        this._twain._DeviceEventObtain();
-                        break;
-                    case TwainCommand.TransferReady:
-                        switch(this._twain.Capabilities.XferMech.GetCurrent()) {
-                            case TwSX.File:
-                                this._twain._FileTransferPictures();
-                                break;
-                            case TwSX.Memory:
-                                this._twain._MemoryTransferPictures(false);
-                                break;
-                            case TwSX.MemFile:
-                                this._twain._MemoryTransferPictures(true);
-                                break;
-                            default:
-                                this._twain._NativeTransferPictures();
-                                break;
-                        }
-                        _end();
-                        this._twain._OnAcquireCompleted(new EventArgs());
-                        break;
+                    switch(_cmd) {
+                        case TwainCommand.CloseRequest:
+                        case TwainCommand.CloseOk:
+                            this._End();
+                            break;
+                        case TwainCommand.DeviceEvent:
+                            this._twain._DeviceEventObtain();
+                            break;
+                        case TwainCommand.TransferReady:
+                            switch(this._twain.Capabilities.XferMech.GetCurrent()) {
+                                case TwSX.File:
+                                    this._twain._FileTransferPictures();
+                                    break;
+                                case TwSX.Memory:
+                                    this._twain._MemoryTransferPictures(false);
+                                    break;
+                                case TwSX.MemFile:
+                                    this._twain._MemoryTransferPictures(true);
+                                    break;
+                                default:
+                                    this._twain._NativeTransferPictures();
+                                    break;
+                            }
+                            this._End();
+                            this._twain._OnAcquireCompleted(new EventArgs());
+                            break;
+                    }
+                } catch(TwainException ex) {
+                    try {
+                        this._End();
+                    } catch {
+                    }
+                    this._twain._OnAcquireError(new AcquireErrorEventArgs(ex));
+                } catch(Exception ex) {
+                    try {
+                        this._End();
+                    } catch {
+                    }
+                    this._twain._OnAcquireError(new AcquireErrorEventArgs(new TwainException(ex.Message,ex)));
                 }
                 return true;
             }
@@ -1887,9 +1942,16 @@ namespace Saraff.Twain {
                 }
             }
 
-            private void RemoveFilter() {
+            private void _RemoveFilter() {
                 Application.RemoveMessageFilter(this);
                 this._is_set_filter=false;
+            }
+
+            private void _End() {
+                this._RemoveFilter();
+                if(this._twain.DisableAfterAcquire) {
+                    this._twain._DisableDataSource();
+                }
             }
 
             [StructLayout(LayoutKind.Sequential,Pack=4)]
