@@ -868,25 +868,24 @@ namespace Saraff.Twain {
                     _pxfr.Count=0;
                     _hBitmap=IntPtr.Zero;
 
-                    if(this._dsmEntry.DSImageXfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap)==TwRC.XferDone) {
-                        // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                        // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                        this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                    for(TwRC _rc=this._dsmEntry.DSImageXfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap); _rc!=TwRC.XferDone; ) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
+                    }
+                    // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
+                    // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
+                    this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
 
-                        IntPtr _pBitmap=_Memory.Lock(_hBitmap);
-                        try {
-                            Image _img=null;
-                            this._images.Add(_img=DibToImage.WithStream(_pBitmap));
-                            this._OnEndXfer(new EndXferEventArgs(_img));
-                        } finally {
-                            _Memory.Unlock(_hBitmap);
-                            _Memory.Free(_hBitmap);
-                        }
-                        if(this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)!=TwRC.Success) {
-                            break;
-                        }
-                    } else {
-                        break;
+                    IntPtr _pBitmap=_Memory.Lock(_hBitmap);
+                    try {
+                        Image _img=null;
+                        this._images.Add(_img=DibToImage.WithStream(_pBitmap));
+                        this._OnEndXfer(new EndXferEventArgs(_img));
+                    } finally {
+                        _Memory.Unlock(_hBitmap);
+                        _Memory.Free(_hBitmap);
+                    }
+                    for(TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr); _rc!=TwRC.Success; ) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                 } while(_pxfr.Count!=0);
             } finally {
@@ -921,25 +920,28 @@ namespace Saraff.Twain {
                     if((this.Capabilities.ImageFileFormat.IsSupported()&TwQC.GetCurrent)!=0) {
                         _fileXfer.Format=this.Capabilities.ImageFileFormat.GetCurrent();
                     }
-                    TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer);
-                    if(_rc!=TwRC.Success) {
+
+                    for(TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
 
-                    if(this._dsmEntry.DSifxfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageFileXfer,TwMSG.Get,IntPtr.Zero)==TwRC.XferDone) {
-                        // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                        // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                        this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                    for(TwRC _rc=this._dsmEntry.DSifxfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageFileXfer,TwMSG.Get,IntPtr.Zero); _rc!=TwRC.XferDone; ) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
                     }
-                    if(this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)!=TwRC.Success) {
-                        break;
+                    // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
+                    // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
+                    this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+
+                    for(TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr); _rc!=TwRC.Success; ) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
                     }
-                    if(this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Get,_fileXfer)==TwRC.Success) {
-                        this._OnFileXfer(new FileXferEventArgs(ImageFileXfer.Create(_fileXfer)));
+                    for(TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Get,_fileXfer); _rc!=TwRC.Success; ) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
                     }
+                    this._OnFileXfer(new FileXferEventArgs(ImageFileXfer.Create(_fileXfer)));
                 } while(_pxfr.Count!=0);
             } finally {
-                TwRC _rc2=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+                TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
             }
         }
 
@@ -963,17 +965,16 @@ namespace Saraff.Twain {
                             TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
                                 Format=this.Capabilities.ImageFileFormat.GetCurrent()
                             };
-                            TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer);
-                            if(_rc!=TwRC.Success) {
+                            for(TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer); _rc!=TwRC.Success; ) {
                                 throw new TwainException(this._GetTwainStatus(),_rc);
                             }
                         }
                     }
 
                     TwSetupMemXfer _memBufSize=new TwSetupMemXfer();
-                    TwRC _rc1=this._dsmEntry.DSsmxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupMemXfer,TwMSG.Get,_memBufSize);
-                    if(_rc1!=TwRC.Success) {
-                        throw new TwainException(this._GetTwainStatus(),_rc1);
+
+                    for(TwRC _rc=this._dsmEntry.DSsmxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupMemXfer,TwMSG.Get,_memBufSize); _rc!=TwRC.Success; ) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                     this._OnSetupMemXfer(new SetupMemXferEventArgs(_info,_memBufSize.Preferred));
 
@@ -993,15 +994,14 @@ namespace Saraff.Twain {
                             _Memory.ZeroMemory(_memXferBuf.Memory.TheMem,(IntPtr)_memXferBuf.Memory.Length);
 
                             TwRC _rc=this._dsmEntry.DSimxfer(this.AppId,this._srcds,TwDG.Image,isMemFile?TwDAT.ImageMemFileXfer:TwDAT.ImageMemXfer,TwMSG.Get,_memXferBuf);
-                            if(_rc==TwRC.Success||_rc==TwRC.XferDone) {
-                                this._OnMemXfer(new MemXferEventArgs(_info,ImageMemXfer.Create(_memXferBuf)));
-                                if(_rc==TwRC.XferDone) {
-                                    // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                                    // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                                    this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
-                                    break;
-                                }
-                            } else {
+                            if(_rc!=TwRC.Success&&_rc!=TwRC.XferDone) {
+                                throw new TwainException(this._GetTwainStatus(),_rc);
+                            }
+                            this._OnMemXfer(new MemXferEventArgs(_info,ImageMemXfer.Create(_memXferBuf)));
+                            if(_rc==TwRC.XferDone) {
+                                // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
+                                // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
+                                this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
                                 break;
                             }
                         } while(true);
@@ -1009,12 +1009,12 @@ namespace Saraff.Twain {
                         _Memory.Unlock(_hMem);
                         _Memory.Free(_hMem);
                     }
-                    if(this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr)!=TwRC.Success) {
-                        break;
+                    for(TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr); _rc!=TwRC.Success; ) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                 } while(_pxfr.Count!=0);
             } finally {
-                TwRC _rc2=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+                TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
             }
         }
 
