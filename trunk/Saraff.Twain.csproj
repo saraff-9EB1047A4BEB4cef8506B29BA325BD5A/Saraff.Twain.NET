@@ -52,6 +52,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Tiff.cs" />
     <Compile Include="Twain32.cs">
       <SubType>Component</SubType>
     </Compile>

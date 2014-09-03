@@ -90,6 +90,7 @@ namespace Saraff.Twain {
         PassThru=0x000f,
         Callback=0x0010,   /* TW_CALLBACK        Added 2.0         */
         StatusUtf8=0x0011, /* TW_STATUSUTF8      Added 2.1         */
+        Callback2=0x0012,
 
         #endregion
 
@@ -273,7 +274,19 @@ namespace Saraff.Twain {
 
         #region Messages used with a pointer to a DAT_PASSTHRU structure
 
-        PassThru=0x0901
+        PassThru=0x0901,
+
+        #endregion
+
+        #region used with DAT_CALLBACK
+
+        RegisterCallback=0x0902,
+
+        #endregion
+
+        #region used with DAT_CAPABILITY
+
+        ResetAll=0x0A01
 
         #endregion
     }
@@ -1483,7 +1496,7 @@ namespace Saraff.Twain {
         }
 
         public static implicit operator string(TwStr32 value) {
-            return value.Value;
+            return value!=null?value.Value:null;
         }
 
         public static implicit operator TwStr32(string value) {
@@ -1508,7 +1521,7 @@ namespace Saraff.Twain {
         }
 
         public static implicit operator string(TwStr64 value) {
-            return value.Value;
+            return value!=null?value.Value:null;
         }
 
         public static implicit operator TwStr64(string value) {
@@ -1533,7 +1546,7 @@ namespace Saraff.Twain {
         }
 
         public static implicit operator string(TwStr128 value) {
-            return value.Value;
+            return value!=null?value.Value:null;
         }
 
         public static implicit operator TwStr128(string value) {
@@ -1558,7 +1571,7 @@ namespace Saraff.Twain {
         }
 
         public static implicit operator string(TwStr255 value) {
-            return value.Value;
+            return value!=null?value.Value:null;
         }
 
         public static implicit operator TwStr255(string value) {
@@ -1583,7 +1596,7 @@ namespace Saraff.Twain {
         }
 
         public static implicit operator string(TwUni512 value) {
-            return value.Value;
+            return value!=null?value.Value:null;
         }
 
         public static implicit operator TwUni512(string value) {
@@ -1608,7 +1621,7 @@ namespace Saraff.Twain {
         }
 
         public static implicit operator string(TwStr1024 value) {
-            return value.Value;
+            return value!=null?value.Value:null;
         }
 
         public static implicit operator TwStr1024(string value) {
@@ -1813,7 +1826,7 @@ namespace Saraff.Twain {
         public TwStr32 ProductName;
 
         public override bool Equals(object obj) {
-            if(obj is TwIdentity) {
+            if(obj!=null&&obj is TwIdentity) {
                 return ((TwIdentity)obj).Id==this.Id;
             }
             return false;
@@ -1903,7 +1916,7 @@ namespace Saraff.Twain {
     /// For passing events down from the application to the DS.
     /// </summary>
     [StructLayout(LayoutKind.Sequential,Pack=2)]
-    internal struct TwEvent {									// TW_EVENT
+    internal class TwEvent {									// TW_EVENT
 
         /// <summary>
         /// Windows pMSG or Mac pEvent.
@@ -2150,6 +2163,9 @@ namespace Saraff.Twain {
         /// Handle to container of type Dat
         /// </summary>
         public IntPtr Handle;
+
+        private TwCapability() {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TwCapability"/> class.
@@ -2661,6 +2677,37 @@ namespace Saraff.Twain {
         /// </summary>
         public uint TimeBetweenCaptures;
     }
+
+    /// <summary>
+    /// Used to register callbacks.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwCallback {
+
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public CallBackProc CallBackProc;
+
+        public uint RefCon;
+
+        public short Message;
+    }
+
+    /// <summary>
+    /// Used to register callbacks.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwCallback2 {
+
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public CallBackProc CallBackProc;
+
+        public UIntPtr RefCon;
+
+        public short Message;
+    }
+
+    [return: MarshalAs(UnmanagedType.U2)]
+    internal delegate TwRC CallBackProc(TwIdentity appId,TwIdentity srcId,[MarshalAs(UnmanagedType.U4)]TwDG dg,[MarshalAs(UnmanagedType.U2)]TwDAT dat,[MarshalAs(UnmanagedType.U2)]TwMSG msg,IntPtr data);
 
     #endregion
 

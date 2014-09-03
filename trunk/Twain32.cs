@@ -51,15 +51,13 @@ namespace Saraff.Twain {
         private ApplicationContext _context=null; //контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
         private Collection<Image> _images=new Collection<Image>();
         private TwainStateFlag _twainState;
-        private bool _isTwain2Enable=IntPtr.Size!=4;
+        private bool _isTwain2Enable=IntPtr.Size!=4||Environment.OSVersion.Platform==PlatformID.Unix;
+        private CallBackProc _callbackProc;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Twain32"/> class.
         /// </summary>
         public Twain32() {
-            Form _window=new Form();
-            this._components.Add(_window);
-            this._hwnd=_window.Handle;
             this._srcds=new TwIdentity();
             this._srcds.Id=0;
             this._filter=new _MessageFilter(this);
@@ -67,6 +65,18 @@ namespace Saraff.Twain {
             this.DisableAfterAcquire=true;
             this.Capabilities=new TwainCapabilities(this);
             this.Palette=new TwainPalette(this);
+            this._callbackProc=this._TwCallbackProc;
+            switch(Environment.OSVersion.Platform) {
+                case PlatformID.Unix:
+                    break;
+                case PlatformID.MacOSX:
+                    throw new NotImplementedException();
+                default:
+                    Form _window=new Form();
+                    this._components.Add(_window);
+                    this._hwnd=_window.Handle;
+                    break;
+            }
         }
 
         /// <summary>
@@ -84,9 +94,17 @@ namespace Saraff.Twain {
         protected override void Dispose(bool disposing) {
             if(disposing) {
                 this.CloseDSM();
-                this._filter.Dispose();
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                        break;
+                    case PlatformID.MacOSX:
+                        throw new NotImplementedException();
+                    default:
+                        this._filter.Dispose();
+                        break;
+                }
                 if(this._hTwainDll!=IntPtr.Zero) {
-                    FreeLibrary(this._hTwainDll);
+                    _Platform.Unload(this._hTwainDll);
                     this._hTwainDll=IntPtr.Zero;
                 }
                 if(this._components!=null) {
@@ -105,9 +123,23 @@ namespace Saraff.Twain {
 
                 #region Загружаем DSM, получаем адрес точки входа DSM_Entry и приводим ее к соответствующим делегатам
 
-                this._hTwainDll=LoadLibrary(string.Format("{0}\\{1}.dll",Environment.SystemDirectory,IntPtr.Size==4&&!this.IsTwain2Enable?"..\\twain_32":"TWAINDSM"));
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                        this._hTwainDll=_Platform.Load("/usr/local/lib/libtwaindsm.so");
+                        break;
+                    case PlatformID.MacOSX:
+                        throw new NotImplementedException();
+                    default:
+                        string _twainDsm=Path.ChangeExtension(Path.Combine(Environment.SystemDirectory,"TWAINDSM"),".dll");
+                        this._hTwainDll=_Platform.Load(File.Exists(_twainDsm)&&this.IsTwain2Enable?_twainDsm:Path.ChangeExtension(Path.Combine(Environment.SystemDirectory,"..\\twain_32"),".dll"));
+                        if(this.Parent!=null) {
+                            this._hwnd=this.Parent.Handle;
+                        }
+                        break;
+                }
+
                 if(this._hTwainDll!=IntPtr.Zero) {
-                    IntPtr _pDsmEntry=GetProcAddress(this._hTwainDll,1);
+                    IntPtr _pDsmEntry=_Platform.GetProcAddr(this._hTwainDll,"DSM_Entry");
                     if(_pDsmEntry!=IntPtr.Zero) {
                         this._dsmEntry=_DsmEntry.Create(_pDsmEntry);
                         _Memory._SetEntryPoints(null);
@@ -120,16 +152,13 @@ namespace Saraff.Twain {
 
                 #endregion
 
-                if(this.Parent!=null) {
-                    this._hwnd=this.Parent.Handle;
-                }
                 TwRC _rc=this._dsmEntry.DsmParent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Parent,TwMSG.OpenDSM,ref this._hwnd);
                 if(_rc==TwRC.Success) {
                     this._TwainState|=TwainStateFlag.DSMOpen;
 
                     if(this.IsTwain2Supported) {
                         TwEntryPoint _entry=new TwEntryPoint();
-                        if(this._dsmEntry.DsmEntryPoint(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.EntryPoint,TwMSG.Get,_entry)==TwRC.Success) {
+                        if(this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.EntryPoint,TwMSG.Get,ref _entry)==TwRC.Success) {
                             _Memory._SetEntryPoints(_entry);
                         }
                     }
@@ -145,6 +174,9 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool SelectSource() {
+            if(Environment.OSVersion.Platform==PlatformID.Unix) {
+                throw new NotSupportedException("DG_CONTROL / DAT_IDENTITY / MSG_USERSELECT is not available on Linux.");
+            }
             if((this._TwainState&TwainStateFlag.DSOpen)==0) {
                 if((this._TwainState&TwainStateFlag.DSMOpen)==0) {
                     this.OpenDSM();
@@ -153,7 +185,7 @@ namespace Saraff.Twain {
                     }
                 }
                 TwIdentity _src=new TwIdentity();
-                TwRC _rc=this._dsmEntry.DsmIdent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Identity,TwMSG.UserSelect,_src);
+                TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.UserSelect,ref _src);
                 if(_rc==TwRC.Success) {
                     this._srcds=_src;
                     return true;
@@ -168,12 +200,39 @@ namespace Saraff.Twain {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool OpenDataSource() {
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0 && (this._TwainState&TwainStateFlag.DSOpen)==0) {
-                TwRC _rc=this._dsmEntry.DsmIdent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Identity,TwMSG.OpenDS,this._srcds);
+                TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.OpenDS,ref this._srcds);
                 if(_rc==TwRC.Success) {
                     this._TwainState|=TwainStateFlag.DSOpen;
+
+                    switch(Environment.OSVersion.Platform) {
+                        case PlatformID.Unix:
+                            this._RegisterCallback();
+                            break;
+                        case PlatformID.MacOSX:
+                            throw new NotImplementedException();
+                        default:
+                            if(this.IsTwain2Supported&&(this._srcds.SupportedGroups&TwDG.DS2)!=0) {
+                                this._RegisterCallback();
+                            }
+                            break;
+                    }
+
                 }
             }
             return (this._TwainState&TwainStateFlag.DSOpen)!=0;
+        }
+
+        /// <summary>
+        /// Регестрирует обработчик событий источника данных.
+        /// </summary>
+        private void _RegisterCallback() {
+            TwCallback2 _callback=new TwCallback2 {
+                CallBackProc=this._callbackProc
+            };
+            TwRC _rc=this._dsmEntry.DsInvoke(this._appid,this._srcds,TwDG.Control,TwDAT.Callback2,TwMSG.RegisterCallback,ref _callback);
+            if(_rc!=TwRC.Success) {
+                throw new TwainException(this._GetTwainStatus(),_rc);
+            }
         }
 
         /// <summary>
@@ -187,9 +246,13 @@ namespace Saraff.Twain {
                     ModalUI=this.ModalUI,
                     ParentHand=this._hwnd
                 };
-                TwRC _rc=this._dsmEntry.DSUI(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.EnableDS,_guif);
+                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.EnableDS,ref _guif);
                 if(_rc==TwRC.Success) {
-                    this._TwainState|=TwainStateFlag.DSEnabled;
+                    if((this._TwainState&TwainStateFlag.DSReady)!=0) {
+                        this._TwainState&=~TwainStateFlag.DSReady;
+                    } else {
+                        this._TwainState|=TwainStateFlag.DSEnabled;
+                    }
                 }
             }
             return (this._TwainState&TwainStateFlag.DSEnabled)!=0;
@@ -199,13 +262,22 @@ namespace Saraff.Twain {
         /// Получает изображение с источника данных.
         /// </summary>
         public void Acquire() {
-
             if(this.OpenDSM()) {
                 if(this.OpenDataSource()) {
                     if(this._EnableDataSource()) {
-                        this._filter.SetFilter();
-                        if(!Application.MessageLoop) {
-                            Application.Run(this._context=new ApplicationContext());
+                        switch(Environment.OSVersion.Platform) {
+                            case PlatformID.Unix:
+                                break;
+                            case PlatformID.MacOSX:
+                                throw new NotImplementedException();
+                            default:
+                                if(!this.IsTwain2Supported||(this._srcds.SupportedGroups&TwDG.DS2)==0) {
+                                    this._filter.SetFilter();
+                                }
+                                if(!Application.MessageLoop) {
+                                    Application.Run(this._context=new ApplicationContext());
+                                }
+                                break;
                         }
                     }
                 }
@@ -223,7 +295,7 @@ namespace Saraff.Twain {
                     ParentHand=this._hwnd,
                     ShowUI=false
                 };
-                _rc=this._dsmEntry.DSUI(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.DisableDS,_guif);
+                _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.DisableDS,ref _guif);
                 if(_rc==TwRC.Success) {
                     this._TwainState&=~TwainStateFlag.DSEnabled;
                     if(this._context!=null) {
@@ -243,7 +315,7 @@ namespace Saraff.Twain {
         public bool CloseDataSource() {
             TwRC _rc=TwRC.Failure;
             if((this._TwainState&TwainStateFlag.DSOpen)!=0 && (this._TwainState&TwainStateFlag.DSEnabled)==0) {
-                _rc=this._dsmEntry.DsmIdent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Identity,TwMSG.CloseDS,this._srcds);
+                _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.CloseDS,ref this._srcds);
                 if(_rc==TwRC.Success) {
                     this._TwainState&=~TwainStateFlag.DSOpen;
                 }
@@ -317,7 +389,13 @@ namespace Saraff.Twain {
                     throw new InvalidOperationException("DSM already opened.");
                 }
                 if(IntPtr.Size!=4&&!value) {
-                    throw new InvalidOperationException("In x64 mode only TWAIN 2.0 enabled.");
+                    throw new InvalidOperationException("In x64 mode only TWAIN 2.x enabled.");
+                }
+                if(Environment.OSVersion.Platform==PlatformID.Unix&&!value) {
+                    throw new InvalidOperationException("On UNIX platform only TWAIN 2.x enabled.");
+                }
+                if(Environment.OSVersion.Platform==PlatformID.MacOSX) {
+                    throw new NotImplementedException();
                 }
                 if(this._isTwain2Enable=value) {
                     this.AppId.SupportedGroups|=TwDG.APP2;
@@ -412,7 +490,7 @@ namespace Saraff.Twain {
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0) {
                 if((this._TwainState&TwainStateFlag.DSOpen)==0) {
                     TwIdentity _src=this._sources[index];
-                    TwRC _rc=this._dsmEntry.DsmIdent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Identity,TwMSG.Set,_src);
+                    TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.Set,ref _src);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
@@ -545,7 +623,7 @@ namespace Saraff.Twain {
         public RectangleF ImageLayout {
             get {
                 TwImageLayout _imageLayout=new TwImageLayout();
-                TwRC _rc=this._dsmEntry.DSImageLayout(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Get,_imageLayout);
+                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Get,ref _imageLayout);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
@@ -553,7 +631,7 @@ namespace Saraff.Twain {
             }
             set {
                 TwImageLayout _imageLayout=new TwImageLayout{Frame=value};
-                TwRC _rc=this._dsmEntry.DSImageLayout(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Set,_imageLayout);
+                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Set,ref _imageLayout);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
@@ -661,13 +739,16 @@ namespace Saraff.Twain {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public TwQC IsCapSupported(TwCap capability) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                using(TwCapability _cap=new TwCapability(capability)) {
-                    TwRC _rc=this._dsmEntry.DSCap(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.QuerySupport,_cap);
+                TwCapability _cap=new TwCapability(capability);
+                try {
+                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.QuerySupport,ref _cap);
                     if(_rc==TwRC.Success) {
                         return (TwQC)((TwOneValue)_cap.GetValue()).Item;
                     } else {
                         return 0;
                     }
+                } finally {
+                    _cap.Dispose();
                 }
             } else {
                 throw new TwainException("Источник данных не открыт.");
@@ -683,8 +764,9 @@ namespace Saraff.Twain {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         private object _GetCapCore(TwCap capability,TwMSG msg) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                using(TwCapability _cap=new TwCapability(capability)) {
-                    TwRC _rc=this._dsmEntry.DSCap(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,msg,_cap);
+                TwCapability _cap=new TwCapability(capability);
+                try {
+                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,msg,ref _cap);
                     if(_rc==TwRC.Success) {
                         switch(_cap.ConType) {
                             case TwOn.One:
@@ -702,6 +784,8 @@ namespace Saraff.Twain {
                     } else {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
+                } finally {
+                    _cap.Dispose();
                 }
             } else {
                 throw new TwainException("Источник данных не открыт.");
@@ -745,11 +829,14 @@ namespace Saraff.Twain {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public void ResetCap(TwCap capability) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                using(TwCapability _cap=new TwCapability(capability)) {
-                    TwRC _rc=this._dsmEntry.DSCap(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Reset,_cap);
+                TwCapability _cap=new TwCapability(capability);
+                try {
+                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Reset,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
+                } finally {
+                    _cap.Dispose();
                 }
             } else {
                 throw new TwainException("Источник данных не открыт.");
@@ -765,11 +852,14 @@ namespace Saraff.Twain {
         public void SetCap(TwCap capability,object value) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwType _type=TwTypeHelper.TypeOf(value.GetType());
-                using(TwCapability _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type)) {
-                    TwRC _rc=this._dsmEntry.DSCap(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,_cap);
+                TwCapability _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type);
+                try {
+                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
+                } finally {
+                    _cap.Dispose();
                 }
             } else {
                 throw new TwainException("Источник данных не открыт.");
@@ -784,17 +874,20 @@ namespace Saraff.Twain {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public void SetCap(TwCap capability,object[] capabilityValue) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                using(TwCapability _cap=new TwCapability(
+                TwCapability _cap=new TwCapability(
                     capability,
                     new TwArray() {
-                        ItemType=TwTypeHelper.TypeOf(capabilityValue[0].GetType()), NumItems=(uint)capabilityValue.Length
+                        ItemType=TwTypeHelper.TypeOf(capabilityValue[0].GetType()),
+                        NumItems=(uint)capabilityValue.Length
                     },
-                    capabilityValue)) {
-
-                    TwRC _rc=this._dsmEntry.DSCap(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,_cap);
+                    capabilityValue);
+                try {
+                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
+                } finally {
+                    _cap.Dispose();
                 }
             } else {
                 throw new TwainException("Источник данных не открыт.");
@@ -809,11 +902,14 @@ namespace Saraff.Twain {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public void SetCap(TwCap capability,Range capabilityValue) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                using(TwCapability _cap=new TwCapability(capability,capabilityValue.ToTwRange())) {
-                    TwRC _rc=this._dsmEntry.DSCap(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,_cap);
+                TwCapability _cap=new TwCapability(capability,capabilityValue.ToTwRange());
+                try {
+                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
+                } finally {
+                    _cap.Dispose();
                 }
             } else {
                 throw new TwainException("Источник данных не открыт.");
@@ -828,7 +924,7 @@ namespace Saraff.Twain {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public void SetCap(TwCap capability,Enumeration capabilityValue) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                using(TwCapability _cap=new TwCapability(
+                TwCapability _cap=new TwCapability(
                     capability,
                     new TwEnumeration() {
                         ItemType=TwTypeHelper.TypeOf(capabilityValue.Items[0].GetType()),
@@ -836,12 +932,14 @@ namespace Saraff.Twain {
                         CurrentIndex=(uint)capabilityValue.CurrentIndex,
                         DefaultIndex=(uint)capabilityValue.DefaultIndex
                     },
-                    capabilityValue.Items)) {
-
-                    TwRC _rc=this._dsmEntry.DSCap(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,_cap);
+                    capabilityValue.Items);
+                try {
+                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
+                } finally {
+                    _cap.Dispose();
                 }
             } else {
                 throw new TwainException("Источник данных не открыт.");
@@ -878,18 +976,28 @@ namespace Saraff.Twain {
                     IntPtr _pBitmap=_Memory.Lock(_hBitmap);
                     try {
                         Image _img=null;
-                        this._images.Add(_img=DibToImage.WithStream(_pBitmap));
+                        switch(Environment.OSVersion.Platform) {
+                            case PlatformID.Unix:
+                                _img=Tiff.FromPtrToImage(_pBitmap);
+                                break;
+                            case PlatformID.MacOSX:
+                                throw new NotImplementedException();
+                            default:
+                                _img=DibToImage.WithStream(_pBitmap);
+                                break;
+                        }
+                        this._images.Add(_img);
                         this._OnEndXfer(new EndXferEventArgs(_img));
                     } finally {
                         _Memory.Unlock(_hBitmap);
                         _Memory.Free(_hBitmap);
                     }
-                    for(TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                 } while(_pxfr.Count!=0);
             } finally {
-                TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
             }
         }
 
@@ -921,27 +1029,27 @@ namespace Saraff.Twain {
                         _fileXfer.Format=this.Capabilities.ImageFileFormat.GetCurrent();
                     }
 
-                    for(TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,ref _fileXfer); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
 
-                    for(TwRC _rc=this._dsmEntry.DSifxfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageFileXfer,TwMSG.Get,IntPtr.Zero); _rc!=TwRC.XferDone; ) {
+                    for(TwRC _rc=this._dsmEntry.DsRaw(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageFileXfer,TwMSG.Get,IntPtr.Zero); _rc!=TwRC.XferDone; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                     // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
                     // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
                     this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
 
-                    for(TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
-                    for(TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Get,_fileXfer); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Get,ref _fileXfer); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                     this._OnFileXfer(new FileXferEventArgs(ImageFileXfer.Create(_fileXfer)));
                 } while(_pxfr.Count!=0);
             } finally {
-                TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
             }
         }
 
@@ -965,7 +1073,7 @@ namespace Saraff.Twain {
                             TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
                                 Format=this.Capabilities.ImageFileFormat.GetCurrent()
                             };
-                            for(TwRC _rc=this._dsmEntry.DSsfxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,_fileXfer); _rc!=TwRC.Success; ) {
+                            for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,ref _fileXfer); _rc!=TwRC.Success; ) {
                                 throw new TwainException(this._GetTwainStatus(),_rc);
                             }
                         }
@@ -973,7 +1081,7 @@ namespace Saraff.Twain {
 
                     TwSetupMemXfer _memBufSize=new TwSetupMemXfer();
 
-                    for(TwRC _rc=this._dsmEntry.DSsmxfer(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupMemXfer,TwMSG.Get,_memBufSize); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupMemXfer,TwMSG.Get,ref _memBufSize); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                     this._OnSetupMemXfer(new SetupMemXferEventArgs(_info,_memBufSize.Preferred));
@@ -993,9 +1101,11 @@ namespace Saraff.Twain {
                             TwImageMemXfer _memXferBuf=new TwImageMemXfer {Memory=_mem};
                             _Memory.ZeroMemory(_memXferBuf.Memory.TheMem,(IntPtr)_memXferBuf.Memory.Length);
 
-                            TwRC _rc=this._dsmEntry.DSimxfer(this.AppId,this._srcds,TwDG.Image,isMemFile?TwDAT.ImageMemFileXfer:TwDAT.ImageMemXfer,TwMSG.Get,_memXferBuf);
+                            TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Image,isMemFile?TwDAT.ImageMemFileXfer:TwDAT.ImageMemXfer,TwMSG.Get,ref _memXferBuf);
                             if(_rc!=TwRC.Success&&_rc!=TwRC.XferDone) {
-                                throw new TwainException(this._GetTwainStatus(),_rc);
+                                TwCC _cc=this._GetTwainStatus();
+                                TwRC _rc2=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr);
+                                throw new TwainException(_cc,_rc);
                             }
                             this._OnMemXfer(new MemXferEventArgs(_info,ImageMemXfer.Create(_memXferBuf)));
                             if(_rc==TwRC.XferDone) {
@@ -1009,22 +1119,102 @@ namespace Saraff.Twain {
                         _Memory.Unlock(_hMem);
                         _Memory.Free(_hMem);
                     }
-                    for(TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,_pxfr); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                 } while(_pxfr.Count!=0);
             } finally {
-                TwRC _rc=this._dsmEntry.DSPendingXfer(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,_pxfr);
+                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
             }
         }
 
         #endregion
 
-        #region Device Event
+        #region DS events handler
+
+        /// <summary>
+        /// Обработчик событий источника данных.
+        /// </summary>
+        /// <param name="appId">Описание приложения.</param>
+        /// <param name="srcId">Описание источника данных.</param>
+        /// <param name="dg">Описание группы данных.</param>
+        /// <param name="dat">Описание данных.</param>
+        /// <param name="msg">Сообщение.</param>
+        /// <param name="data">Данные.</param>
+        /// <returns>Результат обработники события.</returns>
+        private TwRC _TwCallbackProc(TwIdentity appId,TwIdentity srcId,TwDG dg,TwDAT dat,TwMSG msg,IntPtr data) {
+            try {
+                if(appId==null||appId.Id!=this._appid.Id) {
+                    return TwRC.Failure;
+                }
+
+                if((this._TwainState&TwainStateFlag.DSEnabled)==0) {
+                    this._TwainState|=TwainStateFlag.DSEnabled|TwainStateFlag.DSReady;
+                }
+
+                this._TwCallbackProcCore(msg,() => {
+                    if(this.DisableAfterAcquire) {
+                        this._DisableDataSource();
+                    }
+                });
+            } catch(Exception ex) {
+                this._OnAcquireError(new AcquireErrorEventArgs(new TwainException(ex.Message,ex)));
+            }
+            return TwRC.Success;
+        }
+
+        /// <summary>
+        /// Внутренний обработчик событий источника данных.
+        /// </summary>
+        /// <param name="msg">Сообщение.</param>
+        /// <param name="endAction">Действие, завершающее обработку события.</param>
+        private void _TwCallbackProcCore(TwMSG msg,MethodInvoker endAction) {
+            try {
+                switch(msg) {
+                    case TwMSG.XFerReady:
+                        switch(this.Capabilities.XferMech.GetCurrent()) {
+                            case TwSX.File:
+                                this._FileTransferPictures();
+                                break;
+                            case TwSX.Memory:
+                                this._MemoryTransferPictures(false);
+                                break;
+                            case TwSX.MemFile:
+                                this._MemoryTransferPictures(true);
+                                break;
+                            default:
+                                this._NativeTransferPictures();
+                                break;
+                        }
+                        endAction();
+                        this._OnAcquireCompleted(new EventArgs());
+                        break;
+                    case TwMSG.CloseDSReq:
+                    case TwMSG.CloseDSOK:
+                        endAction();
+                        break;
+                    case TwMSG.DeviceEvent:
+                        this._DeviceEventObtain();
+                        break;
+                }
+            } catch(TwainException ex) {
+                try {
+                    endAction();
+                } catch {
+                }
+                this._OnAcquireError(new AcquireErrorEventArgs(ex));
+            } catch {
+                try {
+                    endAction();
+                } catch {
+                }
+                throw;
+            }
+        }
 
         private void _DeviceEventObtain() {
             TwDeviceEvent _deviceEvent=new TwDeviceEvent();
-            if(this._dsmEntry.DSdeviceevent(this.AppId,this._srcds,TwDG.Control,TwDAT.DeviceEvent,TwMSG.Get,_deviceEvent)==TwRC.Success) {
+            if(this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.DeviceEvent,TwMSG.Get,ref _deviceEvent)==TwRC.Success) {
                 this._OnDeviceEvent(new DeviceEventEventArgs(_deviceEvent));
             }
         }
@@ -1095,17 +1285,18 @@ namespace Saraff.Twain {
         private void _GetAllSorces() {
             List<TwIdentity> _src=new List<TwIdentity>();
             TwIdentity _item=new TwIdentity();
-            TwRC _rc=this._dsmEntry.DsmIdent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Identity,TwMSG.GetFirst,_item);
+
+            TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetFirst,ref _item);
             if(_rc==TwRC.Success) {
                 _src.Add(_item);
                 do {
                     _item=new TwIdentity();
-                    _rc=this._dsmEntry.DsmIdent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Identity,TwMSG.GetNext,_item);
+                    _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetNext,ref _item);
                     if(_rc==TwRC.Success) {
                         _src.Add(_item);
                     }
                 } while(_rc!=TwRC.EndOfList);
-                _rc=this._dsmEntry.DsmIdent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Identity,TwMSG.GetDefault,this._srcds);
+                _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetDefault,ref _srcds);
             } else {
                 TwCC _state=this._GetTwainStatus();
             }
@@ -1135,7 +1326,7 @@ namespace Saraff.Twain {
         /// <returns></returns>
         private TwCC _GetTwainStatus() {
             TwStatus _status=new TwStatus();
-            TwRC _rc=this._dsmEntry.DSStatus(this.AppId,this._srcds,TwDG.Control,TwDAT.Status,TwMSG.Get,_status);
+            TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Status,TwMSG.Get,ref _status);
             return _status.ConditionCode;
         }
 
@@ -1145,7 +1336,7 @@ namespace Saraff.Twain {
         /// <returns>Описание изображения.</returns>
         private ImageInfo _GetImageInfo() {
             TwImageInfo _imageInfo=new TwImageInfo();
-            TwRC _rc=this._dsmEntry.DSImageInfo(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageInfo,TwMSG.Get,_imageInfo);
+            TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageInfo,TwMSG.Get,ref _imageInfo);
             if(_rc!=TwRC.Success) {
                 throw new TwainException(this._GetTwainStatus(),_rc);
             }
@@ -1165,7 +1356,7 @@ namespace Saraff.Twain {
             IntPtr _extImageInfo=TwExtImageInfo.ToPtr(_info);
             try {
 
-                TwRC _rc=this._dsmEntry.DSExtImageInfo(this.AppId,this._srcds,TwDG.Image,TwDAT.ExtImageInfo,TwMSG.Get,_extImageInfo);
+                TwRC _rc=this._dsmEntry.DsRaw(this.AppId,this._srcds,TwDG.Image,TwDAT.ExtImageInfo,TwMSG.Get,_extImageInfo);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
@@ -1175,29 +1366,6 @@ namespace Saraff.Twain {
             }
         }
 
-        #region import kernel32.dll
-
-        [DllImport("kernel32.dll",CharSet=CharSet.Unicode)]
-        static extern IntPtr LoadLibrary(string fileName);
-
-        [DllImport("kernel32.dll",CharSet=CharSet.Ansi,ExactSpelling=true)]
-        static extern IntPtr GetProcAddress(IntPtr hModule,int procId);
-
-        [DllImport("kernel32.dll",ExactSpelling=true)]
-        static extern bool FreeLibrary(IntPtr hModule);
-
-        #endregion
-
-        #region import user32.dll
-
-        [DllImport("user32.dll",ExactSpelling=true)]
-        private static extern int GetMessagePos();
-
-        [DllImport("user32.dll",ExactSpelling=true)]
-        private static extern int GetMessageTime();
-
-        #endregion
-
         /// <summary>
         /// Флаги состояния.
         /// </summary>
@@ -1205,7 +1373,8 @@ namespace Saraff.Twain {
         public enum TwainStateFlag {
             DSMOpen=0x1,
             DSOpen=0x2,
-            DSEnabled=0x4
+            DSEnabled=0x4,
+            DSReady=0x08
         }
 
         #region Events
@@ -1615,9 +1784,21 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="ptr">Указатель на DSM_Entry.</param>
             private _DsmEntry(IntPtr ptr) {
-                MethodInfo _createDelegate=typeof(_DsmEntry).GetMethod("CreateDelegate",BindingFlags.Static|BindingFlags.NonPublic);
-                foreach(PropertyInfo _prop in typeof(_DsmEntry).GetProperties()) {
-                    _prop.SetValue(this,_createDelegate.MakeGenericMethod(_prop.PropertyType).Invoke(this,new object[] { ptr }),null);
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                        this.DsmParent=_DsmEntry._LinuxDsmParent;
+                        this.DsmRaw=_DsmEntry._LinuxDsmRaw;
+                        this.DSImageXfer=_DsmEntry._LinuxDsImageXfer;
+                        this.DsRaw=_DsmEntry._LinuxDsRaw;
+                        break;
+                    case PlatformID.MacOSX:
+                        throw new NotImplementedException();
+                    default:
+                        MethodInfo _createDelegate=typeof(_DsmEntry).GetMethod("CreateDelegate",BindingFlags.Static|BindingFlags.NonPublic);
+                        foreach(PropertyInfo _prop in typeof(_DsmEntry).GetProperties()) {
+                            _prop.SetValue(this,_createDelegate.MakeGenericMethod(_prop.PropertyType).Invoke(this,new object[] { ptr }),null);
+                        }
+                        break;
                 }
             }
 
@@ -1640,6 +1821,42 @@ namespace Saraff.Twain {
                 return Marshal.GetDelegateForFunctionPointer(ptr,typeof(T)) as T;
             }
 
+            public TwRC DsmInvoke<T>(TwIdentity origin,TwDG dg,TwDAT dat,TwMSG msg,ref T data) where T:class {
+                if(data==null) {
+                    throw new ArgumentNullException();
+                }
+                IntPtr _data=Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));
+                try {
+                    Marshal.StructureToPtr(data,_data,true);
+
+                    TwRC _rc=this.DsmRaw(origin,IntPtr.Zero,dg,dat,msg,_data);
+                    if(_rc==TwRC.Success) {
+                        data=(T)Marshal.PtrToStructure(_data,typeof(T));
+                    }
+                    return _rc;
+                } finally {
+                    Marshal.FreeHGlobal(_data);
+                }
+            }
+
+            public TwRC DsInvoke<T>(TwIdentity origin,TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,ref T data) where T:class {
+                if(data==null) {
+                    throw new ArgumentNullException();
+                }
+                IntPtr _data=Marshal.AllocHGlobal(Marshal.SizeOf(typeof(T)));
+                try {
+                    Marshal.StructureToPtr(data,_data,true);
+
+                    TwRC _rc=this.DsRaw(origin,dest,dg,dat,msg,_data);
+                    if(_rc==TwRC.Success||_rc==TwRC.DSEvent||_rc==TwRC.XferDone) {
+                        data=(T)Marshal.PtrToStructure(_data,typeof(T));
+                    }
+                    return _rc;
+                } finally {
+                    Marshal.FreeHGlobal(_data);
+                }
+            }
+
             #region Properties
 
             public _DSMparent DsmParent {
@@ -1647,47 +1864,7 @@ namespace Saraff.Twain {
                 private set;
             }
 
-            public _DSMident DsmIdent {
-                get;
-                private set;
-            }
-
-            public _DSMEntryPoint DsmEntryPoint {
-                get;
-                private set;
-            }
-
-            public _DSMstatus DsmStatus {
-                get;
-                private set;
-            }
-
-            public _DSuserif DSUI {
-                get;
-                private set;
-            }
-
-            public _DSevent DSEvent {
-                get;
-                private set;
-            }
-
-            public _DSstatus DSStatus {
-                get;
-                private set;
-            }
-
-            public _DScap DSCap {
-                get;
-                private set;
-            }
-
-            public _DSiinf DSImageInfo {
-                get;
-                private set;
-            }
-
-            public TwDSFuncPtr DSExtImageInfo {
+            public _DSMraw DsmRaw {
                 get;
                 private set;
             }
@@ -1697,47 +1874,29 @@ namespace Saraff.Twain {
                 private set;
             }
 
-            public _DSpxfer DSPendingXfer {
-                get;
-                private set;
-            }
-
-            public _DSimagelayout DSImageLayout {
-                get;
-                private set;
-            }
-
-            public _DSsmxfer DSsmxfer {
-                get;
-                private set;
-            }
-
-            public _DSimxfer DSimxfer {
-                get;
-                private set;
-            }
-
-            public _DSsfxfer DSsfxfer {
-                get;
-                private set;
-            }
-
-            public TwDSFuncPtr DSifxfer {
-                get;
-                private set;
-            }
-
-            public _DSpalette DSpalette {
-                get;
-                private set;
-            }
-
-            public _DSdeviceevent DSdeviceevent {
+            public _DSraw DsRaw {
                 get;
                 private set;
             }
 
             #endregion
+
+            #region import libtwaindsm.so
+
+            [DllImport("/usr/local/lib/libtwaindsm.so",EntryPoint="DSM_Entry",CharSet=CharSet.Ansi)]
+            private static extern TwRC _LinuxDsmParent([In,Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,ref IntPtr refptr);
+
+            [DllImport("/usr/local/lib/libtwaindsm.so",EntryPoint="DSM_Entry",CharSet=CharSet.Ansi)]
+            private static extern TwRC _LinuxDsmRaw([In,Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,IntPtr rawData);
+
+            [DllImport("/usr/local/lib/libtwaindsm.so",EntryPoint="DSM_Entry",CharSet=CharSet.Ansi)]
+            private static extern TwRC _LinuxDsImageXfer([In,Out] TwIdentity origin,[In,Out] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,ref IntPtr hbitmap);
+
+            [DllImport("/usr/local/lib/libtwaindsm.so",EntryPoint="DSM_Entry",CharSet=CharSet.Ansi)]
+            private static extern TwRC _LinuxDsRaw([In,Out] TwIdentity origin,[In,Out] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,IntPtr arg);
+
+            #endregion
+
         }
 
         /// <summary>
@@ -1755,7 +1914,13 @@ namespace Saraff.Twain {
                 if(_Memory._entryPoint!=null&&_Memory._entryPoint.MemoryAllocate!=null) {
                     return _Memory._entryPoint.MemoryAllocate(size);
                 }
-                return _Memory.GlobalAlloc(0x42,size);
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                    case PlatformID.MacOSX:
+                        throw new NotSupportedException();
+                    default:
+                        return _Memory.GlobalAlloc(0x42,size);
+                }
             }
 
             /// <summary>
@@ -1767,7 +1932,14 @@ namespace Saraff.Twain {
                     _Memory._entryPoint.MemoryFree(handle);
                     return;
                 }
-                _Memory.GlobalFree(handle);
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                    case PlatformID.MacOSX:
+                        throw new NotSupportedException();
+                    default:
+                        _Memory.GlobalFree(handle);
+                        break;
+                }
             }
 
             /// <summary>
@@ -1779,7 +1951,13 @@ namespace Saraff.Twain {
                 if(_Memory._entryPoint!=null&&_Memory._entryPoint.MemoryLock!=null) {
                     return _Memory._entryPoint.MemoryLock(handle);
                 }
-                return _Memory.GlobalLock(handle);
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                    case PlatformID.MacOSX:
+                        throw new NotSupportedException();
+                    default:
+                        return _Memory.GlobalLock(handle);
+                }
             }
 
             /// <summary>
@@ -1791,7 +1969,28 @@ namespace Saraff.Twain {
                     _Memory._entryPoint.MemoryUnlock(handle);
                     return;
                 }
-                _Memory.GlobalUnlock(handle);
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                    case PlatformID.MacOSX:
+                        throw new NotSupportedException();
+                    default:
+                        _Memory.GlobalUnlock(handle);
+                        break;
+                }
+            }
+
+            public static void ZeroMemory(IntPtr dest,IntPtr size) {
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                        byte[] _data=new byte[size.ToInt32()];
+                        Marshal.Copy(_data,0,dest,_data.Length);
+                        break;
+                    case PlatformID.MacOSX:
+                        throw new NotImplementedException();
+                    default:
+                        _Memory._ZeroMemory(dest,size);
+                        break;
+                }
             }
 
             /// <summary>
@@ -1817,10 +2016,84 @@ namespace Saraff.Twain {
             private static extern IntPtr GlobalFree(IntPtr handle);
 
             [DllImport("kernel32.dll",EntryPoint="RtlZeroMemory",SetLastError=false)]
-            public static extern void ZeroMemory(IntPtr dest,IntPtr size);
+            private static extern void _ZeroMemory(IntPtr dest,IntPtr size);
 
 
             #endregion
+        }
+
+        /// <summary>
+        /// Точки входа для функций платформы.
+        /// </summary>
+        internal sealed class _Platform {
+
+            /// <summary>
+            /// Загружает указаную библиотеку в память процесса.
+            /// </summary>
+            /// <param name="fileName">Имя библиотеки.</param>
+            /// <returns>Дескриптор модуля.</returns>
+            internal static IntPtr Load(string fileName) {
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                        return _Platform.dlopen(fileName,0x01);
+                    case PlatformID.MacOSX:
+                        throw new NotImplementedException();
+                    default:
+                        return _Platform.LoadLibrary(fileName);
+                }
+            }
+
+            /// <summary>
+            /// Выгружает указаную библиотеку из памяти процесса.
+            /// </summary>
+            /// <param name="hModule">Дескриптор модуля</param>
+            internal static void Unload(IntPtr hModule) {
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                        _Platform.dlclose(hModule);
+                        break;
+                    case PlatformID.MacOSX:
+                        throw new NotImplementedException();
+                    default:
+                        _Platform.FreeLibrary(hModule);
+                        break;
+                }
+            }
+
+            /// <summary>
+            /// Возвращает адрес указанной процедуры.
+            /// </summary>
+            /// <param name="hModule">Дескриптор модуля.</param>
+            /// <param name="procName">Имя процедуры.</param>
+            /// <returns>Указатель на процедуру.</returns>
+            internal static IntPtr GetProcAddr(IntPtr hModule,string procName) {
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                        return _Platform.dlsym(hModule,procName);
+                    case PlatformID.MacOSX:
+                        throw new NotImplementedException();
+                    default:
+                        return _Platform.GetProcAddress(hModule,procName);
+                }
+            }
+
+            [DllImport("kernel32.dll",CharSet=CharSet.Unicode)]
+            private static extern IntPtr LoadLibrary(string fileName);
+
+            [DllImport("kernel32.dll",ExactSpelling=true)]
+            private static extern bool FreeLibrary(IntPtr hModule);
+
+            [DllImport("kernel32.dll",CharSet=CharSet.Ansi,ExactSpelling=true)]
+            private static extern IntPtr GetProcAddress(IntPtr hModule,string procName);
+
+            [DllImport("libdl.so")]
+            private static extern IntPtr dlopen(string fileName,int flags);
+
+            [DllImport("libdl.so")]
+            private static extern bool dlclose(IntPtr hModule);
+
+            [DllImport("libdl.so")]
+            private static extern IntPtr dlsym(IntPtr hModule,string procName);
         }
 
         /// <summary>
@@ -1829,7 +2102,7 @@ namespace Saraff.Twain {
         private sealed class _MessageFilter:IMessageFilter,IDisposable {
             private Twain32 _twain;
             private bool _is_set_filter=false;
-            private TwEvent _evtmsg;
+            private TwEvent _evtmsg=new TwEvent();
 
             public _MessageFilter(Twain32 twain) {
                 this._twain=twain;
@@ -1840,48 +2113,34 @@ namespace Saraff.Twain {
 
             public bool PreFilterMessage(ref Message m) {
                 try {
-                    TwainCommand _cmd=this._PassMessage(ref m);
-                    if(_cmd==TwainCommand.Not) {
+                    if(this._twain._srcds.Id==0) {
                         return false;
                     }
-                    switch(_cmd) {
-                        case TwainCommand.CloseRequest:
-                        case TwainCommand.CloseOk:
-                            this._End();
-                            break;
-                        case TwainCommand.DeviceEvent:
-                            this._twain._DeviceEventObtain();
-                            break;
-                        case TwainCommand.TransferReady:
-                            switch(this._twain.Capabilities.XferMech.GetCurrent()) {
-                                case TwSX.File:
-                                    this._twain._FileTransferPictures();
-                                    break;
-                                case TwSX.Memory:
-                                    this._twain._MemoryTransferPictures(false);
-                                    break;
-                                case TwSX.MemFile:
-                                    this._twain._MemoryTransferPictures(true);
-                                    break;
-                                default:
-                                    this._twain._NativeTransferPictures();
-                                    break;
-                            }
-                            this._End();
-                            this._twain._OnAcquireCompleted(new EventArgs());
-                            break;
+
+                    int _pos=_MessageFilter.GetMessagePos();
+                    WINMSG _winmsg=new WINMSG {
+                        hwnd=m.HWnd,
+                        message=m.Msg,
+                        wParam=m.WParam,
+                        lParam=m.LParam,
+                        time=_MessageFilter.GetMessageTime(),
+                        x=(short)_pos,
+                        y=(short)(_pos>>16)
+                    };
+                    Marshal.StructureToPtr(_winmsg,this._evtmsg.EventPtr,true);
+                    this._evtmsg.Message=0;
+
+                    TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
+                    if(_rc==TwRC.NotDSEvent) {
+                        return false;
                     }
-                } catch(TwainException ex) {
-                    try {
-                        this._End();
-                    } catch {
-                    }
-                    this._twain._OnAcquireError(new AcquireErrorEventArgs(ex));
+                    this._twain._TwCallbackProcCore(this._evtmsg.Message,() => {
+                        this._RemoveFilter();
+                        if(this._twain.DisableAfterAcquire) {
+                            this._twain._DisableDataSource();
+                        }
+                    });
                 } catch(Exception ex) {
-                    try {
-                        this._End();
-                    } catch {
-                    }
                     this._twain._OnAcquireError(new AcquireErrorEventArgs(new TwainException(ex.Message,ex)));
                 }
                 return true;
@@ -1892,48 +2151,13 @@ namespace Saraff.Twain {
             #region IDisposable
 
             public void Dispose() {
-                if(this._evtmsg.EventPtr!=IntPtr.Zero) {
+                if(this._evtmsg!=null&&this._evtmsg.EventPtr!=IntPtr.Zero) {
                     Marshal.FreeHGlobal(this._evtmsg.EventPtr);
                     this._evtmsg.EventPtr=IntPtr.Zero;
                 }
             }
 
             #endregion
-
-            private TwainCommand _PassMessage(ref Message m) {
-                if(this._twain._srcds.Id==0) {
-                    return TwainCommand.Not;
-                }
-
-                int _pos=GetMessagePos();
-                WINMSG _winmsg=new WINMSG {
-                    hwnd=m.HWnd,
-                    message=m.Msg,
-                    wParam=m.WParam,
-                    lParam=m.LParam,
-                    time=GetMessageTime(),
-                    x=(short)_pos,
-                    y=(short)(_pos>>16)
-                };
-                Marshal.StructureToPtr(_winmsg,this._evtmsg.EventPtr,true);
-                this._evtmsg.Message=0;
-
-                TwRC rc=this._twain._dsmEntry.DSEvent(this._twain.AppId,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
-                if(rc==TwRC.NotDSEvent) {
-                    return TwainCommand.Not;
-                }
-                switch(this._evtmsg.Message) {
-                    case TwMSG.XFerReady:
-                        return TwainCommand.TransferReady;
-                    case TwMSG.CloseDSReq:
-                        return TwainCommand.CloseRequest;
-                    case TwMSG.CloseDSOK:
-                        return TwainCommand.CloseOk;
-                    case TwMSG.DeviceEvent:
-                        return TwainCommand.DeviceEvent;
-                }
-                return TwainCommand.Null;
-            }
 
             public void SetFilter() {
                 if(!this._is_set_filter) {
@@ -1947,12 +2171,15 @@ namespace Saraff.Twain {
                 this._is_set_filter=false;
             }
 
-            private void _End() {
-                this._RemoveFilter();
-                if(this._twain.DisableAfterAcquire) {
-                    this._twain._DisableDataSource();
-                }
-            }
+            #region import user32.dll
+
+            [DllImport("user32.dll",ExactSpelling=true)]
+            private static extern int GetMessagePos();
+
+            [DllImport("user32.dll",ExactSpelling=true)]
+            private static extern int GetMessageTime();
+
+            #endregion
 
             [StructLayout(LayoutKind.Sequential,Pack=4)]
             internal struct WINMSG {
@@ -1963,15 +2190,6 @@ namespace Saraff.Twain {
                 public int time;
                 public int x;
                 public int y;
-            }
-
-            private enum TwainCommand {
-                Not=-1,
-                Null=0,
-                TransferReady=1,
-                CloseRequest=2,
-                CloseOk=3,
-                DeviceEvent=4
             }
         }
 
@@ -2581,7 +2799,7 @@ namespace Saraff.Twain {
             /// <returns>Экземпляр класса <see cref="TwainPalette"/>.</returns>
             public ColorPalette Get() {
                 TwPalette8 _palette=new TwPalette8();
-                TwRC _rc=this._twain._dsmEntry.DSpalette(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Get,_palette);
+                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Get,ref _palette);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._twain._GetTwainStatus(),_rc);
                 }
@@ -2594,7 +2812,7 @@ namespace Saraff.Twain {
             /// <returns>Экземпляр класса <see cref="TwainPalette"/>.</returns>
             public ColorPalette GetDefault() {
                 TwPalette8 _palette=new TwPalette8();
-                TwRC _rc=this._twain._dsmEntry.DSpalette(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.GetDefault,_palette);
+                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.GetDefault,ref _palette);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._twain._GetTwainStatus(),_rc);
                 }
@@ -2606,7 +2824,7 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="palette">Экземпляр класса <see cref="TwainPalette"/>.</param>
             public void Reset(ColorPalette palette) {
-                TwRC _rc=this._twain._dsmEntry.DSpalette(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Reset,palette);
+                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Reset,ref palette);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._twain._GetTwainStatus(),_rc);
                 }
@@ -2617,7 +2835,7 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="palette">Экземпляр класса <see cref="TwainPalette"/>.</param>
             public void Set(ColorPalette palette) {
-                TwRC _rc=this._twain._dsmEntry.DSpalette(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Set,palette);
+                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Set,ref palette);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._twain._GetTwainStatus(),_rc);
                 }
@@ -2676,45 +2894,15 @@ namespace Saraff.Twain {
 
         private delegate TwRC _DSMparent([In,Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,ref IntPtr refptr);
 
-        private delegate TwRC _DSMident([In,Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwIdentity idds);
-
-        private delegate TwRC _DSMEntryPoint([In,Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwEntryPoint entry);
-
-        private delegate TwRC _DSMstatus([In,Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwStatus dsmstat);
+        private delegate TwRC _DSMraw([In,Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,IntPtr rawData);
 
         #endregion
 
         #region DS delegates DAT_ variants to DS
 
-        private delegate TwRC _DSuserif([In,Out] TwIdentity origin,[In,Out] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,TwUserInterface guif);
+        private delegate TwRC _DSixfer([In,Out] TwIdentity origin,[In,Out] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,ref IntPtr hbitmap);
 
-        private delegate TwRC _DSevent([In,Out] TwIdentity origin,[In,Out] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,ref TwEvent evt);
-
-        private delegate TwRC _DSstatus([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwStatus dsmstat);
-
-        private delegate TwRC _DScap([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwCapability capa);
-
-        private delegate TwRC _DSiinf([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[Out] TwImageInfo imgInf);
-
-        //private delegate TwRC _DSextiinf([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,/*[In,Out] TwExtImageInfo*/ IntPtr extImgInf);
-
-        private delegate TwRC _DSimagelayout([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwImageLayout imageLayuot);
-
-        private delegate TwRC _DSixfer([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,ref IntPtr hbitmap);
-
-        private delegate TwRC _DSpxfer([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwPendingXfers pxfr);
-
-        private delegate TwRC _DSsmxfer([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwSetupMemXfer smxfr);
-
-        private delegate TwRC _DSimxfer([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwImageMemXfer imxfr);
-
-        private delegate TwRC _DSsfxfer([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwSetupFileXfer sfxfr);
-
-        private delegate TwRC TwDSFuncPtr([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,IntPtr arg);
-
-        private delegate TwRC _DSpalette([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[In,Out] TwPalette8 palette);
-        
-        private delegate TwRC _DSdeviceevent([In,Out] TwIdentity origin,[In] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,[Out] TwDeviceEvent deveceEvent);
+        private delegate TwRC _DSraw([In,Out] TwIdentity origin,[In,Out] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,IntPtr arg);
 
         #endregion
 
