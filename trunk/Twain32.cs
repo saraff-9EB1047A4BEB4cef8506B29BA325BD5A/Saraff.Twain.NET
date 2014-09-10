@@ -770,8 +770,13 @@ namespace Saraff.Twain {
                     if(_rc==TwRC.Success) {
                         switch(_cap.ConType) {
                             case TwOn.One:
-                                TwOneValue _value=(TwOneValue)_cap.GetValue();
-                                return TwTypeHelper.CastToCommon(_value.ItemType,TwTypeHelper.ValueToTw<uint>(_value.ItemType,_value.Item));
+                                object _valueRaw=_cap.GetValue();
+                                TwOneValue _value=_valueRaw as TwOneValue;
+                                if(_value!=null) {
+                                    return TwTypeHelper.CastToCommon(_value.ItemType,TwTypeHelper.ValueToTw<uint>(_value.ItemType,_value.Item));
+                                } else {
+                                    return _valueRaw;
+                                }
                             case TwOn.Range:
                                 return Range.CreateRange((TwRange)_cap.GetValue());
                             case TwOn.Array:
@@ -851,8 +856,13 @@ namespace Saraff.Twain {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public void SetCap(TwCap capability,object value) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                TwType _type=TwTypeHelper.TypeOf(value.GetType());
-                TwCapability _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type);
+                TwCapability _cap=null;
+                if(value is string) {
+                    _cap=new TwCapability(capability,(string)value,new Dictionary<int,TwType> { { 32,TwType.Str32 },{ 64,TwType.Str64 },{ 128,TwType.Str128 },{ 255,TwType.Str255 } }[value.ToString().Length]);
+                } else {
+                    TwType _type=TwTypeHelper.TypeOf(value.GetType());
+                    _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type);
+                }
                 try {
                     TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
                     if(_rc!=TwRC.Success) {

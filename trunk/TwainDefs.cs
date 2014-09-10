@@ -2185,16 +2185,29 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,uint value,TwType type) {
             this.Cap=cap;
             this.ConType=TwOn.One;
-            TwOneValue _value=new TwOneValue() {
+            this._SetValue(new TwOneValue() {
                 ItemType=type,
                 Item=value
-            };
-            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwOneValue)));
-            IntPtr _pTwOneValue=Twain32._Memory.Lock(Handle);
+            });
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TwCapability"/> class.
+        /// </summary>
+        /// <param name="cap">The cap.</param>
+        /// <param name="value">The value.</param>
+        /// <param name="type">The type.</param>
+        public TwCapability(TwCap cap,string value,TwType type) {
+            this.Cap=cap;
+            this.ConType=TwOn.One;
+            int _twOneCustumValueSize=Marshal.SizeOf(typeof(TwOneCustumValue));
+            this.Handle=Twain32._Memory.Alloc(_twOneCustumValueSize+Marshal.SizeOf(TwTypeHelper.TypeOf(type)));
+            IntPtr _ptr=Twain32._Memory.Lock(this.Handle);
             try {
-                Marshal.StructureToPtr(_value,_pTwOneValue,true);
+                Marshal.StructureToPtr(new TwOneCustumValue {ItemType=type},_ptr,true);
+                Marshal.StructureToPtr(TwTypeHelper.CastToTw(type,value),(IntPtr)(_ptr.ToInt64()+_twOneCustumValueSize),true);
             } finally {
-                Twain32._Memory.Unlock(Handle);
+                Twain32._Memory.Unlock(this.Handle);
             }
         }
 
@@ -2206,13 +2219,7 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,TwRange range) {
             this.Cap=cap;
             this.ConType=TwOn.Range;
-            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwRange)));
-            IntPtr _pTwRange=Twain32._Memory.Lock(Handle);
-            try {
-                Marshal.StructureToPtr(range,_pTwRange,true);
-            } finally {
-                Twain32._Memory.Unlock(Handle);
-            }
+            this._SetValue(range);
         }
 
         /// <summary>
@@ -2225,14 +2232,14 @@ namespace Saraff.Twain {
             this.Cap=cap;
             this.ConType=TwOn.Array;
             this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwArray))+(Marshal.SizeOf(arrayValue[0])*arrayValue.Length));
-            IntPtr _pTwArray=Twain32._Memory.Lock(Handle);
+            IntPtr _pTwArray=Twain32._Memory.Lock(this.Handle);
             try {
                 Marshal.StructureToPtr(array,_pTwArray,true);
                 for(long i=0,_ptr=_pTwArray.ToInt64()+Marshal.SizeOf(typeof(TwArray)); i<arrayValue.Length; i++,_ptr+=Marshal.SizeOf(arrayValue[0])) {
                     Marshal.StructureToPtr(arrayValue[i],(IntPtr)_ptr,true);
                 }
             } finally {
-                Twain32._Memory.Unlock(Handle);
+                Twain32._Memory.Unlock(this.Handle);
             }
         }
 
@@ -2246,14 +2253,14 @@ namespace Saraff.Twain {
             this.Cap=cap;
             this.ConType=TwOn.Enum;
             this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwEnumeration))+(Marshal.SizeOf(enumerationValue[0])*enumerationValue.Length));
-            IntPtr _pTwEnumeration=Twain32._Memory.Lock(Handle);
+            IntPtr _pTwEnumeration=Twain32._Memory.Lock(this.Handle);
             try {
                 Marshal.StructureToPtr(enumeration,_pTwEnumeration,true);
                 for(long i=0,_ptr=_pTwEnumeration.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration)); i<enumerationValue.Length; i++,_ptr+=Marshal.SizeOf(enumerationValue[0])) {
                     Marshal.StructureToPtr(enumerationValue[i],(IntPtr)_ptr,true);
                 }
             } finally {
-                Twain32._Memory.Unlock(Handle);
+                Twain32._Memory.Unlock(this.Handle);
             }
         }
 
@@ -2262,17 +2269,26 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Экземпляр TwArray, TwEnumeration, _TwRange или _TwOneValue.</returns>
         public object GetValue() {
-            IntPtr _handle=Twain32._Memory.Lock(this.Handle);
+            IntPtr _ptr=Twain32._Memory.Lock(this.Handle);
             try {
                 switch(this.ConType) {
                     case TwOn.Array:
-                        return new __TwArray((TwArray)Marshal.PtrToStructure(_handle,typeof(TwArray)),(IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwArray))));
+                        return new __TwArray((TwArray)Marshal.PtrToStructure(_ptr,typeof(TwArray)),(IntPtr)(_ptr.ToInt64()+Marshal.SizeOf(typeof(TwArray))));
                     case TwOn.Enum:
-                        return new __TwEnumeration((TwEnumeration)Marshal.PtrToStructure(_handle,typeof(TwEnumeration)),(IntPtr)(_handle.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))));
+                        return new __TwEnumeration((TwEnumeration)Marshal.PtrToStructure(_ptr,typeof(TwEnumeration)),(IntPtr)(_ptr.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))));
                     case TwOn.Range:
-                        return Marshal.PtrToStructure(_handle,typeof(TwRange));
+                        return Marshal.PtrToStructure(_ptr,typeof(TwRange));
                     case TwOn.One:
-                        return Marshal.PtrToStructure(_handle,typeof(TwOneValue));
+                        TwOneCustumValue _value=Marshal.PtrToStructure(_ptr,typeof(TwOneCustumValue)) as TwOneCustumValue;
+                        switch(_value.ItemType) {
+                            case TwType.Str32:
+                            case TwType.Str64:
+                            case TwType.Str128:
+                            case TwType.Str255:
+                                return Marshal.PtrToStructure((IntPtr)(_ptr.ToInt64()+Marshal.SizeOf(typeof(TwOneCustumValue))),TwTypeHelper.TypeOf(_value.ItemType));
+                            default:
+                                return Marshal.PtrToStructure(_ptr,typeof(TwOneValue));
+                        }
                 }
                 return null;
             } finally {
@@ -2293,6 +2309,16 @@ namespace Saraff.Twain {
         }
 
         #endregion
+
+        private void _SetValue<T>(T value) {
+            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(T)));
+            IntPtr _ptr=Twain32._Memory.Lock(this.Handle);
+            try {
+                Marshal.StructureToPtr(value,_ptr,true);
+            } finally {
+                Twain32._Memory.Unlock(this.Handle);
+            }
+        }
     }
 
     internal interface ITwArray {
@@ -2396,6 +2422,15 @@ namespace Saraff.Twain {
         [MarshalAs(UnmanagedType.U2)]
         public TwType ItemType;
         public uint Item;
+    }
+
+    /// <summary>
+    /// Container for one custom value.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential,Pack=2)]
+    internal class TwOneCustumValue {                                 //TW_ONEVALUE. Container for one value.
+        [MarshalAs(UnmanagedType.U2)]
+        public TwType ItemType;
     }
 
     /// <summary>
