@@ -42,14 +42,14 @@ namespace Saraff.Twain {
                 _extra=Math.Max(_bmi.biHeight*(_bytesPerRow+((_bytesPerRow&0x3)!=0?4-_bytesPerRow&0x3:0))-_bmi.biSizeImage,0);
             }
 
-            int _dibSize=_bmi.biSize+_bmi.biSizeImage+_extra+(_bmi.biClrUsed<<2);
+            int _dibSize=_bmi.biSize+_bmi.biSizeImage+_extra+(_bmi.ClrUsed<<2);
 
             #region BITMAPFILEHEADER
 
             _writer.Write((ushort)0x4d42);
             _writer.Write(14+_dibSize);
             _writer.Write(0);
-            _writer.Write(14+_bmi.biSize+(_bmi.biClrUsed<<2));
+            _writer.Write(14+_bmi.biSize+(_bmi.ClrUsed<<2));
 
             #endregion
 
@@ -77,6 +77,18 @@ namespace Saraff.Twain {
             public int biYPelsPerMeter;
             public int biClrUsed;
             public int biClrImportant;
+
+            public int ClrUsed {
+                get {
+                    return this.IsRequiredCreateColorTable?Convert.ToInt32(Math.Pow(2,this.biBitCount)):this.biClrUsed;
+                }
+            }
+
+            public bool IsRequiredCreateColorTable {
+                get {
+                    return this.biClrUsed==0&&this.biBitCount<=8;
+                }
+            }
         }
     }
 }
