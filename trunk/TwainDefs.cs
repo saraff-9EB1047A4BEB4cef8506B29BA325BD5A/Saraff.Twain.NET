@@ -414,6 +414,14 @@ namespace Saraff.Twain {
             {TwType.Uni512,typeof(TwUni512)},
             {TwType.Handle,typeof(IntPtr)}
         };
+        private static Dictionary<int,TwType> _typeofAux=new Dictionary<int,TwType> { 
+            {32,TwType.Str32},
+            {64,TwType.Str64},
+            {128,TwType.Str128},
+            {255,TwType.Str255},
+            {1024,TwType.Str1024},
+            {512,TwType.Uni512}
+        };
 
         /// <summary>
         /// Возвращает соответствующий twain-типу управляемый тип.
@@ -446,6 +454,18 @@ namespace Saraff.Twain {
                 return TwType.Frame;
             }
             throw new KeyNotFoundException();
+        }
+
+        /// <summary>
+        /// Возвращает соответствующий объекту twain-тип.
+        /// </summary>
+        /// <param name="obj">Объект.</param>
+        /// <returns>Код типа данный twain.</returns>
+        internal static TwType TypeOf(object obj) {
+            if(obj is string) {
+                return TwTypeHelper._typeofAux[((string)obj).Length];
+            }
+            return TwTypeHelper.TypeOf(obj.GetType());
         }
 
         /// <summary>
@@ -2231,12 +2251,14 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,TwArray array,object[] arrayValue) {
             this.Cap=cap;
             this.ConType=TwOn.Array;
-            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwArray))+(Marshal.SizeOf(arrayValue[0])*arrayValue.Length));
+            int _twArraySize=Marshal.SizeOf(typeof(TwArray));
+            int _twItemSize=Marshal.SizeOf(TwTypeHelper.TypeOf(array.ItemType));
+            this.Handle=Twain32._Memory.Alloc(_twArraySize+(_twItemSize*arrayValue.Length));
             IntPtr _pTwArray=Twain32._Memory.Lock(this.Handle);
             try {
                 Marshal.StructureToPtr(array,_pTwArray,true);
-                for(long i=0,_ptr=_pTwArray.ToInt64()+Marshal.SizeOf(typeof(TwArray)); i<arrayValue.Length; i++,_ptr+=Marshal.SizeOf(arrayValue[0])) {
-                    Marshal.StructureToPtr(arrayValue[i],(IntPtr)_ptr,true);
+                for(long i=0,_ptr=_pTwArray.ToInt64()+_twArraySize; i<arrayValue.Length; i++,_ptr+=_twItemSize) {
+                    Marshal.StructureToPtr(TwTypeHelper.CastToTw(array.ItemType,arrayValue[i]),(IntPtr)_ptr,true);
                 }
             } finally {
                 Twain32._Memory.Unlock(this.Handle);
@@ -2252,12 +2274,14 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,TwEnumeration enumeration,object[] enumerationValue) {
             this.Cap=cap;
             this.ConType=TwOn.Enum;
-            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(TwEnumeration))+(Marshal.SizeOf(enumerationValue[0])*enumerationValue.Length));
+            int _twEnumerationSize=Marshal.SizeOf(typeof(TwEnumeration));
+            int _twItemSize=Marshal.SizeOf(TwTypeHelper.TypeOf(enumeration.ItemType));
+            this.Handle=Twain32._Memory.Alloc(_twEnumerationSize+(_twItemSize*enumerationValue.Length));
             IntPtr _pTwEnumeration=Twain32._Memory.Lock(this.Handle);
             try {
                 Marshal.StructureToPtr(enumeration,_pTwEnumeration,true);
-                for(long i=0,_ptr=_pTwEnumeration.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration)); i<enumerationValue.Length; i++,_ptr+=Marshal.SizeOf(enumerationValue[0])) {
-                    Marshal.StructureToPtr(enumerationValue[i],(IntPtr)_ptr,true);
+                for(long i=0,_ptr=_pTwEnumeration.ToInt64()+_twEnumerationSize; i<enumerationValue.Length; i++,_ptr+=_twItemSize) {
+                    Marshal.StructureToPtr(TwTypeHelper.CastToTw(enumeration.ItemType,enumerationValue[i]),(IntPtr)_ptr,true);
                 }
             } finally {
                 Twain32._Memory.Unlock(this.Handle);
@@ -2285,6 +2309,8 @@ namespace Saraff.Twain {
                             case TwType.Str64:
                             case TwType.Str128:
                             case TwType.Str255:
+                            case TwType.Str1024:
+                            case TwType.Uni512:
                                 return Marshal.PtrToStructure((IntPtr)(_ptr.ToInt64()+Marshal.SizeOf(typeof(TwOneCustumValue))),TwTypeHelper.TypeOf(_value.ItemType));
                             default:
                                 return Marshal.PtrToStructure(_ptr,typeof(TwOneValue));

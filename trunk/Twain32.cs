@@ -858,7 +858,7 @@ namespace Saraff.Twain {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=null;
                 if(value is string) {
-                    _cap=new TwCapability(capability,(string)value,new Dictionary<int,TwType> { { 32,TwType.Str32 },{ 64,TwType.Str64 },{ 128,TwType.Str128 },{ 255,TwType.Str255 } }[value.ToString().Length]);
+                    _cap=new TwCapability(capability,(string)value,TwTypeHelper.TypeOf(value));
                 } else {
                     TwType _type=TwTypeHelper.TypeOf(value.GetType());
                     _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type);
@@ -887,7 +887,7 @@ namespace Saraff.Twain {
                 TwCapability _cap=new TwCapability(
                     capability,
                     new TwArray() {
-                        ItemType=TwTypeHelper.TypeOf(capabilityValue[0].GetType()),
+                        ItemType=TwTypeHelper.TypeOf(capabilityValue[0]),
                         NumItems=(uint)capabilityValue.Length
                     },
                     capabilityValue);
@@ -937,7 +937,7 @@ namespace Saraff.Twain {
                 TwCapability _cap=new TwCapability(
                     capability,
                     new TwEnumeration() {
-                        ItemType=TwTypeHelper.TypeOf(capabilityValue.Items[0].GetType()),
+                        ItemType=TwTypeHelper.TypeOf(capabilityValue.Items[0]),
                         NumItems=(uint)capabilityValue.Count,
                         CurrentIndex=(uint)capabilityValue.CurrentIndex,
                         DefaultIndex=(uint)capabilityValue.DefaultIndex
