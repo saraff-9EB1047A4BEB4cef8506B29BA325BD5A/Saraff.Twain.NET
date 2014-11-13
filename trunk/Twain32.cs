@@ -1,19 +1,30 @@
-﻿/* Saraff.Twain.dll позволят управлять сканером, цифровой или веб камерой, а также любым другим TWAIN совместимым устройством.
+﻿/* Этот файл является частью библиотеки Saraff.Twain.NET
  * © SARAFF SOFTWARE (Кирножицкий Андрей), 2011.
- * Данная библиотека является свободным программным обеспечением. 
- * Вы вправе распространять её и/или модифицировать в соответствии 
- * с условиями версии 3 либо по вашему выбору с условиями более поздней 
- * версии Стандартной Общественной Лицензии Ограниченного Применения GNU, 
- * опубликованной Free Software Foundation.
- * Мы распространяем эту библиотеку в надежде на то, что она будет Вам 
- * полезной, однако НЕ ПРЕДОСТАВЛЯЕМ НА НЕЕ НИКАКИХ ГАРАНТИЙ, в том числе 
- * ГАРАНТИИ ТОВАРНОГО СОСТОЯНИЯ ПРИ ПРОДАЖЕ и ПРИГОДНОСТИ ДЛЯ ИСПОЛЬЗОВАНИЯ 
- * В КОНКРЕТНЫХ ЦЕЛЯХ. Для получения более подробной информации ознакомьтесь 
- * со Стандартной Общественной Лицензией Ограниченного Применений GNU.
- * Вместе с данной библиотекой вы должны были получить экземпляр Стандартной 
- * Общественной Лицензии Ограниченного Применения GNU. Если вы его не получили, 
- * сообщите об этом в Software Foundation, Inc., 59 Temple Place — Suite 330, 
- * Boston, MA 02111-1307, USA.
+ * Saraff.Twain.NET - свободная программа: вы можете перераспространять ее и/или
+ * изменять ее на условиях Меньшей Стандартной общественной лицензии GNU в том виде,
+ * в каком она была опубликована Фондом свободного программного обеспечения;
+ * либо версии 3 лицензии, либо (по вашему выбору) любой более поздней
+ * версии.
+ * Saraff.Twain.NET распространяется в надежде, что она будет полезной,
+ * но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
+ * или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. Подробнее см. в Меньшей Стандартной
+ * общественной лицензии GNU.
+ * Вы должны были получить копию Меньшей Стандартной общественной лицензии GNU
+ * вместе с этой программой. Если это не так, см.
+ * <http://www.gnu.org/licenses/>.)
+ * 
+ * This file is part of Saraff.Twain.NET.
+ * © SARAFF SOFTWARE (Kirnazhytski Andrei), 2011.
+ * Saraff.Twain.NET is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * Saraff.Twain.NET is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Saraff.Twain.NET. If not, see <http://www.gnu.org/licenses/>.
  * 
  * PLEASE SEND EMAIL TO:  twain@saraff.ru.
  */
@@ -1162,8 +1173,8 @@ namespace Saraff.Twain {
                     this._TwainState|=TwainStateFlag.DSEnabled|TwainStateFlag.DSReady;
                 }
 
-                this._TwCallbackProcCore(msg,() => {
-                    if(this.DisableAfterAcquire) {
+                this._TwCallbackProcCore(msg,isCloseReq => {
+                    if(isCloseReq||this.DisableAfterAcquire) {
                         this._DisableDataSource();
                     }
                 });
@@ -1178,7 +1189,7 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="msg">Сообщение.</param>
         /// <param name="endAction">Действие, завершающее обработку события.</param>
-        private void _TwCallbackProcCore(TwMSG msg,MethodInvoker endAction) {
+        private void _TwCallbackProcCore(TwMSG msg,Action<bool> endAction) {
             try {
                 switch(msg) {
                     case TwMSG.XFerReady:
@@ -1196,12 +1207,14 @@ namespace Saraff.Twain {
                                 this._NativeTransferPictures();
                                 break;
                         }
-                        endAction();
+                        endAction(false);
                         this._OnAcquireCompleted(new EventArgs());
                         break;
                     case TwMSG.CloseDSReq:
+                        endAction(true);
+                        break;
                     case TwMSG.CloseDSOK:
-                        endAction();
+                        endAction(false);
                         break;
                     case TwMSG.DeviceEvent:
                         this._DeviceEventObtain();
@@ -1209,13 +1222,13 @@ namespace Saraff.Twain {
                 }
             } catch(TwainException ex) {
                 try {
-                    endAction();
+                    endAction(false);
                 } catch {
                 }
                 this._OnAcquireError(new AcquireErrorEventArgs(ex));
             } catch {
                 try {
-                    endAction();
+                    endAction(false);
                 } catch {
                 }
                 throw;
@@ -2144,9 +2157,9 @@ namespace Saraff.Twain {
                     if(_rc==TwRC.NotDSEvent) {
                         return false;
                     }
-                    this._twain._TwCallbackProcCore(this._evtmsg.Message,() => {
+                    this._twain._TwCallbackProcCore(this._evtmsg.Message,isCloseReq => {
                         this._RemoveFilter();
-                        if(this._twain.DisableAfterAcquire) {
+                        if(isCloseReq||this._twain.DisableAfterAcquire) {
                             this._twain._DisableDataSource();
                         }
                     });
@@ -2919,6 +2932,8 @@ namespace Saraff.Twain {
         internal delegate ImageInfo GetImageInfoCallback();
 
         internal delegate ExtImageInfo GetExtImageInfoCallback(TwEI[] extInfo);
+
+        private delegate void Action<T>(T arg);
 
         #endregion
     }

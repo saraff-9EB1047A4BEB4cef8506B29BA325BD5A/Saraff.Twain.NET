@@ -74,9 +74,10 @@
     <EmbeddedResource Include="Resources\scanner.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="license.txt">
+    <Content Include="COPYING.LESSER.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="COPYING.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sign.snk" />
