@@ -2158,8 +2158,8 @@ namespace Saraff.Twain {
                         return false;
                     }
                     this._twain._TwCallbackProcCore(this._evtmsg.Message,isCloseReq => {
-                        this._RemoveFilter();
                         if(isCloseReq||this._twain.DisableAfterAcquire) {
+                            this._RemoveFilter();
                             this._twain._DisableDataSource();
                         }
                     });
