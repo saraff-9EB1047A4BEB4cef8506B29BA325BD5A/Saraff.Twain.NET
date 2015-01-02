@@ -163,19 +163,20 @@ namespace Saraff.Twain {
 
                 #endregion
 
-                TwRC _rc=this._dsmEntry.DsmParent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Parent,TwMSG.OpenDSM,ref this._hwnd);
-                if(_rc==TwRC.Success) {
-                    this._TwainState|=TwainStateFlag.DSMOpen;
-
-                    if(this.IsTwain2Supported) {
-                        TwEntryPoint _entry=new TwEntryPoint();
-                        if(this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.EntryPoint,TwMSG.Get,ref _entry)==TwRC.Success) {
-                            _Memory._SetEntryPoints(_entry);
-                        }
-                    }
-
-                    this._GetAllSorces();
+                for(TwRC _rc=this._dsmEntry.DsmParent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Parent,TwMSG.OpenDSM,ref this._hwnd); _rc!=TwRC.Success; ) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
                 }
+                this._TwainState|=TwainStateFlag.DSMOpen;
+
+                if(this.IsTwain2Supported) {
+                    TwEntryPoint _entry=new TwEntryPoint();
+                    for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.EntryPoint,TwMSG.Get,ref _entry); _rc!=TwRC.Success; ) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
+                    }
+                    _Memory._SetEntryPoints(_entry);
+                }
+
+                this._GetAllSorces();
             }
             return (this._TwainState&TwainStateFlag.DSMOpen)!=0;
         }
@@ -196,11 +197,11 @@ namespace Saraff.Twain {
                     }
                 }
                 TwIdentity _src=new TwIdentity();
-                TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.UserSelect,ref _src);
-                if(_rc==TwRC.Success) {
-                    this._srcds=_src;
-                    return true;
+                for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.UserSelect,ref _src); _rc!=TwRC.Success; ) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
                 }
+                this._srcds=_src;
+                return true;
             }
             return false;
         }
@@ -211,24 +212,24 @@ namespace Saraff.Twain {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool OpenDataSource() {
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0 && (this._TwainState&TwainStateFlag.DSOpen)==0) {
-                TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.OpenDS,ref this._srcds);
-                if(_rc==TwRC.Success) {
-                    this._TwainState|=TwainStateFlag.DSOpen;
-
-                    switch(Environment.OSVersion.Platform) {
-                        case PlatformID.Unix:
-                            this._RegisterCallback();
-                            break;
-                        case PlatformID.MacOSX:
-                            throw new NotImplementedException();
-                        default:
-                            if(this.IsTwain2Supported&&(this._srcds.SupportedGroups&TwDG.DS2)!=0) {
-                                this._RegisterCallback();
-                            }
-                            break;
-                    }
-
+                for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.OpenDS,ref this._srcds); _rc!=TwRC.Success; ) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
                 }
+                this._TwainState|=TwainStateFlag.DSOpen;
+
+                switch(Environment.OSVersion.Platform) {
+                    case PlatformID.Unix:
+                        this._RegisterCallback();
+                        break;
+                    case PlatformID.MacOSX:
+                        throw new NotImplementedException();
+                    default:
+                        if(this.IsTwain2Supported&&(this._srcds.SupportedGroups&TwDG.DS2)!=0) {
+                            this._RegisterCallback();
+                        }
+                        break;
+                }
+
             }
             return (this._TwainState&TwainStateFlag.DSOpen)!=0;
         }
@@ -257,13 +258,13 @@ namespace Saraff.Twain {
                     ModalUI=this.ModalUI,
                     ParentHand=this._hwnd
                 };
-                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.EnableDS,ref _guif);
-                if(_rc==TwRC.Success) {
-                    if((this._TwainState&TwainStateFlag.DSReady)!=0) {
-                        this._TwainState&=~TwainStateFlag.DSReady;
-                    } else {
-                        this._TwainState|=TwainStateFlag.DSEnabled;
-                    }
+                for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.EnableDS,ref _guif); _rc!=TwRC.Success; ) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
+                }
+                if((this._TwainState&TwainStateFlag.DSReady)!=0) {
+                    this._TwainState&=~TwainStateFlag.DSReady;
+                } else {
+                    this._TwainState|=TwainStateFlag.DSEnabled;
                 }
             }
             return (this._TwainState&TwainStateFlag.DSEnabled)!=0;
@@ -300,23 +301,23 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         private bool _DisableDataSource() {
-            TwRC _rc=TwRC.Failure;
             if((this._TwainState&TwainStateFlag.DSEnabled)!=0) {
                 TwUserInterface _guif=new TwUserInterface() {
                     ParentHand=this._hwnd,
                     ShowUI=false
                 };
-                _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.DisableDS,ref _guif);
-                if(_rc==TwRC.Success) {
-                    this._TwainState&=~TwainStateFlag.DSEnabled;
-                    if(this._context!=null) {
-                        this._context.ExitThread();
-                        this._context.Dispose();
-                        this._context=null;
-                    }
+                for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.DisableDS,ref _guif); _rc!=TwRC.Success; ) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
                 }
+                this._TwainState&=~TwainStateFlag.DSEnabled;
+                if(this._context!=null) {
+                    this._context.ExitThread();
+                    this._context.Dispose();
+                    this._context=null;
+                }
+                return (this._TwainState&TwainStateFlag.DSEnabled)==0;
             }
-            return _rc==TwRC.Success;
+            return false;
         }
 
         /// <summary>
@@ -324,14 +325,14 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool CloseDataSource() {
-            TwRC _rc=TwRC.Failure;
             if((this._TwainState&TwainStateFlag.DSOpen)!=0 && (this._TwainState&TwainStateFlag.DSEnabled)==0) {
-                _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.CloseDS,ref this._srcds);
-                if(_rc==TwRC.Success) {
-                    this._TwainState&=~TwainStateFlag.DSOpen;
+                for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.CloseDS,ref this._srcds); _rc!=TwRC.Success; ) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
                 }
+                this._TwainState&=~TwainStateFlag.DSOpen;
+                return (this._TwainState&TwainStateFlag.DSOpen)==0;
             }
-            return _rc==TwRC.Success;
+            return false;
         }
 
         /// <summary>
@@ -339,7 +340,6 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool CloseDSM() {
-            TwRC _rc=TwRC.Failure;
             if((this._TwainState&TwainStateFlag.DSEnabled)!=0) {
                 this._DisableDataSource();
             }
@@ -347,12 +347,13 @@ namespace Saraff.Twain {
                 this.CloseDataSource();
             }
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0&&(this._TwainState&TwainStateFlag.DSOpen)==0) {
-                _rc=this._dsmEntry.DsmParent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Parent,TwMSG.CloseDSM,ref this._hwnd);
-                if(_rc==TwRC.Success) {
-                    this._TwainState&=~TwainStateFlag.DSMOpen;
+                for(TwRC _rc=this._dsmEntry.DsmParent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Parent,TwMSG.CloseDSM,ref this._hwnd); _rc!=TwRC.Success; ) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
                 }
+                this._TwainState&=~TwainStateFlag.DSMOpen;
+                return (this._TwainState&TwainStateFlag.DSMOpen)==0;
             }
-            return _rc==TwRC.Success;
+            return false;
         }
 
         /// <summary>
@@ -756,7 +757,7 @@ namespace Saraff.Twain {
                     if(_rc==TwRC.Success) {
                         return (TwQC)((TwOneValue)_cap.GetValue()).Item;
                     } else {
-                        return 0;
+                        throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                 } finally {
                     _cap.Dispose();
@@ -1309,19 +1310,24 @@ namespace Saraff.Twain {
             List<TwIdentity> _src=new List<TwIdentity>();
             TwIdentity _item=new TwIdentity();
 
-            TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetFirst,ref _item);
-            if(_rc==TwRC.Success) {
-                _src.Add(_item);
-                do {
-                    _item=new TwIdentity();
-                    _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetNext,ref _item);
-                    if(_rc==TwRC.Success) {
-                        _src.Add(_item);
-                    }
-                } while(_rc!=TwRC.EndOfList);
-                _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetDefault,ref _srcds);
-            } else {
-                TwCC _state=this._GetTwainStatus();
+            for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetFirst,ref _item); _rc!=TwRC.Success&&_rc!=TwRC.EndOfList; ) {
+                throw new TwainException(this._GetTwainStatus(),_rc);
+            }
+            _src.Add(_item);
+            while(true) {
+                _item=new TwIdentity();
+                TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetNext,ref _item);
+                if(_rc==TwRC.Success) {
+                    _src.Add(_item);
+                    continue;
+                }
+                if(_rc==TwRC.EndOfList) {
+                    break;
+                }
+                throw new TwainException(this._GetTwainStatus(),_rc);
+            }
+            for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetDefault,ref _srcds); _rc!=TwRC.Success; ) {
+                throw new TwainException(this._GetTwainStatus(),_rc);
             }
             this._sources=_src.ToArray();
         }
