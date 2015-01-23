@@ -114,10 +114,7 @@ namespace Saraff.Twain {
                         this._filter.Dispose();
                         break;
                 }
-                if(this._hTwainDll!=IntPtr.Zero) {
-                    _Platform.Unload(this._hTwainDll);
-                    this._hTwainDll=IntPtr.Zero;
-                }
+                this._UnloadDSM();
                 if(this._components!=null) {
                     this._components.Dispose();
                 }
@@ -163,14 +160,14 @@ namespace Saraff.Twain {
 
                 #endregion
 
-                for(TwRC _rc=this._dsmEntry.DsmParent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Parent,TwMSG.OpenDSM,ref this._hwnd); _rc!=TwRC.Success; ) {
+                for(TwRC _rc=this._dsmEntry.DsmParent(this._AppId,IntPtr.Zero,TwDG.Control,TwDAT.Parent,TwMSG.OpenDSM,ref this._hwnd); _rc!=TwRC.Success; ) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
                 this._TwainState|=TwainStateFlag.DSMOpen;
 
                 if(this.IsTwain2Supported) {
                     TwEntryPoint _entry=new TwEntryPoint();
-                    for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.EntryPoint,TwMSG.Get,ref _entry); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.EntryPoint,TwMSG.Get,ref _entry); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                     _Memory._SetEntryPoints(_entry);
@@ -197,7 +194,7 @@ namespace Saraff.Twain {
                     }
                 }
                 TwIdentity _src=new TwIdentity();
-                for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.UserSelect,ref _src); _rc!=TwRC.Success; ) {
+                for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.UserSelect,ref _src); _rc!=TwRC.Success; ) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
                 this._srcds=_src;
@@ -212,7 +209,7 @@ namespace Saraff.Twain {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool OpenDataSource() {
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0 && (this._TwainState&TwainStateFlag.DSOpen)==0) {
-                for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.OpenDS,ref this._srcds); _rc!=TwRC.Success; ) {
+                for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.OpenDS,ref this._srcds); _rc!=TwRC.Success; ) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
                 this._TwainState|=TwainStateFlag.DSOpen;
@@ -241,7 +238,7 @@ namespace Saraff.Twain {
             TwCallback2 _callback=new TwCallback2 {
                 CallBackProc=this._callbackProc
             };
-            TwRC _rc=this._dsmEntry.DsInvoke(this._appid,this._srcds,TwDG.Control,TwDAT.Callback2,TwMSG.RegisterCallback,ref _callback);
+            TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Callback2,TwMSG.RegisterCallback,ref _callback);
             if(_rc!=TwRC.Success) {
                 throw new TwainException(this._GetTwainStatus(),_rc);
             }
@@ -258,7 +255,7 @@ namespace Saraff.Twain {
                     ModalUI=this.ModalUI,
                     ParentHand=this._hwnd
                 };
-                for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.EnableDS,ref _guif); _rc!=TwRC.Success; ) {
+                for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.EnableDS,ref _guif); _rc!=TwRC.Success; ) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
                 if((this._TwainState&TwainStateFlag.DSReady)!=0) {
@@ -306,7 +303,7 @@ namespace Saraff.Twain {
                     ParentHand=this._hwnd,
                     ShowUI=false
                 };
-                for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.DisableDS,ref _guif); _rc!=TwRC.Success; ) {
+                for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.DisableDS,ref _guif); _rc!=TwRC.Success; ) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
                 this._TwainState&=~TwainStateFlag.DSEnabled;
@@ -326,7 +323,7 @@ namespace Saraff.Twain {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool CloseDataSource() {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0 && (this._TwainState&TwainStateFlag.DSEnabled)==0) {
-                for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.CloseDS,ref this._srcds); _rc!=TwRC.Success; ) {
+                for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.CloseDS,ref this._srcds); _rc!=TwRC.Success; ) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
                 this._TwainState&=~TwainStateFlag.DSOpen;
@@ -347,13 +344,22 @@ namespace Saraff.Twain {
                 this.CloseDataSource();
             }
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0&&(this._TwainState&TwainStateFlag.DSOpen)==0) {
-                for(TwRC _rc=this._dsmEntry.DsmParent(this.AppId,IntPtr.Zero,TwDG.Control,TwDAT.Parent,TwMSG.CloseDSM,ref this._hwnd); _rc!=TwRC.Success; ) {
+                for(TwRC _rc=this._dsmEntry.DsmParent(this._AppId,IntPtr.Zero,TwDG.Control,TwDAT.Parent,TwMSG.CloseDSM,ref this._hwnd); _rc!=TwRC.Success; ) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
                 this._TwainState&=~TwainStateFlag.DSMOpen;
+                this._UnloadDSM();
                 return (this._TwainState&TwainStateFlag.DSMOpen)==0;
             }
             return false;
+        }
+
+        private void _UnloadDSM() {
+            this._AppId=null;
+            if(this._hTwainDll!=IntPtr.Zero) {
+                _Platform.Unload(this._hTwainDll);
+                this._hTwainDll=IntPtr.Zero;
+            }
         }
 
         /// <summary>
@@ -410,12 +416,12 @@ namespace Saraff.Twain {
                     throw new NotImplementedException();
                 }
                 if(this._isTwain2Enable=value) {
-                    this.AppId.SupportedGroups|=TwDG.APP2;
+                    this._AppId.SupportedGroups|=TwDG.APP2;
                 } else {
-                    this.AppId.SupportedGroups&=~TwDG.APP2;
+                    this._AppId.SupportedGroups&=~TwDG.APP2;
                 }
-                this.AppId.ProtocolMajor=(ushort)(this._isTwain2Enable?2:1);
-                this.AppId.ProtocolMinor=(ushort)(this._isTwain2Enable?3:9);
+                this._AppId.ProtocolMajor=(ushort)(this._isTwain2Enable?2:1);
+                this._AppId.ProtocolMinor=(ushort)(this._isTwain2Enable?3:9);
             }
         }
 
@@ -428,7 +434,7 @@ namespace Saraff.Twain {
                 if((this._TwainState&TwainStateFlag.DSMOpen)==0) {
                     throw new InvalidOperationException("DSM is not open.");
                 }
-                return (this.AppId.SupportedGroups&TwDG.DSM2)!=0;
+                return (this._AppId.SupportedGroups&TwDG.DSM2)!=0;
             }
         }
 
@@ -502,7 +508,7 @@ namespace Saraff.Twain {
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0) {
                 if((this._TwainState&TwainStateFlag.DSOpen)==0) {
                     TwIdentity _src=this._sources[index];
-                    TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.Set,ref _src);
+                    TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.Set,ref _src);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
@@ -523,7 +529,7 @@ namespace Saraff.Twain {
         /// </summary>
         [Browsable(false)]
         [ReadOnly(true)]
-        private TwIdentity AppId {
+        private TwIdentity _AppId {
             get{
                 if(this._appid==null) {
                     Assembly _asm=typeof(Twain32).Assembly;
@@ -549,6 +555,12 @@ namespace Saraff.Twain {
                 }
                 return this._appid;
             }
+            set {
+                if(value!=null) {
+                    throw new ArgumentException("Is read only property.");
+                }
+                this._appid=null;
+            }
         }
 
         /// <summary>
@@ -558,10 +570,10 @@ namespace Saraff.Twain {
         [Description("Возвращает или устанавливает имя приложения.")]
         public string AppProductName {
             get {
-                return this.AppId.ProductName;
+                return this._AppId.ProductName;
             }
             set {
-                this.AppId.ProductName=value;
+                this._AppId.ProductName=value;
             }
         }
 
@@ -605,10 +617,10 @@ namespace Saraff.Twain {
         [Description("Возвращает или устанавливает используемый приложением язык. Get or set the primary language for your application.")]
         public TwLanguage Language {
             get {
-                return this.AppId.Version.Language;
+                return this._AppId.Version.Language;
             }
             set {
-                this.AppId.Version.Language=value;
+                this._AppId.Version.Language=value;
             }
         }
 
@@ -620,10 +632,10 @@ namespace Saraff.Twain {
         [Description("Возвращает или устанавливает страну происхождения приложения. Get or set the primary country where your application is intended to be distributed.")]
         public TwCountry Country {
             get {
-                return this.AppId.Version.Country;
+                return this._AppId.Version.Country;
             }
             set {
-                this.AppId.Version.Country=value;
+                this._AppId.Version.Country=value;
             }
         }
 
@@ -635,7 +647,7 @@ namespace Saraff.Twain {
         public RectangleF ImageLayout {
             get {
                 TwImageLayout _imageLayout=new TwImageLayout();
-                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Get,ref _imageLayout);
+                TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Get,ref _imageLayout);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
@@ -643,7 +655,7 @@ namespace Saraff.Twain {
             }
             set {
                 TwImageLayout _imageLayout=new TwImageLayout{Frame=value};
-                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Set,ref _imageLayout);
+                TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Image,TwDAT.ImageLayout,TwMSG.Set,ref _imageLayout);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
@@ -753,7 +765,7 @@ namespace Saraff.Twain {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=new TwCapability(capability);
                 try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.QuerySupport,ref _cap);
+                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.QuerySupport,ref _cap);
                     if(_rc==TwRC.Success) {
                         return (TwQC)((TwOneValue)_cap.GetValue()).Item;
                     } else {
@@ -778,7 +790,7 @@ namespace Saraff.Twain {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=new TwCapability(capability);
                 try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,msg,ref _cap);
+                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,msg,ref _cap);
                     if(_rc==TwRC.Success) {
                         switch(_cap.ConType) {
                             case TwOn.One:
@@ -848,7 +860,7 @@ namespace Saraff.Twain {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=new TwCapability(capability);
                 try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Reset,ref _cap);
+                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Reset,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
@@ -876,7 +888,7 @@ namespace Saraff.Twain {
                     _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type);
                 }
                 try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
+                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
@@ -904,7 +916,7 @@ namespace Saraff.Twain {
                     },
                     capabilityValue);
                 try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
+                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
@@ -926,7 +938,7 @@ namespace Saraff.Twain {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=new TwCapability(capability,capabilityValue.ToTwRange());
                 try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
+                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
@@ -956,7 +968,7 @@ namespace Saraff.Twain {
                     },
                     capabilityValue.Items);
                 try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
+                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
                     if(_rc!=TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
@@ -988,7 +1000,7 @@ namespace Saraff.Twain {
                     _pxfr.Count=0;
                     _hBitmap=IntPtr.Zero;
 
-                    for(TwRC _rc=this._dsmEntry.DSImageXfer(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap); _rc!=TwRC.XferDone; ) {
+                    for(TwRC _rc=this._dsmEntry.DSImageXfer(this._AppId,this._srcds,TwDG.Image,TwDAT.ImageNativeXfer,TwMSG.Get,ref _hBitmap); _rc!=TwRC.XferDone; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                     // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
@@ -1014,12 +1026,12 @@ namespace Saraff.Twain {
                         _Memory.Unlock(_hBitmap);
                         _Memory.Free(_hBitmap);
                     }
-                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                 } while(_pxfr.Count!=0);
             } finally {
-                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
+                TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
             }
         }
 
@@ -1051,27 +1063,27 @@ namespace Saraff.Twain {
                         _fileXfer.Format=this.Capabilities.ImageFileFormat.GetCurrent();
                     }
 
-                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,ref _fileXfer); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,ref _fileXfer); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
 
-                    for(TwRC _rc=this._dsmEntry.DsRaw(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageFileXfer,TwMSG.Get,IntPtr.Zero); _rc!=TwRC.XferDone; ) {
+                    for(TwRC _rc=this._dsmEntry.DsRaw(this._AppId,this._srcds,TwDG.Image,TwDAT.ImageFileXfer,TwMSG.Get,IntPtr.Zero); _rc!=TwRC.XferDone; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                     // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
                     // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
                     this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
 
-                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
-                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Get,ref _fileXfer); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Get,ref _fileXfer); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                     this._OnFileXfer(new FileXferEventArgs(ImageFileXfer.Create(_fileXfer)));
                 } while(_pxfr.Count!=0);
             } finally {
-                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
+                TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
             }
         }
 
@@ -1095,7 +1107,7 @@ namespace Saraff.Twain {
                             TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
                                 Format=this.Capabilities.ImageFileFormat.GetCurrent()
                             };
-                            for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,ref _fileXfer); _rc!=TwRC.Success; ) {
+                            for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,ref _fileXfer); _rc!=TwRC.Success; ) {
                                 throw new TwainException(this._GetTwainStatus(),_rc);
                             }
                         }
@@ -1103,7 +1115,7 @@ namespace Saraff.Twain {
 
                     TwSetupMemXfer _memBufSize=new TwSetupMemXfer();
 
-                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.SetupMemXfer,TwMSG.Get,ref _memBufSize); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.SetupMemXfer,TwMSG.Get,ref _memBufSize); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                     this._OnSetupMemXfer(new SetupMemXferEventArgs(_info,_memBufSize.Preferred));
@@ -1123,10 +1135,10 @@ namespace Saraff.Twain {
                             TwImageMemXfer _memXferBuf=new TwImageMemXfer {Memory=_mem};
                             _Memory.ZeroMemory(_memXferBuf.Memory.TheMem,(IntPtr)_memXferBuf.Memory.Length);
 
-                            TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Image,isMemFile?TwDAT.ImageMemFileXfer:TwDAT.ImageMemXfer,TwMSG.Get,ref _memXferBuf);
+                            TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Image,isMemFile?TwDAT.ImageMemFileXfer:TwDAT.ImageMemXfer,TwMSG.Get,ref _memXferBuf);
                             if(_rc!=TwRC.Success&&_rc!=TwRC.XferDone) {
                                 TwCC _cc=this._GetTwainStatus();
-                                TwRC _rc2=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr);
+                                TwRC _rc2=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr);
                                 throw new TwainException(_cc,_rc);
                             }
                             this._OnMemXfer(new MemXferEventArgs(_info,ImageMemXfer.Create(_memXferBuf)));
@@ -1141,12 +1153,12 @@ namespace Saraff.Twain {
                         _Memory.Unlock(_hMem);
                         _Memory.Free(_hMem);
                     }
-                    for(TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                 } while(_pxfr.Count!=0);
             } finally {
-                TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
+                TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
             }
         }
 
@@ -1166,7 +1178,7 @@ namespace Saraff.Twain {
         /// <returns>Результат обработники события.</returns>
         private TwRC _TwCallbackProc(TwIdentity appId,TwIdentity srcId,TwDG dg,TwDAT dat,TwMSG msg,IntPtr data) {
             try {
-                if(appId==null||appId.Id!=this._appid.Id) {
+                if(appId==null||appId.Id!=this._AppId.Id) {
                     return TwRC.Failure;
                 }
 
@@ -1238,7 +1250,7 @@ namespace Saraff.Twain {
 
         private void _DeviceEventObtain() {
             TwDeviceEvent _deviceEvent=new TwDeviceEvent();
-            if(this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.DeviceEvent,TwMSG.Get,ref _deviceEvent)==TwRC.Success) {
+            if(this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.DeviceEvent,TwMSG.Get,ref _deviceEvent)==TwRC.Success) {
                 this._OnDeviceEvent(new DeviceEventEventArgs(_deviceEvent));
             }
         }
@@ -1310,13 +1322,13 @@ namespace Saraff.Twain {
             List<TwIdentity> _src=new List<TwIdentity>();
             TwIdentity _item=new TwIdentity();
 
-            for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetFirst,ref _item); _rc!=TwRC.Success&&_rc!=TwRC.EndOfList; ) {
+            for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetFirst,ref _item); _rc!=TwRC.Success&&_rc!=TwRC.EndOfList; ) {
                 throw new TwainException(this._GetTwainStatus(),_rc);
             }
             _src.Add(_item);
             while(true) {
                 _item=new TwIdentity();
-                TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetNext,ref _item);
+                TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetNext,ref _item);
                 if(_rc==TwRC.Success) {
                     _src.Add(_item);
                     continue;
@@ -1326,7 +1338,7 @@ namespace Saraff.Twain {
                 }
                 throw new TwainException(this._GetTwainStatus(),_rc);
             }
-            for(TwRC _rc=this._dsmEntry.DsmInvoke(this.AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetDefault,ref _srcds); _rc!=TwRC.Success; ) {
+            for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetDefault,ref _srcds); _rc!=TwRC.Success; ) {
                 throw new TwainException(this._GetTwainStatus(),_rc);
             }
             this._sources=_src.ToArray();
@@ -1355,7 +1367,7 @@ namespace Saraff.Twain {
         /// <returns></returns>
         private TwCC _GetTwainStatus() {
             TwStatus _status=new TwStatus();
-            TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Control,TwDAT.Status,TwMSG.Get,ref _status);
+            TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Status,TwMSG.Get,ref _status);
             return _status.ConditionCode;
         }
 
@@ -1365,7 +1377,7 @@ namespace Saraff.Twain {
         /// <returns>Описание изображения.</returns>
         private ImageInfo _GetImageInfo() {
             TwImageInfo _imageInfo=new TwImageInfo();
-            TwRC _rc=this._dsmEntry.DsInvoke(this.AppId,this._srcds,TwDG.Image,TwDAT.ImageInfo,TwMSG.Get,ref _imageInfo);
+            TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Image,TwDAT.ImageInfo,TwMSG.Get,ref _imageInfo);
             if(_rc!=TwRC.Success) {
                 throw new TwainException(this._GetTwainStatus(),_rc);
             }
@@ -1385,7 +1397,7 @@ namespace Saraff.Twain {
             IntPtr _extImageInfo=TwExtImageInfo.ToPtr(_info);
             try {
 
-                TwRC _rc=this._dsmEntry.DsRaw(this.AppId,this._srcds,TwDG.Image,TwDAT.ExtImageInfo,TwMSG.Get,_extImageInfo);
+                TwRC _rc=this._dsmEntry.DsRaw(this._AppId,this._srcds,TwDG.Image,TwDAT.ExtImageInfo,TwMSG.Get,_extImageInfo);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
@@ -2159,7 +2171,7 @@ namespace Saraff.Twain {
                     Marshal.StructureToPtr(_winmsg,this._evtmsg.EventPtr,true);
                     this._evtmsg.Message=0;
 
-                    TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
+                    TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
                     if(_rc==TwRC.NotDSEvent) {
                         return false;
                     }
@@ -2828,7 +2840,7 @@ namespace Saraff.Twain {
             /// <returns>Экземпляр класса <see cref="TwainPalette"/>.</returns>
             public ColorPalette Get() {
                 TwPalette8 _palette=new TwPalette8();
-                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Get,ref _palette);
+                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Get,ref _palette);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._twain._GetTwainStatus(),_rc);
                 }
@@ -2841,7 +2853,7 @@ namespace Saraff.Twain {
             /// <returns>Экземпляр класса <see cref="TwainPalette"/>.</returns>
             public ColorPalette GetDefault() {
                 TwPalette8 _palette=new TwPalette8();
-                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.GetDefault,ref _palette);
+                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.GetDefault,ref _palette);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._twain._GetTwainStatus(),_rc);
                 }
@@ -2853,7 +2865,7 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="palette">Экземпляр класса <see cref="TwainPalette"/>.</param>
             public void Reset(ColorPalette palette) {
-                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Reset,ref palette);
+                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Reset,ref palette);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._twain._GetTwainStatus(),_rc);
                 }
@@ -2864,7 +2876,7 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="palette">Экземпляр класса <see cref="TwainPalette"/>.</param>
             public void Set(ColorPalette palette) {
-                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain.AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Set,ref palette);
+                TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Set,ref palette);
                 if(_rc!=TwRC.Success) {
                     throw new TwainException(this._twain._GetTwainStatus(),_rc);
                 }
