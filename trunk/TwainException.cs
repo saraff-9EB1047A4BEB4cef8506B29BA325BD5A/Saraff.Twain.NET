@@ -31,6 +31,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Runtime.Serialization;
 
 namespace Saraff.Twain {
 
@@ -62,6 +63,9 @@ namespace Saraff.Twain {
         /// <param name="message">The message.</param>
         /// <param name="innerException">Inner exception.</param>
         internal TwainException(string message,Exception innerException):base(message,innerException) {
+        }
+
+        internal TwainException(SerializationInfo info,StreamingContext context) : base(info,context) {
         }
 
         /// <summary>

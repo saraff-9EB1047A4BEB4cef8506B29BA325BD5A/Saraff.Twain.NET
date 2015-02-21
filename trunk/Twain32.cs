@@ -2237,6 +2237,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Диапазон значений.
         /// </summary>
+        [Serializable]
         public sealed class Range {
 
             /// <summary>
@@ -2341,6 +2342,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Перечисление.
         /// </summary>
+        [Serializable]
         public sealed class Enumeration {
             private object[] _items;
 
@@ -2467,6 +2469,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Описание изображения.
         /// </summary>
+        [Serializable]
         public sealed class ImageInfo {
 
             private ImageInfo() {
@@ -2576,6 +2579,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Расширенное описание изображения.
         /// </summary>
+        [Serializable]
         public sealed class ExtImageInfo:Collection<ExtImageInfo.InfoItem> {
 
             private ExtImageInfo() {
@@ -2619,6 +2623,7 @@ namespace Saraff.Twain {
             /// <summary>
             /// Элемент описания расширенной информации о изображении.
             /// </summary>
+            [Serializable]
             [DebuggerDisplay("InfoId = {InfoId}, IsSuccess = {IsSuccess}, Value = {Value}")]
             public sealed class InfoItem {
 
@@ -2685,6 +2690,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Used to pass image data (e.g. in strips) from DS to application.
         /// </summary>
+        [Serializable]
         public sealed class ImageMemXfer {
 
             private ImageMemXfer() {
