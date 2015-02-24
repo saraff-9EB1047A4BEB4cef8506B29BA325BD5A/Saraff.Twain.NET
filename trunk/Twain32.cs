@@ -768,9 +768,8 @@ namespace Saraff.Twain {
                     TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.QuerySupport,ref _cap);
                     if(_rc==TwRC.Success) {
                         return (TwQC)((TwOneValue)_cap.GetValue()).Item;
-                    } else {
-                        throw new TwainException(this._GetTwainStatus(),_rc);
                     }
+                    return 0;
                 } finally {
                     _cap.Dispose();
                 }
