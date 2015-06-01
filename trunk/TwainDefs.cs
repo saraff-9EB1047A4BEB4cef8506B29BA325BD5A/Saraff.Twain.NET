@@ -587,6 +587,19 @@ namespace Saraff.Twain {
         }
     }
 
+    [AttributeUsage(AttributeTargets.Field,AllowMultiple=false,Inherited=false)]
+    internal sealed class TwTypeAttribute:Attribute {
+
+        public TwTypeAttribute(TwType type) {
+            this.TwType=type;
+        }
+
+        public TwType TwType {
+            get;
+            private set;
+        }
+    }
+
     /// <summary>
     /// Capability Constants
     /// </summary>
@@ -600,12 +613,15 @@ namespace Saraff.Twain {
         AutoBright=0x1100,
         Brightness=0x1101,
         Contrast=0x1103,
-        CustHalfTone=0x1104,
+        CustHalftone=0x1104,
         ExposureTime=0x1105,
         Filter=0x1106,
-        Flashused=0x1107,
+        FlashUsed=0x1107,
         Gamma=0x1108,
-        HalfTones=0x1109,
+        
+        [TwType(TwType.Str32)]
+        Halftones=0x1109,
+        
         Highlight=0x110a,
         ImageFileFormat=0x110c,
         LampState=0x110d,
@@ -622,7 +638,7 @@ namespace Saraff.Twain {
         MaxFrames=0x111a,
         Tiles=0x111b,
         BitOrder=0x111c,
-        CCITTKFactor=0x111d,
+        CcittKFactor=0x111d,
         LightPath=0x111e,
         PixelFlavor=0x111f,
         PlanarChunky=0x1120,
@@ -677,17 +693,24 @@ namespace Saraff.Twain {
         ColorManagementEnabled=0x115b,
         ImageMerge=0x115c,
         ImageMergeHeightThreshold=0x115d,
-        SupportedExtimageInfo=0x115e,
+        SupportedExtImageInfo=0x115e,
         FilmType=0x115f,
         Mirror=0x1160,
         JpegSubSampling=0x1161,
 
         /* all data sources MAY support these caps */
+        [TwType(TwType.Str128)]
         Author=0x1000,
+
+        [TwType(TwType.Str255)]
         Caption=0x1001,
+
         FeederEnabled=0x1002,
         FeederLoaded=0x1003,
+
+        [TwType(TwType.Str32)]
         TimeDate=0x1004,
+        
         SupportedCaps=0x1005,
         ExtendedCaps=0x1006,
         AutoFeed=0x1007,
@@ -714,17 +737,28 @@ namespace Saraff.Twain {
         TimeBetweenCaptures=0x101c,   /* Added 1.8 */
         ClearBuffers=0x101d,   /* Added 1.8 */
         MaxBatchBuffers=0x101e,   /* Added 1.8 */
+
+        [TwType(TwType.Str32)]
         DeviceTimeDate=0x101f,   /* Added 1.8 */
+
         PowerSupply=0x1020,   /* Added 1.8 */
         CameraPreviewUI=0x1021,   /* Added 1.8 */
         DeviceEvent=0x1022,   /* Added 1.8 */
+
+        [TwType(TwType.Str255)]
         SerialNumber=0x1024,   /* Added 1.8 */
+
         Printer=0x1026,   /* Added 1.8 */
         PrinterEnabled=0x1027,   /* Added 1.8 */
         PrinterIndex=0x1028,   /* Added 1.8 */
         PrinterMode=0x1029,   /* Added 1.8 */
+        
+        [TwType(TwType.Str255)]
         PrinterString=0x102a,   /* Added 1.8 */
+
+        [TwType(TwType.Str255)]
         PrinterSuffix=0x102b,   /* Added 1.8 */
+
         Language=0x102c,   /* Added 1.8 */
         FeederAlignment=0x102d,   /* Added 1.8 */
         FeederOrder=0x102e,   /* Added 1.8 */
@@ -739,7 +773,10 @@ namespace Saraff.Twain {
         FeederPrep=0x1039,
         FeederPocket=0x103a,
         AutomaticSenseMedium=0x103b,
+        
+        [TwType(TwType.Str255)]
         CustomInterfaceGuid=0x103c,
+        
         SupportedCapsSegmentUnique=0x103d,
         SupportedDats=0x103e,
         DoubleFeedDetection=0x103f,
@@ -1506,6 +1543,462 @@ namespace Saraff.Twain {
         LampFailure=14,
         PowerSave=15,
         PowerSaveNotify=16
+    }
+
+    /// <summary>
+    /// ICAP_DUPLEX values.
+    /// </summary>
+    public enum TwDX:ushort {
+        None=0,          // TWDX_NONE
+        OnePassDuplex=1, // TWDX_1PASSDUPLEX
+        TwoPassDuplex=2  // TWDX_2PASSDUPLEX
+    }
+
+    /// <summary>
+    /// ICAP_AUTODISCARDBLANKPAGES values.
+    /// </summary>
+    public enum TwBP:int {
+        Disable=-2, // TWBP_DISABLE
+        Auto=-1  // TWBP_AUTO
+    }
+
+    /// <summary>
+    /// ICAP_AUTOSIZE values.
+    /// </summary>
+    public enum TwAS:ushort {
+        None=0,
+        Auto=1,
+        Current=2
+    }
+
+    /// <summary>
+    /// ICAP_FLIPROTATION values (FR_ means flip rotation).
+    /// </summary>
+    public enum TwFR:ushort {
+        Book=0,
+        Fanfold=1
+    }
+
+    /// <summary>
+    /// ICAP_IMAGEMERGE values.
+    /// </summary>
+    public enum TwIM:ushort {
+        None=0,
+        FrontOnTop=1,
+        FrontOnBottom=2,
+        FrontOnLeft=3,
+        FrontOnRight=4
+    }
+
+    /// <summary>
+    /// CAP_CAMERASIDE and TWEI_PAGESIDE values.
+    /// </summary>
+    public enum TwCS:ushort {
+        Both=0,
+        Top=1,
+        Bottom=2
+    }
+
+    /// <summary>
+    /// CAP_CLEARBUFFERS values.
+    /// </summary>
+    public enum TwCB:ushort {
+        Auto=0,
+        Clear=1,
+        NoClear=2
+    }
+
+    /// <summary>
+    /// ICAP_SUPPORTEDBARCODETYPES and TWEI_BARCODETYPE values.
+    /// </summary>
+    public enum TwBT:ushort {
+        Code3Of9=0,
+        Code2Of5Interleaved=1,
+        Code2Of5NonInterleaved=2,
+        Code93=3,
+        Code128=4,
+        Ucc128=5,
+        CodaBar=6,
+        Upca=7,
+        Upce=8,
+        Ean8=9,
+        Ean13=10,
+        PostNet=11,
+        Pdf417=12,
+        Code2Of5Industrial=13,
+        Code2Of5Matrix=14,
+        Code2Of5DataLogic=15,
+        Code2Of5Iata=16,
+        Code3Of9FullAscii=17,
+        CodaBarWithStartStop=18,
+        MaxiCode=19,
+        QRCode=20
+    }
+
+    /// <summary>
+    /// ICAP_BARCODESEARCHMODE values.
+    /// </summary>
+    public enum TwBD:ushort {
+        Horz=0,
+        Vert=1,
+        HorzVert=2,
+        VertHorz=3
+    }
+
+    /// <summary>
+    /// ICAP_FILTER values.
+    /// </summary>
+    public enum TwFT:ushort {
+        Red=0,
+        Green=1,
+        Blue=2,
+        None=3,
+        White=4,
+        Cyan=5,
+        Magenta=6,
+        Yellow=7,
+        Black=8
+    }
+
+    /// <summary>
+    /// ICAP_ICCPROFILE values.
+    /// </summary>
+    public enum TwIC:ushort {
+        None=0,
+        Link=1,
+        Embed=2
+    }
+
+    /// <summary>
+    /// ICAP_PLANARCHUNKY values.
+    /// </summary>
+    public enum TwPC:ushort {
+        Chunky=0,
+        Planar=1
+    }
+
+    /// <summary>
+    /// ICAP_BITORDER values.
+    /// </summary>
+    public enum TwBO:ushort {
+        LsbFirst=0,
+        MsbFirst=1
+    }
+
+    /// <summary>
+    /// ICAP_JPEGQUALITY values.
+    /// </summary>
+    public enum TwJQ:short {
+        Unknown=-4,
+        Low=-3,
+        Medium=-2,
+        High=-1
+    }
+
+    /// <summary>
+    /// ICAP_JPEGSUBSAMPLING values.
+    /// </summary>
+    public enum TwJS:ushort {
+        _444Ycbcr=0,
+        _444Rgb=1,
+        _422=2,
+        _421=3,
+        _411=4,
+        _420=5,
+        _410=6,
+        _311=7
+    }
+
+    /// <summary>
+    /// ICAP_PIXELFLAVOR values.
+    /// </summary>
+    public enum TwPF:ushort {
+        Chocolate=0,
+        Vanilla=1
+    }
+
+    /// <summary>
+    /// ICAP_FLASHUSED2 values.
+    /// </summary>
+    public enum TwFL:ushort {
+        None=0,
+        Off=1,
+        On=2,
+        Auto=3,
+        RedEye=4
+    }
+
+    /// <summary>
+    /// ICAP_IMAGEFILTER values.
+    /// </summary>
+    public enum TwIF:ushort {
+        None=0,
+        Auto=1,
+        LowPass=2,
+        BandPass=3,
+        HighPass=4,
+        Text=BandPass,
+        FineLine=HighPass
+    }
+
+    /// <summary>
+    /// ICAP_LIGHTPATH values.
+    /// </summary>
+    public enum TwLP:ushort {
+        Reflective=0,
+        Transmissive=1
+    }
+
+    /// <summary>
+    /// ICAP_LIGHTSOURCE values.
+    /// </summary>
+    public enum TwLS:ushort {
+        Red=0,
+        Green=1,
+        Blue=2,
+        None=3,
+        White=4,
+        UV=5,
+        IR=6
+    }
+
+    /// <summary>
+    /// ICAP_NOISEFILTER values.
+    /// </summary>
+    public enum TwNF:ushort {
+        None=0,
+        Auto=1,
+        LonePixel=2,
+        MajorityRule=3
+    }
+
+    /// <summary>
+    /// ICAP_OVERSCAN values.
+    /// </summary>
+    public enum TwOV:ushort {
+        None=0,
+        Auto=1,
+        TopBottom=2,
+        LeftRight=3,
+        All=4
+    }
+
+    /// <summary>
+    /// CAP_DOUBLEFEEDDETECTION.
+    /// </summary>
+    public enum TwDF:ushort {
+        Ultrasonic=0,
+        ByLength=1,
+        Infrared=2
+    }
+
+    /// <summary>
+    /// CAP_DOUBLEFEEDDETECTIONSENSITIVITY.
+    /// </summary>
+    public enum TwUS:ushort {
+        Low=0,
+        Medium=1,
+        High=2
+    }
+
+    /// <summary>
+    /// CAP_DOUBLEFEEDDETECTIONRESPONSE.
+    /// </summary>
+    public enum TwDP:ushort {
+        Stop=0,
+        StopAndWait=1,
+        Sound=2,
+        DoNotImprint=3
+    }
+
+    /// <summary>
+    /// CAP_PRINTER values.
+    /// </summary>
+    public enum TwPR:ushort {
+        ImprinterTopBefore=0,
+        ImprinterTopAfter=1,
+        ImprinterBottomBefore=2,
+        ImprinterBottomAfter=3,
+        EndorserTopBefore=4,
+        EndorserTopAfter=5,
+        EndorserBottomBefore=6,
+        EndorserBottomAfter=7
+    }
+
+    /// <summary>
+    /// CAP_PRINTERMODE values.
+    /// </summary>
+    public enum TwPM:ushort {
+        SingleString=0,
+        MultiString=1,
+        CompoundString=2
+    }
+
+    /// <summary>
+    /// ICAP_ORIENTATION values.
+    /// </summary>
+    public enum TwOR:ushort {
+        Rot0=0,
+        Rot90=1,
+        Rot180=2,
+        Rot270=3,
+        Portrait=Rot0,
+        Landscape=Rot270,
+        Auto=4,
+        AutoText=5,
+        AutoPicture=6
+    }
+
+    /// <summary>
+    /// ICAP_BITDEPTHREDUCTION values.
+    /// </summary>
+    public enum TwBR:ushort {
+        Threshold=0,
+        Halftone=1,
+        CustHalftone=2,
+        Diffusion=3,
+        DynamicThreshold=4
+    }
+
+    /// <summary>
+    /// CAP_SEGMENTED values.
+    /// </summary>
+    public enum TwSG:ushort {
+        None=0,
+        Auto=1,
+        Manual=2
+    }
+
+    /// <summary>
+    /// CAP_FEEDERALIGNMENT values.
+    /// </summary>
+    public enum TwFA:ushort {
+        None=0,
+        Left=1,
+        Center=2,
+        Right=3
+    }
+
+    /// <summary>
+    /// CAP_FEEDERORDER values.
+    /// </summary>
+    public enum TwFO:ushort {
+        FirstPageFirst=0,
+        LastPageFirst=1
+    }
+
+    /// <summary>
+    /// CAP_FEEDERPOCKET values.
+    /// </summary>
+    public enum TwFP:ushort {
+        PocketError=0,
+        Pocket1=1,
+        Pocket2=2,
+        Pocket3=3,
+        Pocket4=4,
+        Pocket5=5,
+        Pocket6=6,
+        Pocket7=7,
+        Pocket8=8,
+        Pocket9=9,
+        Pocket10=10,
+        Pocket11=11,
+        Pocket12=12,
+        Pocket13=13,
+        Pocket14=14,
+        Pocket15=15,
+        Pocket16=16
+    }
+
+    /// <summary>
+    /// CAP_PAPERHANDLING values.
+    /// </summary>
+    public enum TwPH:ushort {
+        Normal=0,
+        Fragile=1,
+        Thick=2,
+        Trifold=3,
+        Photograph=4
+    }
+
+    /// <summary>
+    /// ICAP_FEEDERTYPE values.
+    /// </summary>
+    public enum TwFE:ushort {
+        General=0,
+        Photo=1,
+    }
+
+    /// <summary>
+    /// TWEI_PATCHCODE values.
+    /// </summary>
+    public enum TwPch:ushort {
+        Patch1=0,
+        Patch2=1,
+        Patch3=2,
+        Patch4=3,
+        Patch6=4,
+        PatchT=5
+    }
+
+    /// <summary>
+    /// CAP_BATTERYMINUTES values.
+    /// </summary>
+    public enum TwBM1:int {
+        Infinite=-2,
+        CannotReport=-1
+    }
+
+    /// <summary>
+    /// CAP_BATTERYPERCENTAGE values.
+    /// </summary>
+    public enum TwBM2:short {
+        Infinite=-2,
+        CannotReport=-1
+    }
+
+    /// <summary>
+    /// CAP_POWERSUPPLY values.
+    /// </summary>
+    public enum TwPS:ushort {
+        External=0,
+        Battery=1
+    }
+
+    /// <summary>
+    /// CAP_JOBCONTROL values.
+    /// </summary>
+    public enum TwJC:ushort {
+        None=0,
+        Jsic=1,
+        Jsis=2,
+        Jsxc=3,
+        Jsxs=4
+    }
+
+    /// <summary>
+    /// CAP_INDICATORSMODE values.
+    /// </summary>
+    public enum TwCI:ushort {
+        Info=0,
+        Warning=1,
+        Error=2,
+        WarmUp=3
+    }
+
+    /// <summary>
+    /// CAP_ALARMS values.
+    /// </summary>
+    public enum TwAL:ushort {
+        Alarm=0,
+        FeederError=1,
+        FeederWarning=2,
+        BarCode=3,
+        DoubleFeed=4,
+        Jam=5,
+        PatchCode=6,
+        Power=7,
+        Skew=8
     }
 
     #endregion

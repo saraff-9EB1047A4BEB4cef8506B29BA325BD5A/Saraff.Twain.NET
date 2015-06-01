@@ -64,6 +64,7 @@ namespace Saraff.Twain {
         private TwainStateFlag _twainState;
         private bool _isTwain2Enable=IntPtr.Size!=4||Environment.OSVersion.Platform==PlatformID.Unix;
         private CallBackProc _callbackProc;
+        private TwainCapabilities _capabilities;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Twain32"/> class.
@@ -74,7 +75,6 @@ namespace Saraff.Twain {
             this._filter=new _MessageFilter(this);
             this.ShowUI=true;
             this.DisableAfterAcquire=true;
-            this.Capabilities=new TwainCapabilities(this);
             this.Palette=new TwainPalette(this);
             this._callbackProc=this._TwCallbackProc;
             switch(Environment.OSVersion.Platform) {
@@ -668,8 +668,12 @@ namespace Saraff.Twain {
         [Browsable(false)]
         [ReadOnly(true)]
         public TwainCapabilities Capabilities {
-            get;
-            private set;
+            get {
+                if(this._capabilities==null) {
+                    this._capabilities=new TwainCapabilities(this);
+                }
+                return this._capabilities;
+            }
         }
 
         /// <summary>
@@ -881,7 +885,12 @@ namespace Saraff.Twain {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=null;
                 if(value is string) {
-                    _cap=new TwCapability(capability,(string)value,TwTypeHelper.TypeOf(value));
+                    object[] _attrs=typeof(TwCap).GetField(capability.ToString()).GetCustomAttributes(typeof(TwTypeAttribute),false);
+                    if(_attrs.Length>0) {
+                        _cap=new TwCapability(capability,(string)value,((TwTypeAttribute)_attrs[0]).TwType);
+                    } else {
+                        _cap=new TwCapability(capability,(string)value,TwTypeHelper.TypeOf(value));
+                    }
                 } else {
                     TwType _type=TwTypeHelper.TypeOf(value.GetType());
                     _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type);

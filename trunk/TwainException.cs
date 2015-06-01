@@ -32,6 +32,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.Serialization;
+using System.Diagnostics;
 
 namespace Saraff.Twain {
 
@@ -39,6 +40,7 @@ namespace Saraff.Twain {
     /// Класс исключения <see cref="TwainException"/>
     /// </summary>
     [Serializable]
+    [DebuggerDisplay("{Message}; ReturnCode = {ReturnCode}; ConditionCode = {ConditionCode}")]
     public sealed class TwainException:Exception {
 
         /// <summary>
