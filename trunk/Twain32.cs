@@ -299,18 +299,21 @@ namespace Saraff.Twain {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         private bool _DisableDataSource() {
             if((this._TwainState&TwainStateFlag.DSEnabled)!=0) {
-                TwUserInterface _guif=new TwUserInterface() {
-                    ParentHand=this._hwnd,
-                    ShowUI=false
-                };
-                for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.DisableDS,ref _guif); _rc!=TwRC.Success; ) {
-                    throw new TwainException(this._GetTwainStatus(),_rc);
-                }
-                this._TwainState&=~TwainStateFlag.DSEnabled;
-                if(this._context!=null) {
-                    this._context.ExitThread();
-                    this._context.Dispose();
-                    this._context=null;
+                try {
+                    TwUserInterface _guif=new TwUserInterface() {
+                        ParentHand=this._hwnd,
+                        ShowUI=false
+                    };
+                    for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.UserInterface,TwMSG.DisableDS,ref _guif); _rc!=TwRC.Success; ) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
+                    }
+                } finally {
+                    this._TwainState&=~TwainStateFlag.DSEnabled;
+                    if(this._context!=null) {
+                        this._context.ExitThread();
+                        this._context.Dispose();
+                        this._context=null;
+                    }
                 }
                 return (this._TwainState&TwainStateFlag.DSEnabled)==0;
             }
@@ -1329,27 +1332,29 @@ namespace Saraff.Twain {
         private void _GetAllSorces() {
             List<TwIdentity> _src=new List<TwIdentity>();
             TwIdentity _item=new TwIdentity();
-
-            for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetFirst,ref _item); _rc!=TwRC.Success&&_rc!=TwRC.EndOfList; ) {
-                throw new TwainException(this._GetTwainStatus(),_rc);
-            }
-            _src.Add(_item);
-            while(true) {
-                _item=new TwIdentity();
-                TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetNext,ref _item);
-                if(_rc==TwRC.Success) {
-                    _src.Add(_item);
-                    continue;
+            try {
+                for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetFirst,ref _item); _rc!=TwRC.Success; ) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
                 }
-                if(_rc==TwRC.EndOfList) {
-                    break;
+                _src.Add(_item);
+                while(true) {
+                    _item=new TwIdentity();
+                    TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetNext,ref _item);
+                    if(_rc==TwRC.Success) {
+                        _src.Add(_item);
+                        continue;
+                    }
+                    if(_rc==TwRC.EndOfList) {
+                        break;
+                    }
+                    throw new TwainException(this._GetTwainStatus(),_rc);
                 }
-                throw new TwainException(this._GetTwainStatus(),_rc);
+                for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetDefault,ref _srcds); _rc!=TwRC.Success; ) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
+                }
+            } finally {
+                this._sources=_src.ToArray();
             }
-            for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetDefault,ref _srcds); _rc!=TwRC.Success; ) {
-                throw new TwainException(this._GetTwainStatus(),_rc);
-            }
-            this._sources=_src.ToArray();
         }
 
         /// <summary>

@@ -77,12 +77,18 @@ namespace Saraff.Twain {
 
         #region Audible Alarms
 
+        /// <summary>
+        /// CAP_ALARMS. Turns specific audible alarms on and off.
+        /// </summary>
         [Capability(TwCap.Alarms)]
         public ICapability2<TwAL> Alarms {
             get;
             private set;
         }
 
+        /// <summary>
+        /// CAP_ALARMVOLUME. Controls the volume of a device’s audible alarm.
+        /// </summary>
         [Capability(TwCap.AlarmVolume)]
         public ICapability<int> AlarmVolume {
             get;
