@@ -58,7 +58,7 @@ namespace Saraff.Twain {
         private TwIdentity _appid; //идентификатор приложения.
         private TwIdentity _srcds; //идентификатор текущего источника данных.
         private _MessageFilter _filter; //фильтр событий WIN32
-        private TwIdentity[] _sources; //массив доступных источников данных.
+        private TwIdentity[] _sources=new TwIdentity[0]; //массив доступных источников данных.
         private ApplicationContext _context=null; //контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
         private Collection<Image> _images=new Collection<Image>();
         private TwainStateFlag _twainState;
