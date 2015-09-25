@@ -2171,18 +2171,14 @@ namespace Saraff.Twain {
                         return false;
                     }
 
-                    int _pos=_MessageFilter.GetMessagePos();
                     WINMSG _winmsg=new WINMSG {
                         hwnd=m.HWnd,
                         message=m.Msg,
                         wParam=m.WParam,
-                        lParam=m.LParam,
-                        time=_MessageFilter.GetMessageTime(),
-                        x=(short)_pos,
-                        y=(short)(_pos>>16)
+                        lParam=m.LParam
                     };
                     Marshal.StructureToPtr(_winmsg,this._evtmsg.EventPtr,true);
-                    this._evtmsg.Message=0;
+                    this._evtmsg.Message=TwMSG.Null;
 
                     TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
                     if(_rc==TwRC.NotDSEvent) {
@@ -2225,25 +2221,12 @@ namespace Saraff.Twain {
                 this._is_set_filter=false;
             }
 
-            #region import user32.dll
-
-            [DllImport("user32.dll",ExactSpelling=true)]
-            private static extern int GetMessagePos();
-
-            [DllImport("user32.dll",ExactSpelling=true)]
-            private static extern int GetMessageTime();
-
-            #endregion
-
             [StructLayout(LayoutKind.Sequential,Pack=4)]
             internal struct WINMSG {
                 public IntPtr hwnd;
                 public int message;
                 public IntPtr wParam;
                 public IntPtr lParam;
-                public int time;
-                public int x;
-                public int y;
             }
         }
 
