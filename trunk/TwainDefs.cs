@@ -2815,7 +2815,7 @@ namespace Saraff.Twain {
                             case TwType.Str255:
                             case TwType.Str1024:
                             case TwType.Uni512:
-                                return Marshal.PtrToStructure((IntPtr)(_ptr.ToInt64()+Marshal.SizeOf(typeof(TwOneCustumValue))),TwTypeHelper.TypeOf(_value.ItemType));
+                                return Marshal.PtrToStructure((IntPtr)(_ptr.ToInt64()+Marshal.SizeOf(typeof(TwOneCustumValue))),TwTypeHelper.TypeOf(_value.ItemType)).ToString();
                             default:
                                 return Marshal.PtrToStructure(_ptr,typeof(TwOneValue));
                         }

@@ -42,6 +42,7 @@ namespace Saraff.Twain {
     /// </summary>
     [DebuggerDisplay("SupportedCaps = {SupportedCaps.Get().Count}")]
     public sealed class TwainCapabilities {
+        private Dictionary<TwCap,Type> _caps=new Dictionary<TwCap,Type>();
 
         internal TwainCapabilities(Twain32 twain) {
             MethodInfo _сreateCapability=typeof(TwainCapabilities).GetMethod("CreateCapability",BindingFlags.Instance|BindingFlags.NonPublic);
@@ -49,6 +50,7 @@ namespace Saraff.Twain {
                 object[] _attrs=_prop.GetCustomAttributes(typeof(CapabilityAttribute),false);
                 if(_attrs.Length>0) {
                     CapabilityAttribute _attr=_attrs[0] as CapabilityAttribute;
+                    this._caps.Add(_attr.Cap,_prop.PropertyType);
                     _prop.SetValue(this,_сreateCapability.MakeGenericMethod(_prop.PropertyType.GetGenericArguments()[0]).Invoke(this,new object[] { twain,_attr.Cap }),null);
                 }
             }
@@ -1583,9 +1585,17 @@ namespace Saraff.Twain {
             }
 
             public void Set(T value) {
-                if(!this.GetCurrent().Equals(value)) {
+                if(this._Twain32.Capabilities._caps[this._Cap]==typeof(ICapability2<T>)||!this.GetCurrent().Equals(value)) {
                     this._Twain32.SetCap(this._Cap,value);
                 }
+            }
+
+            public void Set(T[] value) {
+                var _val=new object[value.Length];
+                for(var i=0; i<_val.Length; i++) {
+                    _val[i]=value[i];
+                }
+                this._Twain32.SetCap(this._Cap,_val);
             }
 
             public void Reset() {
@@ -1609,7 +1619,7 @@ namespace Saraff.Twain {
             private Twain32.Enumeration ToEnumeration(object value) {
                 Twain32.Enumeration _val=Twain32.Enumeration.FromObject(value);
                 for(int i=0; i<_val.Count; i++) {
-                    _val[i]=(T)_val[i];
+                    _val[i]=typeof(T).IsEnum?(T)_val[i]:Convert.ChangeType(_val[i],typeof(T));
                 }
                 return _val;
             }
@@ -1705,6 +1715,12 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="value">Значение.</param>
         void Set(T value);
+
+        /// <summary>
+        /// Устанавливает текущее значение возможности (capability).
+        /// </summary>
+        /// <param name="value">Значение.</param>
+        void Set(T[] value);
 
         /// <summary>
         /// Сбрасывает текущее значение возможности (capability) в значение по умолчанию.

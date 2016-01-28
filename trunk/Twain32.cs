@@ -879,6 +879,26 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
+        /// Сбрасывает текущее значение всех текущих значений в значения по умолчанию.
+        /// </summary>
+        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        public void ResetAllCap() {
+            if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
+                TwCapability _cap=new TwCapability(TwCap.SupportedCaps);
+                try {
+                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.ResetAll,ref _cap);
+                    if(_rc!=TwRC.Success) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
+                    }
+                } finally {
+                    _cap.Dispose();
+                }
+            } else {
+                throw new TwainException("Источник данных не открыт.");
+            }
+        }
+
+        /// <summary>
         /// Устанавливает значение для указанного <see cref="TwCap">capability</see>
         /// </summary>
         /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
@@ -2170,26 +2190,27 @@ namespace Saraff.Twain {
                     if(this._twain._srcds.Id==0) {
                         return false;
                     }
-
-                    WINMSG _winmsg=new WINMSG {
-                        hwnd=m.HWnd,
-                        message=m.Msg,
-                        wParam=m.WParam,
-                        lParam=m.LParam
-                    };
-                    Marshal.StructureToPtr(_winmsg,this._evtmsg.EventPtr,true);
+                    Marshal.StructureToPtr(new WINMSG {hwnd=m.HWnd,message=m.Msg,wParam=m.WParam,lParam=m.LParam},this._evtmsg.EventPtr,true);
                     this._evtmsg.Message=TwMSG.Null;
 
-                    TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg);
-                    if(_rc==TwRC.NotDSEvent) {
-                        return false;
+                    switch(this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Control,TwDAT.Event,TwMSG.ProcessEvent,ref this._evtmsg)) {
+                        case TwRC.DSEvent:
+                            this._twain._TwCallbackProcCore(this._evtmsg.Message,isCloseReq => {
+                                if(isCloseReq||this._twain.DisableAfterAcquire) {
+                                    this._RemoveFilter();
+                                    this._twain._DisableDataSource();
+                                }
+                            });
+                            break;
+                        case TwRC.NotDSEvent:
+                            return false;
+                        case TwRC.Failure:
+                            throw new TwainException(this._twain._GetTwainStatus(),TwRC.Failure);
+                        default:
+                            throw new InvalidOperationException("Получен неверный код результата операции. Invalid a Return Code value.");
                     }
-                    this._twain._TwCallbackProcCore(this._evtmsg.Message,isCloseReq => {
-                        if(isCloseReq||this._twain.DisableAfterAcquire) {
-                            this._RemoveFilter();
-                            this._twain._DisableDataSource();
-                        }
-                    });
+                } catch(TwainException ex) {
+                    this._twain._OnAcquireError(new AcquireErrorEventArgs(ex));
                 } catch(Exception ex) {
                     this._twain._OnAcquireError(new AcquireErrorEventArgs(new TwainException(ex.Message,ex)));
                 }
@@ -2221,7 +2242,7 @@ namespace Saraff.Twain {
                 this._is_set_filter=false;
             }
 
-            [StructLayout(LayoutKind.Sequential,Pack=4)]
+            [StructLayout(LayoutKind.Sequential,Pack=2)]
             internal struct WINMSG {
                 public IntPtr hwnd;
                 public int message;
@@ -2416,18 +2437,18 @@ namespace Saraff.Twain {
             /// <param name="value">Экземпляр <see cref="Range"/>.</param>
             /// <returns>Экземпляр <see cref="Enumeration"/>.</returns>
             public static Enumeration FromRange(Range value) {
-                int _current_index=0, _default_index=0;
-                object[] _items=new object[(int)(((float)value.MaxValue-(float)value.MinValue)/(float)value.StepSize)];
-                for (int i=0; i<_items.Length; i++) {
-                    _items[i]=(float)value.MinValue+((float)value.StepSize*(float)i);
-                    if ((float)_items[i]==(float)value.CurrentValue) {
-                        _current_index=i;
+                int _currentIndex=0,_defaultIndex=0;
+                object[] _items=new object[(int)((Convert.ToSingle(value.MaxValue)-Convert.ToSingle(value.MinValue))/Convert.ToSingle(value.StepSize))];
+                for(int i=0; i<_items.Length; i++) {
+                    _items[i]=Convert.ToSingle(value.MinValue)+(Convert.ToSingle(value.StepSize)*(float)i);
+                    if(Convert.ToSingle(_items[i])==Convert.ToSingle(value.CurrentValue)) {
+                        _currentIndex=i;
                     }
-                    if ((float)_items[i]==(float)value.DefaultValue) {
-                        _default_index=i;
+                    if(Convert.ToSingle(_items[i])==Convert.ToSingle(value.DefaultValue)) {
+                        _defaultIndex=i;
                     }
                 }
-                return Enumeration.CreateEnumeration(_items, _current_index, _default_index);
+                return Enumeration.CreateEnumeration(_items,_currentIndex,_defaultIndex);
             }
 
             /// <summary>
@@ -2449,14 +2470,17 @@ namespace Saraff.Twain {
             }
 
             internal static Enumeration FromObject(object value) {
-                if (value is Range) {
+                if(value is Range) {
                     return Enumeration.FromRange((Range)value);
                 }
-                if (value is object[]) {
+                if(value is object[]) {
                     return Enumeration.FromArray((object[])value);
                 }
-                if (value is ValueType) {
+                if(value is ValueType) {
                     return Enumeration.FromOneValue((ValueType)value);
+                }
+                if(value is string) {
+                    return Enumeration.CreateEnumeration(new object[] { value },0,0);
                 }
                 return value as Enumeration;
             }
