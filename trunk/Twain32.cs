@@ -1579,7 +1579,7 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="extInfo">Набор кодов расширенного описания изображения для которых требуется получить описание.</param>
             /// <returns>Расширенное описание изображения.</returns>
-            public ExtImageInfo GetExtImageInfo(TwEI[] extInfo) {
+            public ExtImageInfo GetExtImageInfo(params TwEI[] extInfo) {
                 return this._extImageInfoMethod(extInfo);
             }
         }
@@ -2809,6 +2809,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Описание файла изображения.
         /// </summary>
+        [Serializable]
         public sealed class ImageFileXfer {
 
             /// <summary>
@@ -2849,7 +2850,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Набор операций для работы с цветовой палитрой.
         /// </summary>
-        public sealed class TwainPalette {
+        public sealed class TwainPalette:MarshalByRefObject {
             private Twain32 _twain;
 
             /// <summary>
@@ -2912,6 +2913,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Цветовая палитра.
         /// </summary>
+        [Serializable]
         public sealed class ColorPalette {
 
             /// <summary>
