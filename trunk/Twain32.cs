@@ -495,6 +495,15 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
+        /// Возвращает описание указанного источника. Gets the source identity.
+        /// </summary>
+        /// <param name="index">Индекс. The index.</param>
+        /// <returns>Описание источника данных.</returns>
+        public Identity GetSourceIdentity(int index) {
+            return new Identity(this._sources[index]);
+        }
+
+        /// <summary>
         /// Возвращает истину, если указанный источник поддерживает TWAIN 2.0; иначе лож.
         /// </summary>
         /// <param name="index">Индекс.</param>
@@ -2950,6 +2959,72 @@ namespace Saraff.Twain {
             /// Возвращает цвета, входящие в состав палитры.
             /// </summary>
             public Color[] Colors {
+                get;
+                private set;
+            }
+        }
+
+        /// <summary>
+        /// Identifies the resource.
+        /// </summary>
+        [Serializable]
+        [DebuggerDisplay("{Name}, Version = {Version}")]
+        public sealed class Identity {
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Identity"/> class.
+            /// </summary>
+            /// <param name="identity">The identity.</param>
+            internal Identity(TwIdentity identity) {
+                this.Family=identity.ProductFamily;
+                this.Manufacturer=identity.Manufacturer;
+                this.Name=identity.ProductName;
+                this.ProtocolVersion=new Version(identity.ProtocolMajor,identity.ProtocolMinor);
+                this.Version=new Version(identity.Version.MajorNum,identity.Version.MinorNum);
+            }
+
+            /// <summary>
+            /// Get the version of the software.
+            /// </summary>
+            /// <value>
+            /// The version.
+            /// </value>
+            public Version Version {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Get the protocol version.
+            /// </summary>
+            /// <value>
+            /// The protocol version.
+            /// </value>
+            public Version ProtocolVersion {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Get manufacturer name, e.g. "Hewlett-Packard".
+            /// </summary>
+            public string Manufacturer {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Get product family name, e.g. "ScanJet".
+            /// </summary>
+            public string Family {
+                get;
+                private set;
+            }
+
+            /// <summary>
+            /// Get product name, e.g. "ScanJet Plus".
+            /// </summary>
+            public string Name {
                 get;
                 private set;
             }
