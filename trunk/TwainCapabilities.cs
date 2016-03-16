@@ -41,7 +41,7 @@ namespace Saraff.Twain {
     /// Набор возможностей (Capabilities).
     /// </summary>
     [DebuggerDisplay("SupportedCaps = {SupportedCaps.Get().Count}")]
-    public sealed class TwainCapabilities {
+    public sealed class TwainCapabilities:MarshalByRefObject {
         private Dictionary<TwCap,Type> _caps=new Dictionary<TwCap,Type>();
 
         internal TwainCapabilities(Twain32 twain) {

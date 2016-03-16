@@ -1091,7 +1091,7 @@ namespace Saraff.Twain {
                     ImageInfo _info=this._GetImageInfo();
 
                     TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
-                        Format=TwFF.Bmp,
+                        Format=((this.Capabilities.ImageFileFormat.IsSupported()&TwQC.GetCurrent)!=0)?this.Capabilities.ImageFileFormat.GetCurrent():TwFF.Bmp,
                         FileName=Path.GetTempFileName()
                     };
                     SetupFileXferEventArgs _args=new SetupFileXferEventArgs();
