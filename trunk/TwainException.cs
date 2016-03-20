@@ -46,7 +46,8 @@ namespace Saraff.Twain {
         /// <summary>
         /// Initializes a new instance of the <see cref="TwainException"/> class.
         /// </summary>
-        /// <param name="cc">The code.</param>
+        /// <param name="cc">The condition code.</param>
+        /// <param name="rc">The return code.</param>
         internal TwainException(TwCC cc,TwRC rc):this(TwainException._CodeToMessage(cc)) {
             this.ConditionCode=cc;
             this.ReturnCode=rc;

@@ -195,6 +195,9 @@ namespace Saraff.Twain {
                 }
                 TwIdentity _src=new TwIdentity();
                 for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.UserSelect,ref _src); _rc!=TwRC.Success; ) {
+                    if(_rc==TwRC.Cancel) {
+                        return false;
+                    }
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
                 this._srcds=_src;
@@ -1454,10 +1457,26 @@ namespace Saraff.Twain {
         /// </summary>
         [Flags]
         public enum TwainStateFlag {
-            DSMOpen=0x1,
-            DSOpen=0x2,
-            DSEnabled=0x4,
-            DSReady=0x08
+
+            /// <summary>
+            /// The DSM open.
+            /// </summary>
+            DSMOpen = 0x1,
+
+            /// <summary>
+            /// The ds open.
+            /// </summary>
+            DSOpen = 0x2,
+
+            /// <summary>
+            /// The ds enabled.
+            /// </summary>
+            DSEnabled = 0x4,
+
+            /// <summary>
+            /// The ds ready.
+            /// </summary>
+            DSReady = 0x08
         }
 
         #region Events

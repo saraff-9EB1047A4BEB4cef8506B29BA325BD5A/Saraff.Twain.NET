@@ -36,7 +36,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Saraff.Twain.NET")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Allows you to control work of flatbed scanner, web and digital camera and any other TWAIN device from .NET environment. You can use this library in your programs written in any programming languages compatible with .NET technology.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("SARAFF SOFTWARE")]
 [assembly: AssemblyProduct("Saraff.Twain.NET")]
@@ -62,5 +62,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.19.473")]
-[assembly: AssemblyFileVersion("1.0.19.473")]
+[assembly: AssemblyVersion("1.0.19.474")]
+[assembly: AssemblyFileVersion("1.0.19.474")]

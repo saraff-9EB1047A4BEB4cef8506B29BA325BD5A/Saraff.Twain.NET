@@ -305,53 +305,240 @@ namespace Saraff.Twain {
     /// <summary>
     /// Return Codes
     /// </summary>
-    public enum TwRC:ushort {									// TWRC_....
-        Success=0x0000,
-        Failure=0x0001,
-        CheckStatus=0x0002,
-        Cancel=0x0003,
-        DSEvent=0x0004,
-        NotDSEvent=0x0005,
-        XferDone=0x0006,
-        EndOfList=0x0007,
-        InfoNotSupported=0x0008,
-        DataNotAvailable=0x0009,
-        Busy=10,
-        ScannerLocked=11
+    public enum TwRC:ushort {                                   // TWRC_....
+
+        /// <summary>
+        /// Operation was successful.
+        /// </summary>
+        Success = 0x0000,
+
+        /// <summary>
+        /// May be returned by any operation. An error has occurred.
+        /// </summary>
+        Failure = 0x0001,
+
+        /// <summary>
+        /// Intended for use with DAT_CAPABILITY and DAT_IMAGELAYOUT. 
+        /// Operation failed to completely perform
+        /// the desired operation. For example, setting ICAP_BRIGHTNESS to
+        /// 3 when its range is -1000 to 1000 with a step of 200. The data source
+        /// may opt to set the value to 0 and return this status.
+        /// </summary>
+        CheckStatus = 0x0002,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations. Operation has been canceled.
+        /// </summary>
+        Cancel = 0x0003,
+
+        /// <summary>
+        /// Intended for use with DAT_EVENT. The data source processed the event.
+        /// </summary>
+        DSEvent = 0x0004,
+
+        /// <summary>
+        /// Intended for use with DAT_EVENT. The data source did not process the event.
+        /// </summary>
+        NotDSEvent = 0x0005,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations. The image has been fully transferred.
+        /// </summary>
+        XferDone = 0x0006,
+
+        /// <summary>
+        /// Intended for use with DAT_IDENTITY and DAT_FILESYSTEM.
+        /// </summary>
+        EndOfList = 0x0007,
+
+        /// <summary>
+        /// Intended for use with DAT_EXTIMAGEINFO. 
+        /// The requested TWEI_ data is either not supported by this data source, or is not supported for this particular image.
+        /// </summary>
+        InfoNotSupported = 0x0008,
+
+        /// <summary>
+        /// Intended for use with DAT_EXTIMAGEINFO. There is no data available for the requested TWEI_ item.
+        /// </summary>
+        DataNotAvailable = 0x0009,
+
+        /// <summary>
+        /// The busy.
+        /// </summary>
+        Busy = 10,
+
+        /// <summary>
+        /// The scanner locked.
+        /// </summary>
+        ScannerLocked = 11
     }
 
     /// <summary>
     /// Condition Codes
     /// </summary>
-    public enum TwCC:ushort {									// TWCC_....
-        Success=0x0000,
-        Bummer=0x0001,
-        LowMemory=0x0002,
-        NoDS=0x0003,
-        MaxConnections=0x0004,
-        OperationError=0x0005,
-        BadCap=0x0006,
-        BadProtocol=0x0009,
-        BadValue=0x000a,
-        SeqError=0x000b,
-        BadDest=0x000c,
-        CapUnsupported=0x000d,
-        CapBadOperation=0x000e,
-        CapSeqError=0x000f,
-        Denied=0x0010,
-        FileExists=0x0011,
-        FileNotFound=0x0012,
-        NotEmpty=0x0013,
-        PaperJam=0x0014,
-        PaperDoubleFeed=0x0015,
-        FileWriteError=0x0016,
-        CheckDeviceOnline=0x0017,
-        InterLock=24,
-        DamagedCorner=25,
-        FocusError=26,
-        DocTooLight=27,
-        DocTooDark=28,
-        NoMedia=29,
+    public enum TwCC:ushort {                                   // TWCC_....
+
+        /// <summary>
+        /// Operation was successful. This value should only be paired with TWRC_SUCCESS.
+        /// </summary>
+        Success = 0x0000,
+
+        /// <summary>
+        /// May be returned by any operation. The data source is in a critical state.
+        /// </summary>
+        Bummer = 0x0001,
+
+        /// <summary>
+        /// May be returned for any operation except ones that reduce state
+        /// (DAT_PENDINGXFERS / MSG_ENDXER, DAT_PENDINGXFERS / MSG_RESET, 
+        /// DAT_USERINTERFACE / MSG_DISABLEDS, DAT_IDENTITY / MSG_CLOSEDS, 
+        /// DAT_PARENT / MSG_CLOSEDSM).
+        /// </summary>
+        LowMemory = 0x0002,
+
+        /// <summary>
+        /// Intended for use with DAT_IDENTITY / MSG_OPENDS. The device is not online.
+        /// </summary>
+        NoDS = 0x0003,
+
+        /// <summary>
+        /// Intended for use with DAT_IDENTITY / MSG_OPENDS. The data
+        /// source cannot support any more connections to this device.
+        /// </summary>
+        MaxConnections = 0x0004,
+
+        /// <summary>
+        /// The operation failed, but the user has already been informed by the data source.
+        /// </summary>
+        OperationError = 0x0005,
+
+        /// <summary>
+        /// Intended for use with DAT_CAPABILITY. Returned by pre-1.7
+        /// data sources to indicate that the capability is not supported, that the
+        /// value was bad, or that the desired value could not be set at this time.
+        /// </summary>
+        BadCap = 0x0006,
+
+        /// <summary>
+        /// May be returned by any operation. The requested 
+        /// DG_* / DAT_* / MSG_* is not supported by the data source.
+        /// </summary>
+        BadProtocol = 0x0009,
+
+        /// <summary>
+        /// May be returned by any operation. The capability or operation has
+        /// rejected the requested setting.
+        /// </summary>
+        BadValue = 0x000a,
+
+        /// <summary>
+        /// The seq error.
+        /// </summary>
+        SeqError = 0x000b,
+
+        /// <summary>
+        /// May be returned by any operation (save for the DAT_PARENT
+        /// operations). The TW_IDENTITY for the destination (the data
+        /// source) does not match any items opened by MSG_OPENDS.
+        /// </summary>
+        BadDest = 0x000c,
+
+        /// <summary>
+        /// Intended for use with DAT_CAPABILITY. The capability is not supported.
+        /// </summary>
+        CapUnsupported = 0x000d,
+
+        /// <summary>
+        /// Intended for use with DAT_CAPABILITY. The capability does not support the requested operation.
+        /// </summary>
+        CapBadOperation = 0x000e,
+
+        /// <summary>
+        /// Intended for use with DAT_CAPABILITY. The capability being
+        /// MSG_SET or MSG_RESET cannot be modified due to a setting for a
+        /// related capability. For instance, this may be returned by
+        /// ICAP_CITTKFACTOR if ICAP_COMPRESSION is set to any value
+        /// other than TWCP_GROUP32D.
+        /// </summary>
+        CapSeqError = 0x000f,
+
+        /// <summary>
+        /// Intended for DAT_IMAGEFILEXFER and DAT_FILESYSTEM, the
+        /// specified file or directory cannot be modified or deleted.
+        /// </summary>
+        Denied = 0x0010,
+
+        /// <summary>
+        /// Intended for DAT_FILESYSTEM. The specified file or directory already exists.
+        /// </summary>
+        FileExists = 0x0011,
+
+        /// <summary>
+        /// Intended for DAT_IMAGEFILEXFER and DAT_FILESYSTEM. The
+        /// specified file or directory cannot be found.
+        /// </summary>
+        FileNotFound = 0x0012,
+
+        /// <summary>
+        /// Intended for use with DAT_FILESYSTEM. Directory is in use, and cannot be deleted.
+        /// </summary>
+        NotEmpty = 0x0013,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations.
+        /// </summary>
+        PaperJam = 0x0014,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations.
+        /// </summary>
+        PaperDoubleFeed = 0x0015,
+
+        /// <summary>
+        /// Intended for DAT_IMAGEFILEXFER and DAT_FILESYSTEM, the
+        /// specified file or directory could not be written, usually indicating a
+        /// disk full condition, though it may also indicate a file or directory
+        /// that the user has no permission to write.
+        /// </summary>
+        FileWriteError = 0x0016,
+
+        /// <summary>
+        /// May be returned for any operation in state 4 or higher, except ones
+        /// that reduce state (DAT_PENDINGXFERS / MSG_ENDXER,
+        /// DAT_PENDINGXFERS / MSG_RESET, DAT_USERINTERFACE / MSG_DISABLEDS, 
+        /// DAT_IDENTITY / MSG_CLOSEDS, DAT_PARENT / MSG_CLOSEDSM).
+        /// </summary>
+        CheckDeviceOnline = 0x0017,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations.
+        /// </summary>
+        InterLock = 24,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations.
+        /// </summary>
+        DamagedCorner = 25,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations.
+        /// </summary>
+        FocusError = 26,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations.
+        /// </summary>
+        DocTooLight = 27,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations.
+        /// </summary>
+        DocTooDark = 28,
+
+        /// <summary>
+        /// Intended for use with the DAT_IMAGE*XFER operations.
+        /// </summary>
+        NoMedia = 29,
     }
 
     /// <summary>
@@ -605,6 +792,7 @@ namespace Saraff.Twain {
     /// </summary>
     public enum TwCap:ushort {
         /* image data sources MAY support these caps */
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         XferCount=0x0001,			// all data sources are REQUIRED to support these caps
         ICompression=0x0100,		// ICAP_...
         IPixelType=0x0101,
@@ -795,29 +983,64 @@ namespace Saraff.Twain {
         PrinterIndexStep=0x104C,
         PrinterIndexTrigger=0x104D,
         PrinterStringPreview=0x104E
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
-    /// Bit patterns: for query the operation that are supported by the data source on a capability
+    /// Bit patterns: for query the operation that are supported by the data source on a capability.
     /// </summary>
     [Flags]
     public enum TwQC:ushort { //TWQC_...
-        Get=0x0001,
-        Set=0x0002,
-        GetDefault=0x0004,
-        GetCurrent=0x0008,
-        Reset=0x0010,
-        SetConstraint=0x0020,
+
+        /// <summary>
+        /// Returns the Current, Default and Available settings for a capability.
+        /// </summary>
+        Get = 0x0001,
+
+        /// <summary>
+        /// Allows the application to set the Current value of a capability.
+        /// </summary>
+        Set = 0x0002,
+
+        /// <summary>
+        /// Returns the value of the Source’s preferred Default values.
+        /// </summary>
+        GetDefault = 0x0004,
+
+        /// <summary>
+        /// Returns the Current setting for a capability.
+        /// </summary>
+        GetCurrent = 0x0008,
+
+        /// <summary>
+        /// Returns the capability to its TWAIN Default (power-on) condition (i.e. all previous negotiation is ignored).
+        /// </summary>
+        Reset = 0x0010,
+
+        /// <summary>
+        /// Allows the application to set the Current and Default value(s) and
+        /// restrict the Available values to some subset of the Source’s power-on
+        /// set of values. Sources are strongly encouraged to allow the
+        /// application to set as many of its capabilities as possible, and further to
+        /// reflect these changes in the Source’s user interface. This will ensure
+        /// that the user can only select images with characteristics that are
+        /// useful to the consuming application.
+        /// </summary>
+        SetConstraint = 0x0020,
+
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         ConstrainAble=0x0040,
         GetHelp=0x0100,
         GetLabel=0x0200,
         GetLabelEnum=0x0400
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Language Constants
     /// </summary>
     public enum TwLanguage:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         DANISH=0,             /* Danish                 */
         DUTCH=1,              /* Dutch                  */
         ENGLISH=2,            /* International English  */
@@ -933,12 +1156,14 @@ namespace Saraff.Twain {
         TRIPURI=111,
         URDU=112,
         VIETNAMESE=113
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Country Constantsz
     /// </summary>
     public enum TwCountry:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         AFGHANISTAN=1001,
         ALGERIA=213,
         AMERICANSAMOA=684,
@@ -1179,12 +1404,14 @@ namespace Saraff.Twain {
         UKRAINE=380,
         USVIRGINIS=340,
         VIETNAM=84
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Unit of measure
     /// </summary>
     public enum TwUnits:ushort { //ICAP_UNITS values (UN_ means UNits)
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Inches=0,
         Centimeters=1,
         Picas=2,
@@ -1192,6 +1419,7 @@ namespace Saraff.Twain {
         Twips=4,
         Pixels=5,
         Millimeters=6
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
@@ -1203,6 +1431,7 @@ namespace Saraff.Twain {
         /// Black and white
         /// </summary>
         BW=0, /* Black and White */
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Gray=1,
         RGB=2,
         Palette=3,
@@ -1214,13 +1443,15 @@ namespace Saraff.Twain {
         LAB=9,
         SRGB=10,
         SCRGB=11,
-        INFRARED=16    
+        INFRARED=16
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Compression values
     /// </summary>
     public enum TwCompression:ushort { //ICAP_COMPRESSION values (CP_ means ComPression )
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         PackBits=1,
 
@@ -1265,13 +1496,15 @@ namespace Saraff.Twain {
         Rle8=11,
         BitFields=12,
         Zip=13,
-        Jpeg2000=14    
+        Jpeg2000=14
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Extended Image Info Attributes.
     /// </summary>
     public enum TwEI:ushort { //TWEI_xxxx
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         BarCodeX=0x1200,
         BarCodeY=0x1201,
         BarCodeText=0x1202,
@@ -1345,17 +1578,20 @@ namespace Saraff.Twain {
         ImageMerged=0x1247,
         MagDataLength=0x1248,
         PaperCount=0x1249,
-        PrinterText=0x124A     
+        PrinterText=0x124A
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_XFERMECH values (SX_ means Setup XFer)
     /// </summary>
     public enum TwSX:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Native=0,
         File=1,
         Memory=2,
         MemFile=4    /* added 1.91 */
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
@@ -1374,6 +1610,7 @@ namespace Saraff.Twain {
     /// ICAP_SUPPORTEDSIZES values (SS_ means Supported Sizes).
     /// </summary>
     public enum TwSS:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         A4Letter=1,
         B5Letter=2,
@@ -1435,12 +1672,14 @@ namespace Saraff.Twain {
         C10=51,
         USStatement=52,
         BusinessCard=53
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_IMAGEFILEFORMAT values (FF_means File Format).
     /// </summary>
     public enum TwFF:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
 
         /// <summary>
         /// Tagged Image File Format.
@@ -1510,21 +1749,25 @@ namespace Saraff.Twain {
         /// 2.1 Adobe PDF/A, Version.
         /// </summary>
         PdfA2=16
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Palette types for TW_PALETTE8.
     /// </summary>
     public enum TwPA:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         RGB=0,
         Gray=1,
         CMY=2
-    }
+ #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+   }
 
     /// <summary>
     /// CAP_DEVICEEVENT values (DE_ means device event).
     /// </summary>
     public enum TwDE:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         CustomEvents=0x8000,
         CheckAutomaticCapture=0,
         CheckBattery=1,
@@ -1543,75 +1786,91 @@ namespace Saraff.Twain {
         LampFailure=14,
         PowerSave=15,
         PowerSaveNotify=16
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_DUPLEX values.
     /// </summary>
     public enum TwDX:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,          // TWDX_NONE
         OnePassDuplex=1, // TWDX_1PASSDUPLEX
         TwoPassDuplex=2  // TWDX_2PASSDUPLEX
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_AUTODISCARDBLANKPAGES values.
     /// </summary>
     public enum TwBP:int {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Disable=-2, // TWBP_DISABLE
         Auto=-1  // TWBP_AUTO
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_AUTOSIZE values.
     /// </summary>
     public enum TwAS:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         Current=2
-    }
+ #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+   }
 
     /// <summary>
     /// ICAP_FLIPROTATION values (FR_ means flip rotation).
     /// </summary>
     public enum TwFR:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Book=0,
         Fanfold=1
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_IMAGEMERGE values.
     /// </summary>
     public enum TwIM:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         FrontOnTop=1,
         FrontOnBottom=2,
         FrontOnLeft=3,
         FrontOnRight=4
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_CAMERASIDE and TWEI_PAGESIDE values.
     /// </summary>
     public enum TwCS:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Both=0,
         Top=1,
         Bottom=2
-    }
+ #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+   }
 
     /// <summary>
     /// CAP_CLEARBUFFERS values.
     /// </summary>
     public enum TwCB:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Auto=0,
         Clear=1,
         NoClear=2
-    }
+ #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+   }
 
     /// <summary>
     /// ICAP_SUPPORTEDBARCODETYPES and TWEI_BARCODETYPE values.
     /// </summary>
     public enum TwBT:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Code3Of9=0,
         Code2Of5Interleaved=1,
         Code2Of5NonInterleaved=2,
@@ -1633,22 +1892,26 @@ namespace Saraff.Twain {
         CodaBarWithStartStop=18,
         MaxiCode=19,
         QRCode=20
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_BARCODESEARCHMODE values.
     /// </summary>
     public enum TwBD:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Horz=0,
         Vert=1,
         HorzVert=2,
         VertHorz=3
-    }
+ #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+   }
 
     /// <summary>
     /// ICAP_FILTER values.
     /// </summary>
     public enum TwFT:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Red=0,
         Green=1,
         Blue=2,
@@ -1658,47 +1921,57 @@ namespace Saraff.Twain {
         Magenta=6,
         Yellow=7,
         Black=8
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_ICCPROFILE values.
     /// </summary>
     public enum TwIC:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Link=1,
         Embed=2
-    }
+ #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+   }
 
     /// <summary>
     /// ICAP_PLANARCHUNKY values.
     /// </summary>
     public enum TwPC:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Chunky=0,
         Planar=1
-    }
+ #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+   }
 
     /// <summary>
     /// ICAP_BITORDER values.
     /// </summary>
     public enum TwBO:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         LsbFirst=0,
         MsbFirst=1
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_JPEGQUALITY values.
     /// </summary>
     public enum TwJQ:short {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Unknown=-4,
         Low=-3,
         Medium=-2,
         High=-1
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_JPEGSUBSAMPLING values.
     /// </summary>
     public enum TwJS:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         _444Ycbcr=0,
         _444Rgb=1,
         _422=2,
@@ -1707,31 +1980,37 @@ namespace Saraff.Twain {
         _420=5,
         _410=6,
         _311=7
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_PIXELFLAVOR values.
     /// </summary>
     public enum TwPF:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Chocolate=0,
         Vanilla=1
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_FLASHUSED2 values.
     /// </summary>
     public enum TwFL:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Off=1,
         On=2,
         Auto=3,
         RedEye=4
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_IMAGEFILTER values.
     /// </summary>
     public enum TwIF:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         LowPass=2,
@@ -1739,20 +2018,24 @@ namespace Saraff.Twain {
         HighPass=4,
         Text=BandPass,
         FineLine=HighPass
-    }
+ #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+   }
 
     /// <summary>
     /// ICAP_LIGHTPATH values.
     /// </summary>
     public enum TwLP:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Reflective=0,
         Transmissive=1
-    }
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+  }
 
     /// <summary>
     /// ICAP_LIGHTSOURCE values.
     /// </summary>
     public enum TwLS:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Red=0,
         Green=1,
         Blue=2,
@@ -1760,61 +2043,73 @@ namespace Saraff.Twain {
         White=4,
         UV=5,
         IR=6
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_NOISEFILTER values.
     /// </summary>
     public enum TwNF:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         LonePixel=2,
         MajorityRule=3
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_OVERSCAN values.
     /// </summary>
     public enum TwOV:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         TopBottom=2,
         LeftRight=3,
         All=4
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_DOUBLEFEEDDETECTION.
     /// </summary>
     public enum TwDF:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Ultrasonic=0,
         ByLength=1,
         Infrared=2
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_DOUBLEFEEDDETECTIONSENSITIVITY.
     /// </summary>
     public enum TwUS:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Low=0,
         Medium=1,
         High=2
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_DOUBLEFEEDDETECTIONRESPONSE.
     /// </summary>
     public enum TwDP:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Stop=0,
         StopAndWait=1,
         Sound=2,
         DoNotImprint=3
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_PRINTER values.
     /// </summary>
     public enum TwPR:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         ImprinterTopBefore=0,
         ImprinterTopAfter=1,
         ImprinterBottomBefore=2,
@@ -1823,21 +2118,25 @@ namespace Saraff.Twain {
         EndorserTopAfter=5,
         EndorserBottomBefore=6,
         EndorserBottomAfter=7
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_PRINTERMODE values.
     /// </summary>
     public enum TwPM:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         SingleString=0,
         MultiString=1,
         CompoundString=2
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_ORIENTATION values.
     /// </summary>
     public enum TwOR:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Rot0=0,
         Rot90=1,
         Rot180=2,
@@ -1847,50 +2146,60 @@ namespace Saraff.Twain {
         Auto=4,
         AutoText=5,
         AutoPicture=6
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_BITDEPTHREDUCTION values.
     /// </summary>
     public enum TwBR:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Threshold=0,
         Halftone=1,
         CustHalftone=2,
         Diffusion=3,
         DynamicThreshold=4
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_SEGMENTED values.
     /// </summary>
     public enum TwSG:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         Manual=2
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_FEEDERALIGNMENT values.
     /// </summary>
     public enum TwFA:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Left=1,
         Center=2,
         Right=3
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_FEEDERORDER values.
     /// </summary>
     public enum TwFO:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         FirstPageFirst=0,
         LastPageFirst=1
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_FEEDERPOCKET values.
     /// </summary>
     public enum TwFP:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         PocketError=0,
         Pocket1=1,
         Pocket2=2,
@@ -1908,88 +2217,106 @@ namespace Saraff.Twain {
         Pocket14=14,
         Pocket15=15,
         Pocket16=16
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_PAPERHANDLING values.
     /// </summary>
     public enum TwPH:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Normal=0,
         Fragile=1,
         Thick=2,
         Trifold=3,
         Photograph=4
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_FEEDERTYPE values.
     /// </summary>
     public enum TwFE:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         General=0,
         Photo=1,
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// TWEI_PATCHCODE values.
     /// </summary>
     public enum TwPch:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Patch1=0,
         Patch2=1,
         Patch3=2,
         Patch4=3,
         Patch6=4,
         PatchT=5
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_BATTERYMINUTES values.
     /// </summary>
     public enum TwBM1:int {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Infinite=-2,
         CannotReport=-1
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_BATTERYPERCENTAGE values.
     /// </summary>
     public enum TwBM2:short {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Infinite=-2,
         CannotReport=-1
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_POWERSUPPLY values.
     /// </summary>
     public enum TwPS:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         External=0,
         Battery=1
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_JOBCONTROL values.
     /// </summary>
     public enum TwJC:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Jsic=1,
         Jsis=2,
         Jsxc=3,
         Jsxs=4
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_INDICATORSMODE values.
     /// </summary>
     public enum TwCI:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Info=0,
         Warning=1,
         Error=2,
         WarmUp=3
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_ALARMS values.
     /// </summary>
     public enum TwAL:ushort {
+#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
         Alarm=0,
         FeederError=1,
         FeederWarning=2,
@@ -1999,6 +2326,7 @@ namespace Saraff.Twain {
         PatchCode=6,
         Power=7,
         Skew=8
+#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     #endregion
@@ -2220,7 +2548,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Создает экземпляр TwFix32 из целого числа.
         /// </summary>
-        /// <param name="f">Целое число.</param>
+        /// <param name="value">Целое число.</param>
         /// <returns>Экземпляр TwFix32.</returns>
         public static explicit operator TwFix32(uint value) {
             return new TwFix32() {
@@ -3307,7 +3635,6 @@ namespace Saraff.Twain {
     /// <summary>
     /// Container for array of values.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     internal class __TwArray:__ITwArray {
         private ITwArray _data;
         private object[] _items;
@@ -3342,7 +3669,6 @@ namespace Saraff.Twain {
     /// <summary>
     /// Container for a collection of values.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     internal class __TwEnumeration:__TwArray,__ITwEnumeration {
         private TwEnumeration _data;
 
