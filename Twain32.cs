@@ -2529,18 +2529,26 @@ namespace Saraff.Twain {
             /// <param name="info">Описание изображения.</param>
             /// <returns>Экземпляр класса ImageInfo.</returns>
             internal static ImageInfo FromTwImageInfo(TwImageInfo info) {
+
                 return new ImageInfo {
                     BitsPerPixel=info.BitsPerPixel,
-                    BitsPerSample=info.BitsPerSample,
+                    BitsPerSample=ImageInfo._Copy(info.BitsPerSample,info.SamplesPerPixel),
                     Compression=info.Compression,
                     ImageLength=info.ImageLength,
                     ImageWidth=info.ImageWidth,
                     PixelType=info.PixelType,
                     Planar=info.Planar,
-                    SamplesPerPixel=info.SamplesPerPixel,
                     XResolution=info.XResolution,
                     YResolution=info.YResolution
                 };
+            }
+
+            private static short[] _Copy(short[] array,int len) {
+                var _result = new short[len];
+                for(var i = 0; i<len; i++) {
+                    _result[i]=array[i];
+                }
+                return _result;
             }
 
             /// <summary>
@@ -2571,14 +2579,6 @@ namespace Saraff.Twain {
             /// Rows in the image, -1 if unknown by DS
             /// </summary>
             public int ImageLength {
-                get;
-                private set;
-            }
-
-            /// <summary>
-            /// Number of samples per pixel, 3 for RGB
-            /// </summary>
-            public short SamplesPerPixel {
                 get;
                 private set;
             }
