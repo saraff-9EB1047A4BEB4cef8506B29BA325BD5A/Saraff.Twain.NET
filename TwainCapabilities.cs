@@ -1590,7 +1590,7 @@ namespace Saraff.Twain {
                 }
             }
 
-            public void Set(T[] value) {
+            public void Set(params T[] value) {
                 var _val=new object[value.Length];
                 for(var i=0; i<_val.Length; i++) {
                     _val[i]=value[i];
@@ -1604,6 +1604,10 @@ namespace Saraff.Twain {
 
             public TwQC IsSupported() {
                 return this._Twain32.IsCapSupported(this._Cap);
+            }
+
+            public bool IsSupported(TwQC operation) {
+                return (this.IsSupported()&operation)==operation;
             }
 
             protected Twain32 _Twain32 {
@@ -1684,6 +1688,13 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Набор флагов поддерживаемых операций.</returns>
         TwQC IsSupported();
+
+        /// <summary>
+        /// Определяет поддерживаются ли указанные операции. Determines whether the specified operation is supported.
+        /// </summary>
+        /// <param name="operation">Набор битовых флагов, определяющих требуемые операйии. The operation.</param>
+        /// <returns>Истина, если все указанные операции поддерживаются, иначе лож. True, if all specified operation is supported, otherwise false.</returns>
+        bool IsSupported(TwQC operation);
     }
 
     /// <summary>
@@ -1720,7 +1731,7 @@ namespace Saraff.Twain {
         /// Устанавливает текущее значение возможности (capability).
         /// </summary>
         /// <param name="value">Значение.</param>
-        void Set(T[] value);
+        void Set(params T[] value);
 
         /// <summary>
         /// Сбрасывает текущее значение возможности (capability) в значение по умолчанию.
@@ -1732,5 +1743,12 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Набор флагов поддерживаемых операций.</returns>
         TwQC IsSupported();
+
+        /// <summary>
+        /// Определяет поддерживаются ли указанные операции. Determines whether the specified operation is supported.
+        /// </summary>
+        /// <param name="operation">Набор битовых флагов, определяющих требуемые операйии. The operation.</param>
+        /// <returns>Истина, если все указанные операции поддерживаются, иначе лож. True, if all specified operation is supported, otherwise false.</returns>
+        bool IsSupported(TwQC operation);
     }
 }

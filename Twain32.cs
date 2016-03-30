@@ -2747,7 +2747,6 @@ namespace Saraff.Twain {
             internal static ImageMemXfer Create(TwImageMemXfer data) {
                 ImageMemXfer _res=new ImageMemXfer() {
                     BytesPerRow=data.BytesPerRow,
-                    BytesWritten=data.BytesWritten,
                     Columns=data.Columns,
                     Compression=data.Compression,
                     Rows=data.Rows,
@@ -2757,13 +2756,13 @@ namespace Saraff.Twain {
                 if((data.Memory.Flags&TwMF.Handle)!=0) {
                     IntPtr _data=Twain32._Memory.Lock(data.Memory.TheMem);
                     try {
-                        _res.ImageData=new byte[_res.BytesWritten];
+                        _res.ImageData=new byte[data.BytesWritten];
                         Marshal.Copy(_data,_res.ImageData,0,_res.ImageData.Length);
                     } finally {
                         Twain32._Memory.Unlock(data.Memory.TheMem);
                     }
                 } else {
-                    _res.ImageData=new byte[_res.BytesWritten];
+                    _res.ImageData=new byte[data.BytesWritten];
                     Marshal.Copy(data.Memory.TheMem,_res.ImageData,0,_res.ImageData.Length);
                 }
                 return _res;
@@ -2813,14 +2812,6 @@ namespace Saraff.Twain {
             /// How far from the top of the image.
             /// </summary>
             public uint YOffset {
-                get;
-                private set;
-            }
-
-            /// <summary>
-            /// How many bytes written in Memory.
-            /// </summary>
-            public uint BytesWritten {
                 get;
                 private set;
             }
