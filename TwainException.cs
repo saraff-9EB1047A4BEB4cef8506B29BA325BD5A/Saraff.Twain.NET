@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.Serialization;
 using System.Diagnostics;
+using System.Security.Permissions;
 
 namespace Saraff.Twain {
 
@@ -68,7 +69,30 @@ namespace Saraff.Twain {
         internal TwainException(string message,Exception innerException):base(message,innerException) {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TwainException"/> class.
+        /// </summary>
+        /// <param name="info">Объект <see cref="T:System.Runtime.Serialization.SerializationInfo" />, содержащий сериализованные данные объекта о выбрасываемом исключении.</param>
+        /// <param name="context">Объект <see cref="T:System.Runtime.Serialization.StreamingContext" />, содержащий контекстные сведения об источнике или назначении.</param>
         internal TwainException(SerializationInfo info,StreamingContext context) : base(info,context) {
+            this.ConditionCode=(TwCC)info.GetValue("ConditionCode",typeof(TwCC));
+            this.ReturnCode=(TwRC)info.GetValue("ReturnCode",typeof(TwRC));
+        }
+
+        /// <summary>
+        /// При переопределении в производном классе задает сведения об исключении для <see cref="T:System.Runtime.Serialization.SerializationInfo" />.
+        /// </summary>
+        /// <param name="info">Объект <see cref="T:System.Runtime.Serialization.SerializationInfo" />, содержащий сериализованные данные объекта о выбрасываемом исключении.</param>
+        /// <param name="context">Объект <see cref="T:System.Runtime.Serialization.StreamingContext" />, содержащий контекстные сведения об источнике или назначении.</param>
+        /// <PermissionSet>
+        ///   <IPermission class="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" version="1" Read="*AllFiles*" PathDiscovery="*AllFiles*" />
+        ///   <IPermission class="System.Security.Permissions.SecurityPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" version="1" Flags="SerializationFormatter" />
+        /// </PermissionSet>
+        [SecurityPermission(SecurityAction.Demand,SerializationFormatter = true)]
+        public override void GetObjectData(SerializationInfo info,StreamingContext context) {
+            base.GetObjectData(info,context);
+            info.AddValue("ConditionCode",this.ConditionCode);
+            info.AddValue("ReturnCode",this.ReturnCode);
         }
 
         /// <summary>

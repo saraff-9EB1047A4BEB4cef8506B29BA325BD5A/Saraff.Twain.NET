@@ -91,7 +91,7 @@ namespace Saraff.Twain {
 
             public int ClrUsed {
                 get {
-                    return this.IsRequiredCreateColorTable?Convert.ToInt32(Math.Pow(2,this.biBitCount)):this.biClrUsed;
+                    return this.IsRequiredCreateColorTable ? 1<<this.biBitCount : this.biClrUsed;
                 }
             }
 
