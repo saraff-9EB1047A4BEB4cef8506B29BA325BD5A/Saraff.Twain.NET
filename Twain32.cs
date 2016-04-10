@@ -60,7 +60,7 @@ namespace Saraff.Twain {
         private _MessageFilter _filter; //фильтр событий WIN32
         private TwIdentity[] _sources=new TwIdentity[0]; //массив доступных источников данных.
         private ApplicationContext _context=null; //контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
-        private Collection<Image> _images=new Collection<Image>();
+        private Collection<_Image> _images=new Collection<_Image>();
         private TwainStateFlag _twainState;
         private bool _isTwain2Enable=IntPtr.Size!=4||Environment.OSVersion.Platform==PlatformID.Unix;
         private CallBackProc _callbackProc;
@@ -1052,7 +1052,7 @@ namespace Saraff.Twain {
 
                     IntPtr _pBitmap=_Memory.Lock(_hBitmap);
                     try {
-                        Image _img=null;
+                        _Image _img=null;
                         switch(Environment.OSVersion.Platform) {
                             case PlatformID.Unix:
                                 _img=Tiff.FromPtrToImage(_pBitmap);
@@ -1558,23 +1558,37 @@ namespace Saraff.Twain {
         /// <summary>
         /// Аргументы события EndXfer.
         /// </summary>
+        [Serializable]
         public sealed class EndXferEventArgs:EventArgs {
+            private _Image _image;
 
             /// <summary>
             /// Инициализирует новый экземпляр класса.
             /// </summary>
             /// <param name="image">Изображение.</param>
-            internal EndXferEventArgs(Image image) {
-                this.Image=image;
+            internal EndXferEventArgs(object image) {
+                this._image=image as _Image;
             }
 
             /// <summary>
             /// Возвращает изображение.
             /// </summary>
             public Image Image {
-                get;
-                private set;
+                get {
+                    return this._image;
+                }
             }
+
+#if !NET2            
+            /// <summary>
+            /// Возвращает изображение.
+            /// </summary>
+            public System.Windows.Media.ImageSource ImageSource {
+                get {
+                    return this._image;
+                }
+            }
+#endif
         }
 
         /// <summary>
@@ -1615,6 +1629,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Аргументы события SetupMemXferEvent.
         /// </summary>
+        [Serializable]
         public sealed class SetupMemXferEventArgs:EventArgs {
 
             /// <summary>
@@ -1647,6 +1662,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Аргументы события MemXferEvent.
         /// </summary>
+        [Serializable]
         public sealed class MemXferEventArgs:EventArgs {
 
             /// <summary>
@@ -1679,6 +1695,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Аргументы события SetupFileXferEvent.
         /// </summary>
+        [Serializable]
         public sealed class SetupFileXferEventArgs:EventArgs {
 
             /// <summary>
@@ -1699,6 +1716,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Аргументы события FileXferEvent.
         /// </summary>
+        [Serializable]
         public sealed class FileXferEventArgs:EventArgs {
 
             /// <summary>
@@ -1721,6 +1739,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Аргументы события TwainStateChanged.
         /// </summary>
+        [Serializable]
         public sealed class TwainStateEventArgs:EventArgs {
 
             /// <summary>
@@ -1853,6 +1872,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Аргументы события AcquireError.
         /// </summary>
+        [Serializable]
         public sealed class AcquireErrorEventArgs:EventArgs {
 
             /// <summary>
@@ -2277,6 +2297,47 @@ namespace Saraff.Twain {
                 public IntPtr wParam;
                 public IntPtr lParam;
             }
+        }
+
+        [Serializable]
+        private sealed class _Image {
+            private Stream _stream = null;
+
+            [NonSerialized]
+            private Image _image = null;
+#if !NET2
+            [NonSerialized]
+            private System.Windows.Media.Imaging.BitmapImage _image2 = null;
+#endif
+
+            private _Image() {
+            }
+
+            public static implicit operator _Image(Stream stream) {
+                return new _Image { _stream=stream };
+            }
+
+            public static implicit operator Image(_Image value) {
+                if(value._image==null) {
+                    value._image=Image.FromStream(value._stream);
+                }
+                return value._image;
+            }
+
+#if !NET2
+            public static implicit operator System.Windows.Media.ImageSource(_Image value) {
+                if(value._image2==null) {
+                    value._stream.Seek(0,SeekOrigin.Begin);
+                    value._image2=new System.Windows.Media.Imaging.BitmapImage();
+                    value._image2.BeginInit();
+                    value._image2.StreamSource=value._stream;
+                    value._image2.CacheOption=System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    value._image2.EndInit();
+                    value._image2.Freeze();
+                }
+                return value._image2;
+            }
+#endif
         }
 
         /// <summary>

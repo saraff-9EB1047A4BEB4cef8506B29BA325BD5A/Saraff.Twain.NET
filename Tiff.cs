@@ -54,11 +54,11 @@ namespace Saraff.Twain {
             return _tiff;
         }
 
-        public static Image FromPtrToImage(IntPtr ptr) {
+        public static Stream FromPtrToImage(IntPtr ptr) {
             Tiff _tiff=Tiff.FromPtr(ptr);
             byte[] _tiffData=new byte[_tiff._GetSize()];
             Marshal.Copy(ptr,_tiffData,0,_tiffData.Length);
-            return Image.FromStream(new MemoryStream(_tiffData));
+            return new MemoryStream(_tiffData);
         }
 
         private int _GetSize() {

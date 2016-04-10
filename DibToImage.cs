@@ -41,7 +41,7 @@ namespace Saraff.Twain {
 
     internal sealed class DibToImage {
 
-        public static Image WithStream(IntPtr dibPtr) {
+        public static Stream WithStream(IntPtr dibPtr) {
             MemoryStream _stream=new MemoryStream();
             BinaryWriter _writer=new BinaryWriter(_stream);
 
@@ -72,7 +72,7 @@ namespace Saraff.Twain {
 
             #endregion
             
-            return Image.FromStream(_stream);
+            return _stream;
         }
 
         [StructLayout(LayoutKind.Sequential,Pack=2)]
