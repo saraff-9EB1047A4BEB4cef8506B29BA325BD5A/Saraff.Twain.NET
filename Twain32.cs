@@ -910,37 +910,77 @@ namespace Saraff.Twain {
             }
         }
 
+        private void _SetCapCore(TwCapability cap,TwMSG msg) {
+            if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
+                try {
+                    TwRC _rc = this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,msg,ref cap);
+                    if(_rc!=TwRC.Success) {
+                        throw new TwainException(this._GetTwainStatus(),_rc);
+                    }
+                } finally {
+                    cap.Dispose();
+                }
+            } else {
+                throw new TwainException("Источник данных не открыт.");
+            }
+        }
+
+        private void _SetCapCore(TwCap capability,TwMSG msg,object value) {
+            TwCapability _cap = null;
+            if(value is string) {
+                object[] _attrs = typeof(TwCap).GetField(capability.ToString()).GetCustomAttributes(typeof(TwTypeAttribute),false);
+                if(_attrs.Length>0) {
+                    _cap=new TwCapability(capability,(string)value,((TwTypeAttribute)_attrs[0]).TwType);
+                } else {
+                    _cap=new TwCapability(capability,(string)value,TwTypeHelper.TypeOf(value));
+                }
+            } else {
+                TwType _type = TwTypeHelper.TypeOf(value.GetType());
+                _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type);
+            }
+            this._SetCapCore(_cap,msg);
+        }
+
+        private void _SetCapCore(TwCap capability,TwMSG msg,object[] value) {
+            var _attrs = typeof(TwCap).GetField(capability.ToString()).GetCustomAttributes(typeof(TwTypeAttribute),false);
+            this._SetCapCore(
+                new TwCapability(
+                    capability,
+                    new TwArray() {
+                        ItemType=_attrs.Length>0 ? ((TwTypeAttribute)(_attrs[0])).TwType : TwTypeHelper.TypeOf(value[0]),
+                        NumItems=(uint)value.Length
+                    },
+                    value),
+                msg);
+        }
+
+        private void _SetCapCore(TwCap capability,TwMSG msg,Range value) {
+            this._SetCapCore(new TwCapability(capability,value.ToTwRange()),msg);
+        }
+
+        private void _SetCapCore(TwCap capability,TwMSG msg,Enumeration value) {
+            var _attrs = typeof(TwCap).GetField(capability.ToString()).GetCustomAttributes(typeof(TwTypeAttribute),false);
+            this._SetCapCore(
+                new TwCapability(
+                    capability,
+                    new TwEnumeration {
+                        ItemType=_attrs.Length>0 ? ((TwTypeAttribute)(_attrs[0])).TwType : TwTypeHelper.TypeOf(value[0]),
+                        NumItems=(uint)value.Count,
+                        CurrentIndex=(uint)value.CurrentIndex,
+                        DefaultIndex=(uint)value.DefaultIndex
+                    },
+                    value.Items),
+                msg);
+        }
+
         /// <summary>
         /// Устанавливает значение для указанного <see cref="TwCap">capability</see>
         /// </summary>
         /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
         /// <param name="value">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
         public void SetCap(TwCap capability,object value) {
-            if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                TwCapability _cap=null;
-                if(value is string) {
-                    object[] _attrs=typeof(TwCap).GetField(capability.ToString()).GetCustomAttributes(typeof(TwTypeAttribute),false);
-                    if(_attrs.Length>0) {
-                        _cap=new TwCapability(capability,(string)value,((TwTypeAttribute)_attrs[0]).TwType);
-                    } else {
-                        _cap=new TwCapability(capability,(string)value,TwTypeHelper.TypeOf(value));
-                    }
-                } else {
-                    TwType _type=TwTypeHelper.TypeOf(value.GetType());
-                    _cap=new TwCapability(capability,TwTypeHelper.ValueFromTw<uint>(TwTypeHelper.CastToTw(_type,value)),_type);
-                }
-                try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
-                    if(_rc!=TwRC.Success) {
-                        throw new TwainException(this._GetTwainStatus(),_rc);
-                    }
-                } finally {
-                    _cap.Dispose();
-                }
-            } else {
-                throw new TwainException("Источник данных не открыт.");
-            }
+            this._SetCapCore(capability,TwMSG.Set,value);
         }
 
         /// <summary>
@@ -948,27 +988,9 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
         /// <param name="capabilityValue">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
-        public void SetCap(TwCap capability,object[] capabilityValue) {
-            if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                TwCapability _cap=new TwCapability(
-                    capability,
-                    new TwArray() {
-                        ItemType=TwTypeHelper.TypeOf(capabilityValue[0]),
-                        NumItems=(uint)capabilityValue.Length
-                    },
-                    capabilityValue);
-                try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
-                    if(_rc!=TwRC.Success) {
-                        throw new TwainException(this._GetTwainStatus(),_rc);
-                    }
-                } finally {
-                    _cap.Dispose();
-                }
-            } else {
-                throw new TwainException("Источник данных не открыт.");
-            }
+        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        public void SetCap(TwCap capability,object[] value) {
+            this._SetCapCore(capability,TwMSG.Set,value);
         }
 
         /// <summary>
@@ -976,21 +998,9 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
         /// <param name="capabilityValue">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
-        public void SetCap(TwCap capability,Range capabilityValue) {
-            if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                TwCapability _cap=new TwCapability(capability,capabilityValue.ToTwRange());
-                try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
-                    if(_rc!=TwRC.Success) {
-                        throw new TwainException(this._GetTwainStatus(),_rc);
-                    }
-                } finally {
-                    _cap.Dispose();
-                }
-            } else {
-                throw new TwainException("Источник данных не открыт.");
-            }
+        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        public void SetCap(TwCap capability,Range value) {
+            this._SetCapCore(capability,TwMSG.Set,value);
         }
 
         /// <summary>
@@ -998,29 +1008,49 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
         /// <param name="capabilityValue">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
-        public void SetCap(TwCap capability,Enumeration capabilityValue) {
-            if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
-                TwCapability _cap=new TwCapability(
-                    capability,
-                    new TwEnumeration() {
-                        ItemType=TwTypeHelper.TypeOf(capabilityValue.Items[0]),
-                        NumItems=(uint)capabilityValue.Count,
-                        CurrentIndex=(uint)capabilityValue.CurrentIndex,
-                        DefaultIndex=(uint)capabilityValue.DefaultIndex
-                    },
-                    capabilityValue.Items);
-                try {
-                    TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.Capability,TwMSG.Set,ref _cap);
-                    if(_rc!=TwRC.Success) {
-                        throw new TwainException(this._GetTwainStatus(),_rc);
-                    }
-                } finally {
-                    _cap.Dispose();
-                }
-            } else {
-                throw new TwainException("Источник данных не открыт.");
-            }
+        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        public void SetCap(TwCap capability,Enumeration value) {
+            this._SetCapCore(capability,TwMSG.Set,value);
+        }
+
+        /// <summary>
+        /// Устанавливает ограничение на значения указанной возможности.
+        /// </summary>
+        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
+        /// <param name="value">Устанавливаемое значение.</param>
+        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        public void SetConstraintCap(TwCap capability,object value) {
+            this._SetCapCore(capability,TwMSG.SetConstraint,value);
+        }
+
+        /// <summary>
+        /// Устанавливает ограничение на значения указанной возможности.
+        /// </summary>
+        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
+        /// <param name="value">Устанавливаемое значение.</param>
+        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        public void SetConstraintCap(TwCap capability,object[] value) {
+            this._SetCapCore(capability,TwMSG.SetConstraint,value);
+        }
+
+        /// <summary>
+        /// Устанавливает ограничение на значения указанной возможности.
+        /// </summary>
+        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
+        /// <param name="value">Устанавливаемое значение.</param>
+        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        public void SetConstraintCap(TwCap capability,Range value) {
+            this._SetCapCore(capability,TwMSG.SetConstraint,value);
+        }
+
+        /// <summary>
+        /// Устанавливает ограничение на значения указанной возможности.
+        /// </summary>
+        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
+        /// <param name="value">Устанавливаемое значение.</param>
+        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        public void SetConstraintCap(TwCap capability,Enumeration value) {
+            this._SetCapCore(capability,TwMSG.SetConstraint,value);
         }
 
         #endregion

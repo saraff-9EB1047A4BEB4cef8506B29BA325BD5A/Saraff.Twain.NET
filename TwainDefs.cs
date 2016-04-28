@@ -182,6 +182,11 @@ namespace Saraff.Twain {
         /// </summary>
         QuerySupport=0x0008,
 
+        GetHelp=0x0009,
+        GetLabel=0x000a,
+        GetLabelEnum=0x000b,
+        SetConstraint=0x000c,
+
         #endregion
 
         #region Messages used with DAT_NULL
