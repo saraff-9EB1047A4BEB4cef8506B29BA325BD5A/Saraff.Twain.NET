@@ -1602,7 +1602,7 @@ namespace Saraff.Twain {
             /// Устанавливает ограничение на значения указанной возможности.
             /// </summary>
             /// <param name="value">Устанавливаемое значение.</param>
-            public void SetConstrain(T value) {
+            public void SetConstraint(T value) {
                 this._Twain32.SetConstraintCap(this._Cap,value);
             }
 
@@ -1610,7 +1610,7 @@ namespace Saraff.Twain {
             /// Устанавливает ограничение на значения указанной возможности.
             /// </summary>
             /// <param name="value">Устанавливаемое значение.</param>
-            public void SetConstrain(params T[] value) {
+            public void SetConstraint(params T[] value) {
                 var _val = new object[value.Length];
                 for(var i = 0; i<_val.Length; i++) {
                     _val[i]=value[i];
@@ -1622,7 +1622,7 @@ namespace Saraff.Twain {
             /// Устанавливает ограничение на значения указанной возможности.
             /// </summary>
             /// <param name="value">Устанавливаемое значение.</param>
-            public void SetConstrain(Twain32.Range value) {
+            public void SetConstraint(Twain32.Range value) {
                 if(value.CurrentValue.GetType()!=typeof(T)) {
                     throw new ArgumentException();
                 }
@@ -1633,7 +1633,7 @@ namespace Saraff.Twain {
             /// Устанавливает ограничение на значения указанной возможности.
             /// </summary>
             /// <param name="value">Устанавливаемое значение.</param>
-            public void SetConstrain(Twain32.Enumeration value) {
+            public void SetConstraint(Twain32.Enumeration value) {
                 if(value.Items==null||value.Items.Length==0||value.Items[0].GetType()!=typeof(T)) {
                     throw new ArgumentException();
                 }
@@ -1724,25 +1724,25 @@ namespace Saraff.Twain {
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstrain(T value);
+        void SetConstraint(T value);
 
         /// <summary>
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstrain(params T[] value);
+        void SetConstraint(params T[] value);
 
         /// <summary>
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstrain(Twain32.Range value);
+        void SetConstraint(Twain32.Range value);
 
         /// <summary>
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstrain(Twain32.Enumeration value);
+        void SetConstraint(Twain32.Enumeration value);
 
         /// <summary>
         /// Сбрасывает текущее значение возможности (capability) в значение по умолчанию.
@@ -1803,25 +1803,25 @@ namespace Saraff.Twain {
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstrain(T value);
+        void SetConstraint(T value);
 
         /// <summary>
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstrain(params T[] value);
+        void SetConstraint(params T[] value);
 
         /// <summary>
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstrain(Twain32.Range value);
+        void SetConstraint(Twain32.Range value);
 
         /// <summary>
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstrain(Twain32.Enumeration value);
+        void SetConstraint(Twain32.Enumeration value);
 
         /// <summary>
         /// Сбрасывает текущее значение возможности (capability) в значение по умолчанию.
