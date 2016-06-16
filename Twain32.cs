@@ -1078,7 +1078,9 @@ namespace Saraff.Twain {
                     }
                     // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
                     // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                    this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                    if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo))) {
+                        return;
+                    }
 
                     IntPtr _pBitmap=_Memory.Lock(_hBitmap);
                     try {
@@ -1094,7 +1096,9 @@ namespace Saraff.Twain {
                                 break;
                         }
                         this._images.Add(_img);
-                        this._OnEndXfer(new EndXferEventArgs(_img));
+                        if(this._OnEndXfer(new EndXferEventArgs(_img))) {
+                            return;
+                        }
                     } finally {
                         _Memory.Unlock(_hBitmap);
                         _Memory.Free(_hBitmap);
@@ -1121,14 +1125,15 @@ namespace Saraff.Twain {
                 this._images.Clear();
                 do {
                     _pxfr.Count=0;
-                    ImageInfo _info=this._GetImageInfo();
 
                     TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
                         Format=((this.Capabilities.ImageFileFormat.IsSupported()&TwQC.GetCurrent)!=0)?this.Capabilities.ImageFileFormat.GetCurrent():TwFF.Bmp,
                         FileName=Path.GetTempFileName()
                     };
                     SetupFileXferEventArgs _args=new SetupFileXferEventArgs();
-                    this._OnSetupFileXfer(_args);
+                    if(this._OnSetupFileXfer(_args)) {
+                        return;
+                    }
                     if(!string.IsNullOrEmpty(_args.FileName)) {
                         _fileXfer.FileName=_args.FileName;
                     }
@@ -1145,7 +1150,9 @@ namespace Saraff.Twain {
                     }
                     // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
                     // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                    this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                    if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo))) {
+                        return;
+                    }
 
                     for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
@@ -1153,7 +1160,9 @@ namespace Saraff.Twain {
                     for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Get,ref _fileXfer); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
-                    this._OnFileXfer(new FileXferEventArgs(ImageFileXfer.Create(_fileXfer)));
+                    if(this._OnFileXfer(new FileXferEventArgs(ImageFileXfer.Create(_fileXfer)))) {
+                        return;
+                    }
                 } while(_pxfr.Count!=0);
             } finally {
                 TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.Reset,ref _pxfr);
@@ -1191,7 +1200,9 @@ namespace Saraff.Twain {
                     for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.SetupMemXfer,TwMSG.Get,ref _memBufSize); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
-                    this._OnSetupMemXfer(new SetupMemXferEventArgs(_info,_memBufSize.Preferred));
+                    if(this._OnSetupMemXfer(new SetupMemXferEventArgs(_info,_memBufSize.Preferred))) {
+                        return;
+                    }
 
                     IntPtr _hMem=_Memory.Alloc((int)_memBufSize.Preferred);
                     if(_hMem==IntPtr.Zero) {
@@ -1214,11 +1225,15 @@ namespace Saraff.Twain {
                                 TwRC _rc2=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.PendingXfers,TwMSG.EndXfer,ref _pxfr);
                                 throw new TwainException(_cc,_rc);
                             }
-                            this._OnMemXfer(new MemXferEventArgs(_info,ImageMemXfer.Create(_memXferBuf)));
+                            if(this._OnMemXfer(new MemXferEventArgs(_info,ImageMemXfer.Create(_memXferBuf)))) {
+                                return;
+                            }
                             if(_rc==TwRC.XferDone) {
                                 // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
                                 // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                                this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo));
+                                if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo,this._GetExtImageInfo))) {
+                                    return;
+                                }
                                 break;
                             }
                         } while(true);
@@ -1344,40 +1359,46 @@ namespace Saraff.Twain {
             }
         }
 
-        private void _OnXferDone(XferDoneEventArgs e) {
+        private bool _OnXferDone(XferDoneEventArgs e) {
             if(this.XferDone!=null) {
                 this.XferDone(this,e);
             }
+            return e.Cancel;
         }
 
-        private void _OnEndXfer(EndXferEventArgs e) {
+        private bool _OnEndXfer(EndXferEventArgs e) {
             if(this.EndXfer!=null) {
                 this.EndXfer(this,e);
             }
+            return e.Cancel;
         }
 
-        private void _OnSetupMemXfer(SetupMemXferEventArgs e) {
+        private bool _OnSetupMemXfer(SetupMemXferEventArgs e) {
             if(this.SetupMemXferEvent!=null) {
                 this.SetupMemXferEvent(this,e);
             }
+            return e.Cancel;
         }
 
-        private void _OnMemXfer(MemXferEventArgs e) {
+        private bool _OnMemXfer(MemXferEventArgs e) {
             if(this.MemXferEvent!=null) {
                 this.MemXferEvent(this,e);
             }
+            return e.Cancel;
         }
 
-        private void _OnSetupFileXfer(SetupFileXferEventArgs e) {
+        private bool _OnSetupFileXfer(SetupFileXferEventArgs e) {
             if(this.SetupFileXferEvent!=null) {
                 this.SetupFileXferEvent(this,e);
             }
+            return e.Cancel;
         }
 
-        private void _OnFileXfer(FileXferEventArgs e) {
+        private bool _OnFileXfer(FileXferEventArgs e) {
             if(this.FileXferEvent!=null) {
                 this.FileXferEvent(this,e);
             }
+            return e.Cancel;
         }
 
         private void _OnDeviceEvent(DeviceEventEventArgs e) {
@@ -1589,7 +1610,7 @@ namespace Saraff.Twain {
         /// Аргументы события EndXfer.
         /// </summary>
         [Serializable]
-        public sealed class EndXferEventArgs:EventArgs {
+        public sealed class EndXferEventArgs:CancelEventArgs {
             private _Image _image;
 
             /// <summary>
@@ -1624,7 +1645,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Аргументы события XferDone.
         /// </summary>
-        public sealed class XferDoneEventArgs:EventArgs {
+        public sealed class XferDoneEventArgs:CancelEventArgs {
             private GetImageInfoCallback _imageInfoMethod;
             private GetExtImageInfoCallback _extImageInfoMethod;
 
@@ -1660,7 +1681,7 @@ namespace Saraff.Twain {
         /// Аргументы события SetupMemXferEvent.
         /// </summary>
         [Serializable]
-        public sealed class SetupMemXferEventArgs:EventArgs {
+        public sealed class SetupMemXferEventArgs:CancelEventArgs {
 
             /// <summary>
             /// Инициализирует новый экземпляр класса <see cref="SetupMemXferEventArgs"/>.
@@ -1693,7 +1714,7 @@ namespace Saraff.Twain {
         /// Аргументы события MemXferEvent.
         /// </summary>
         [Serializable]
-        public sealed class MemXferEventArgs:EventArgs {
+        public sealed class MemXferEventArgs:CancelEventArgs {
 
             /// <summary>
             /// Инициализирует новый экземпляр класса <see cref="MemXferEventArgs"/>.
@@ -1726,7 +1747,7 @@ namespace Saraff.Twain {
         /// Аргументы события SetupFileXferEvent.
         /// </summary>
         [Serializable]
-        public sealed class SetupFileXferEventArgs:EventArgs {
+        public sealed class SetupFileXferEventArgs:CancelEventArgs {
 
             /// <summary>
             /// Инициализирует новый экземпляр класса <see cref="SetupFileXferEventArgs"/>.
@@ -1747,7 +1768,7 @@ namespace Saraff.Twain {
         /// Аргументы события FileXferEvent.
         /// </summary>
         [Serializable]
-        public sealed class FileXferEventArgs:EventArgs {
+        public sealed class FileXferEventArgs:CancelEventArgs {
 
             /// <summary>
             /// Инициализирует новый экземпляр класса <see cref="FileXferEventArgs"/>.
