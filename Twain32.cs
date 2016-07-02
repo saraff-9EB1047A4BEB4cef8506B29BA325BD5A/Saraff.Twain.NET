@@ -1610,7 +1610,7 @@ namespace Saraff.Twain {
         /// Аргументы события EndXfer.
         /// </summary>
         [Serializable]
-        public sealed class EndXferEventArgs:CancelEventArgs {
+        public sealed class EndXferEventArgs:SerializableCancelEventArgs {
             private _Image _image;
 
             /// <summary>
@@ -1645,7 +1645,7 @@ namespace Saraff.Twain {
         /// <summary>
         /// Аргументы события XferDone.
         /// </summary>
-        public sealed class XferDoneEventArgs:CancelEventArgs {
+        public sealed class XferDoneEventArgs:SerializableCancelEventArgs {
             private GetImageInfoCallback _imageInfoMethod;
             private GetExtImageInfoCallback _extImageInfoMethod;
 
@@ -1681,7 +1681,7 @@ namespace Saraff.Twain {
         /// Аргументы события SetupMemXferEvent.
         /// </summary>
         [Serializable]
-        public sealed class SetupMemXferEventArgs:CancelEventArgs {
+        public sealed class SetupMemXferEventArgs:SerializableCancelEventArgs {
 
             /// <summary>
             /// Инициализирует новый экземпляр класса <see cref="SetupMemXferEventArgs"/>.
@@ -1714,7 +1714,7 @@ namespace Saraff.Twain {
         /// Аргументы события MemXferEvent.
         /// </summary>
         [Serializable]
-        public sealed class MemXferEventArgs:CancelEventArgs {
+        public sealed class MemXferEventArgs:SerializableCancelEventArgs {
 
             /// <summary>
             /// Инициализирует новый экземпляр класса <see cref="MemXferEventArgs"/>.
@@ -1747,7 +1747,7 @@ namespace Saraff.Twain {
         /// Аргументы события SetupFileXferEvent.
         /// </summary>
         [Serializable]
-        public sealed class SetupFileXferEventArgs:CancelEventArgs {
+        public sealed class SetupFileXferEventArgs:SerializableCancelEventArgs {
 
             /// <summary>
             /// Инициализирует новый экземпляр класса <see cref="SetupFileXferEventArgs"/>.
@@ -1768,7 +1768,7 @@ namespace Saraff.Twain {
         /// Аргументы события FileXferEvent.
         /// </summary>
         [Serializable]
-        public sealed class FileXferEventArgs:CancelEventArgs {
+        public sealed class FileXferEventArgs:SerializableCancelEventArgs {
 
             /// <summary>
             /// Инициализирует новый экземпляр класса <see cref="FileXferEventArgs"/>.
@@ -1940,6 +1940,21 @@ namespace Saraff.Twain {
             public TwainException Exception {
                 get;
                 private set;
+            }
+        }
+
+        [Serializable]
+        public class SerializableCancelEventArgs:EventArgs {
+
+            /// <summary>
+            /// Получает или задает значение, показывающее, следует ли отменить событие. Gets or sets a value indicating whether the event should be canceled.
+            /// </summary>
+            /// <value>
+            /// Значение <c>true<c>, если событие следует отменить, в противном случае — значение <c>false<c>. <c>true</c> if cancel; otherwise, <c>false</c>.
+            /// </value>
+            public bool Cancel {
+                get;
+                set;
             }
         }
 
