@@ -987,7 +987,7 @@ namespace Saraff.Twain {
         /// Устанавливает значение для указанного <see cref="TwCap">capability</see>
         /// </summary>
         /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="capabilityValue">Устанавливаемое значение.</param>
+        /// <param name="value">Устанавливаемое значение.</param>
         /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
         public void SetCap(TwCap capability,object[] value) {
             this._SetCapCore(capability,TwMSG.Set,value);
@@ -997,7 +997,7 @@ namespace Saraff.Twain {
         /// Устанавливает значение для указанного <see cref="TwCap">capability</see>
         /// </summary>
         /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="capabilityValue">Устанавливаемое значение.</param>
+        /// <param name="value">Устанавливаемое значение.</param>
         /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
         public void SetCap(TwCap capability,Range value) {
             this._SetCapCore(capability,TwMSG.Set,value);
@@ -1007,7 +1007,7 @@ namespace Saraff.Twain {
         /// Устанавливает значение для указанного <see cref="TwCap">capability</see>
         /// </summary>
         /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="capabilityValue">Устанавливаемое значение.</param>
+        /// <param name="value">Устанавливаемое значение.</param>
         /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
         public void SetCap(TwCap capability,Enumeration value) {
             this._SetCapCore(capability,TwMSG.Set,value);
@@ -1264,7 +1264,7 @@ namespace Saraff.Twain {
         /// <param name="msg">Сообщение.</param>
         /// <param name="data">Данные.</param>
         /// <returns>Результат обработники события.</returns>
-        private TwRC _TwCallbackProc(TwIdentity appId,TwIdentity srcId,TwDG dg,TwDAT dat,TwMSG msg,IntPtr data) {
+        private TwRC _TwCallbackProc(TwIdentity srcId,TwIdentity appId,TwDG dg,TwDAT dat,TwMSG msg,IntPtr data) {
             try {
                 if(appId==null||appId.Id!=this._AppId.Id) {
                     return TwRC.Failure;
@@ -1943,6 +1943,10 @@ namespace Saraff.Twain {
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <seealso cref="System.EventArgs" />
         [Serializable]
         public class SerializableCancelEventArgs:EventArgs {
 
@@ -1950,7 +1954,7 @@ namespace Saraff.Twain {
             /// Получает или задает значение, показывающее, следует ли отменить событие. Gets or sets a value indicating whether the event should be canceled.
             /// </summary>
             /// <value>
-            /// Значение <c>true<c>, если событие следует отменить, в противном случае — значение <c>false<c>. <c>true</c> if cancel; otherwise, <c>false</c>.
+            /// Значение <c>true</c>, если событие следует отменить, в противном случае — значение <c>false</c>. <c>true</c> if cancel; otherwise, <c>false</c>.
             /// </value>
             public bool Cancel {
                 get;
