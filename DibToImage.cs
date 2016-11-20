@@ -40,9 +40,10 @@ using System.Collections.Generic;
 namespace Saraff.Twain {
 
     internal sealed class DibToImage {
+        private const int BufferSize=256*1024; //256K
 
-        public static Stream WithStream(IntPtr dibPtr) {
-            MemoryStream _stream=new MemoryStream();
+        public static Stream WithStream(IntPtr dibPtr,IStreamProvider provider) {
+            Stream _stream=provider!=null?provider.GetStream():new MemoryStream();
             BinaryWriter _writer=new BinaryWriter(_stream);
 
             BITMAPINFOHEADER _bmi=(BITMAPINFOHEADER)Marshal.PtrToStructure(dibPtr,typeof(BITMAPINFOHEADER));
@@ -66,13 +67,20 @@ namespace Saraff.Twain {
 
             #region BITMAPINFO and pixel data
 
-            byte[] _data=new byte[_dibSize];
-            Marshal.Copy(dibPtr,_data,0,_data.Length);
-            _writer.Write(_data);
+            byte[] _buffer = new byte[DibToImage.BufferSize];
+            for(int _offset = 0, _len = 0; _offset<_dibSize; _offset+=_len) {
+                _len=Math.Min(DibToImage.BufferSize,_dibSize-_offset);
+                Marshal.Copy((IntPtr)(dibPtr.ToInt64()+_offset),_buffer,0,_len);
+                _writer.Write(_buffer,0,_len);
+            }
 
             #endregion
-            
+
             return _stream;
+        }
+
+        public static Stream WithStream(IntPtr dibPtr) {
+            return DibToImage.WithStream(dibPtr,null);
         }
 
         [StructLayout(LayoutKind.Sequential,Pack=2)]
@@ -101,5 +109,17 @@ namespace Saraff.Twain {
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Provides instances of the <see cref="System.IO.Stream"/> for data writing.
+    /// </summary>
+    public interface IStreamProvider {
+
+        /// <summary>
+        /// Gets the stream.
+        /// </summary>
+        /// <returns>The stream.</returns>
+        Stream GetStream();
     }
 }

@@ -329,6 +329,7 @@ namespace Saraff.Twain {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool CloseDataSource() {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0 && (this._TwainState&TwainStateFlag.DSEnabled)==0) {
+                this._images.Clear();
                 for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.CloseDS,ref this._srcds); _rc!=TwRC.Success; ) {
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
@@ -1092,7 +1093,7 @@ namespace Saraff.Twain {
                             case PlatformID.MacOSX:
                                 throw new NotImplementedException();
                             default:
-                                _img=DibToImage.WithStream(_pBitmap);
+                                _img=DibToImage.WithStream(_pBitmap,this.GetService(typeof(IStreamProvider)) as IStreamProvider);
                                 break;
                         }
                         this._images.Add(_img);
@@ -2389,6 +2390,7 @@ namespace Saraff.Twain {
 
             public static implicit operator Image(_Image value) {
                 if(value._image==null) {
+                    value._stream.Seek(0L,SeekOrigin.Begin);
                     value._image=Image.FromStream(value._stream);
                 }
                 return value._image;
@@ -2397,7 +2399,7 @@ namespace Saraff.Twain {
 #if !NET2
             public static implicit operator System.Windows.Media.ImageSource(_Image value) {
                 if(value._image2==null) {
-                    value._stream.Seek(0,SeekOrigin.Begin);
+                    value._stream.Seek(0L,SeekOrigin.Begin);
                     value._image2=new System.Windows.Media.Imaging.BitmapImage();
                     value._image2.BeginInit();
                     value._image2.StreamSource=value._stream;
