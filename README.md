@@ -5,4 +5,6 @@ To install Saraff.Twain.NET, run the following command in the [Package Manager C
 ```
 PM> Install-Package Saraff.Twain
 ```
-Also, you can see https://www.nuget.org/packages/Saraff.Twain/
+Also, you can see: 
+* [NuGet package of the Saraff.Twain.NET](https://www.nuget.org/packages/Saraff.Twain/)
+* [Wiki of the Saraff.Twain.NET](https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET/wiki)
