@@ -987,7 +987,8 @@ namespace Saraff.Twain {
         PrinterIndexNumDigits=0x104B,
         PrinterIndexStep=0x104C,
         PrinterIndexTrigger=0x104D,
-        PrinterStringPreview=0x104E
+        PrinterStringPreview=0x104E,
+        SheetCount= 0x104F // Controls the number of sheets scanned (compare to CAP_XFERCOUNT that controls images)
 #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
@@ -1583,7 +1584,8 @@ namespace Saraff.Twain {
         ImageMerged=0x1247,
         MagDataLength=0x1248,
         PaperCount=0x1249,
-        PrinterText=0x124A
+        PrinterText=0x124A,
+        TwainDirectMetadata=0x124B // Metadata returned in TWAIN Direct JSON format
 #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
@@ -1753,7 +1755,12 @@ namespace Saraff.Twain {
         /// <summary>
         /// 2.1 Adobe PDF/A, Version.
         /// </summary>
-        PdfA2=16
+        PdfA2=16,
+
+        /// <summary>
+        /// PDF/raster.
+        /// </summary>
+        PdfRaster = 17 // Added support for PDF/raster
 #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
