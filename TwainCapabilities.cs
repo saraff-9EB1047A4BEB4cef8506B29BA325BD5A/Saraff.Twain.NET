@@ -1435,6 +1435,15 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
+        /// CAP_SHEETCOUNT. Capture the specified number of sheets of paper.
+        /// </summary>
+        [Capability(TwCap.SheetCount)]
+        public ICapability<uint> SheetCount {
+            get;
+            private set;
+        }
+
+        /// <summary>
         /// CAP_XFERCOUNT. Number of images the application is willing to accept this session.
         /// </summary>
         [Capability(TwCap.XferCount)]
