@@ -536,6 +536,23 @@ namespace Saraff.Twain {
             }
         }
 
+        public int GetDefaultSource() {
+            if((this._TwainState&TwainStateFlag.DSMOpen)!=0) {
+                TwIdentity _identity = new TwIdentity();
+                for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetDefault,ref _identity); _rc!=TwRC.Success;) {
+                    throw new TwainException(this._GetTwainStatus(),_rc);
+                }
+                for(var i = 0; i<this._sources.Length; i++) {
+                    if(_identity.Id==this._sources[i].Id) {
+                        return i;
+                    }
+                }
+                throw new TwainException("Не удалось найти источник данных по умолчанию.");
+            } else {
+                throw new TwainException("DSM не открыт.");
+            }
+        }
+
         #endregion
 
         #region Properties of source
