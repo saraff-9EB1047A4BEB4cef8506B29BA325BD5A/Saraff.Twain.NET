@@ -536,6 +536,15 @@ namespace Saraff.Twain {
             }
         }
 
+        /// <summary>
+        /// Gets the default Data Source.
+        /// </summary>
+        /// <returns>Index of default Data Source.</returns>
+        /// <exception cref="TwainException">
+        /// Не удалось найти источник данных по умолчанию.
+        /// or
+        /// DSM не открыт.
+        /// </exception>
         public int GetDefaultSource() {
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0) {
                 TwIdentity _identity = new TwIdentity();
@@ -1435,6 +1444,9 @@ namespace Saraff.Twain {
             TwIdentity _item=new TwIdentity();
             try {
                 for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.GetFirst,ref _item); _rc!=TwRC.Success; ) {
+                    if(_rc==TwRC.EndOfList) {
+                        return;
+                    }
                     throw new TwainException(this._GetTwainStatus(),_rc);
                 }
                 _src.Add(_item);
