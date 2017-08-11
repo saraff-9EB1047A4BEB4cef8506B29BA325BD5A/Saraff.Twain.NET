@@ -62,7 +62,7 @@ namespace Saraff.Twain {
         private ApplicationContext _context=null; //контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
         private Collection<_Image> _images=new Collection<_Image>();
         private TwainStateFlag _twainState;
-        private bool _isTwain2Enable=IntPtr.Size!=4||Environment.OSVersion.Platform==PlatformID.Unix;
+        private bool _isTwain2Enable=IntPtr.Size!=4||Environment.OSVersion.Platform==PlatformID.Unix||Environment.OSVersion.Platform==PlatformID.MacOSX;
         private CallBackProc _callbackProc;
         private TwainCapabilities _capabilities;
 
@@ -79,9 +79,8 @@ namespace Saraff.Twain {
             this._callbackProc=this._TwCallbackProc;
             switch(Environment.OSVersion.Platform) {
                 case PlatformID.Unix:
-                    break;
                 case PlatformID.MacOSX:
-                    throw new NotImplementedException();
+                    break;
                 default:
                     Form _window=new Form();
                     this._components.Add(_window);
@@ -107,9 +106,8 @@ namespace Saraff.Twain {
                 this.CloseDSM();
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
-                        break;
                     case PlatformID.MacOSX:
-                        throw new NotImplementedException();
+                        break;
                     default:
                         this._filter.Dispose();
                         break;
@@ -133,30 +131,28 @@ namespace Saraff.Twain {
 
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
-                        this._hTwainDll=_Platform.Load("/usr/local/lib/libtwaindsm.so");
-                        break;
                     case PlatformID.MacOSX:
-                        throw new NotImplementedException();
+                        break;
                     default:
                         string _twainDsm=Path.ChangeExtension(Path.Combine(Environment.SystemDirectory,"TWAINDSM"),".dll");
                         this._hTwainDll=_Platform.Load(File.Exists(_twainDsm)&&this.IsTwain2Enable?_twainDsm:Path.ChangeExtension(Path.Combine(Environment.SystemDirectory,"..\\twain_32"),".dll"));
                         if(this.Parent!=null) {
                             this._hwnd=this.Parent.Handle;
                         }
+                        if(this._hTwainDll!=IntPtr.Zero) {
+                            IntPtr _pDsmEntry=_Platform.GetProcAddr(this._hTwainDll,"DSM_Entry");
+                            if(_pDsmEntry!=IntPtr.Zero) {
+                                this._dsmEntry=_DsmEntry.Create(_pDsmEntry);
+                                _Memory._SetEntryPoints(null);
+                            } else {
+                                throw new TwainException("Cann't find DSM_Entry entry point.");
+                            }
+                        } else {
+                            throw new TwainException("Cann't load DSM.");
+                        }
                         break;
                 }
 
-                if(this._hTwainDll!=IntPtr.Zero) {
-                    IntPtr _pDsmEntry=_Platform.GetProcAddr(this._hTwainDll,"DSM_Entry");
-                    if(_pDsmEntry!=IntPtr.Zero) {
-                        this._dsmEntry=_DsmEntry.Create(_pDsmEntry);
-                        _Memory._SetEntryPoints(null);
-                    } else {
-                        throw new TwainException("Cann't find DSM_Entry entry point.");
-                    }
-                } else {
-                    throw new TwainException("Cann't load DSM.");
-                }
 
                 #endregion
 
@@ -219,10 +215,9 @@ namespace Saraff.Twain {
 
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
+                    case PlatformID.MacOSX:
                         this._RegisterCallback();
                         break;
-                    case PlatformID.MacOSX:
-                        throw new NotImplementedException();
                     default:
                         if(this.IsTwain2Supported&&(this._srcds.SupportedGroups&TwDG.DS2)!=0) {
                             this._RegisterCallback();
@@ -279,9 +274,8 @@ namespace Saraff.Twain {
                     if(this._EnableDataSource()) {
                         switch(Environment.OSVersion.Platform) {
                             case PlatformID.Unix:
-                                break;
                             case PlatformID.MacOSX:
-                                throw new NotImplementedException();
+                                break;
                             default:
                                 if(!this.IsTwain2Supported||(this._srcds.SupportedGroups&TwDG.DS2)==0) {
                                     this._filter.SetFilter();
@@ -419,8 +413,8 @@ namespace Saraff.Twain {
                 if(Environment.OSVersion.Platform==PlatformID.Unix&&!value) {
                     throw new InvalidOperationException("On UNIX platform only TWAIN 2.x enabled.");
                 }
-                if(Environment.OSVersion.Platform==PlatformID.MacOSX) {
-                    throw new NotImplementedException();
+                if(Environment.OSVersion.Platform==PlatformID.MacOSX&&!value) {
+                    throw new InvalidOperationException("On MacOSX platform only TWAIN 2.x enabled.");
                 }
                 if(this._isTwain2Enable=value) {
                     this._AppId.SupportedGroups|=TwDG.APP2;
@@ -1114,10 +1108,11 @@ namespace Saraff.Twain {
                         _Image _img=null;
                         switch(Environment.OSVersion.Platform) {
                             case PlatformID.Unix:
-                                _img=Tiff.FromPtrToImage(_pBitmap);
+                                _img=Tiff.FromPtrToImage(_pBitmap,this.GetService(typeof(IStreamProvider)) as IStreamProvider);
                                 break;
                             case PlatformID.MacOSX:
-                                throw new NotImplementedException();
+                                _img = Pict.FromPtrToImage(_pBitmap,this.GetService(typeof(IStreamProvider)) as IStreamProvider);
+                                break;
                             default:
                                 _img=DibToImage.WithStream(_pBitmap,this.GetService(typeof(IStreamProvider)) as IStreamProvider);
                                 break;
@@ -2014,7 +2009,11 @@ namespace Saraff.Twain {
                         this.DsRaw=_DsmEntry._LinuxDsRaw;
                         break;
                     case PlatformID.MacOSX:
-                        throw new NotImplementedException();
+                        this.DsmParent = _DsmEntry._MacosxDsmParent;
+                        this.DsmRaw = _DsmEntry._MacosxDsmRaw;
+                        this.DSImageXfer = _DsmEntry._MacosxDsImageXfer;
+                        this.DsRaw = _DsmEntry._MacosxDsRaw;
+                        break;
                     default:
                         MethodInfo _createDelegate=typeof(_DsmEntry).GetMethod("CreateDelegate",BindingFlags.Static|BindingFlags.NonPublic);
                         foreach(PropertyInfo _prop in typeof(_DsmEntry).GetProperties()) {
@@ -2103,7 +2102,7 @@ namespace Saraff.Twain {
 
             #endregion
 
-            #region import libtwaindsm.so
+            #region import libtwaindsm.so (Unix)
 
             [DllImport("/usr/local/lib/libtwaindsm.so",EntryPoint="DSM_Entry",CharSet=CharSet.Ansi)]
             private static extern TwRC _LinuxDsmParent([In,Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,ref IntPtr refptr);
@@ -2116,6 +2115,22 @@ namespace Saraff.Twain {
 
             [DllImport("/usr/local/lib/libtwaindsm.so",EntryPoint="DSM_Entry",CharSet=CharSet.Ansi)]
             private static extern TwRC _LinuxDsRaw([In,Out] TwIdentity origin,[In,Out] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,IntPtr arg);
+
+            #endregion
+
+            #region import TWAIN.framework/TWAIN (MacOSX)
+
+            [DllImport("/System/Library/Frameworks/TWAIN.framework/TWAIN",EntryPoint = "DSM_Entry",CharSet = CharSet.Ansi)]
+            private static extern TwRC _MacosxDsmParent([In, Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,ref IntPtr refptr);
+
+            [DllImport("/System/Library/Frameworks/TWAIN.framework/TWAIN",EntryPoint = "DSM_Entry",CharSet = CharSet.Ansi)]
+            private static extern TwRC _MacosxDsmRaw([In, Out] TwIdentity origin,IntPtr zeroptr,TwDG dg,TwDAT dat,TwMSG msg,IntPtr rawData);
+
+            [DllImport("/System/Library/Frameworks/TWAIN.framework/TWAIN",EntryPoint = "DSM_Entry",CharSet = CharSet.Ansi)]
+            private static extern TwRC _MacosxDsImageXfer([In, Out] TwIdentity origin,[In, Out] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,ref IntPtr hbitmap);
+
+            [DllImport("/System/Library/Frameworks/TWAIN.framework/TWAIN",EntryPoint = "DSM_Entry",CharSet = CharSet.Ansi)]
+            private static extern TwRC _MacosxDsRaw([In, Out] TwIdentity origin,[In, Out] TwIdentity dest,TwDG dg,TwDAT dat,TwMSG msg,IntPtr arg);
 
             #endregion
 
@@ -2204,11 +2219,10 @@ namespace Saraff.Twain {
             public static void ZeroMemory(IntPtr dest,IntPtr size) {
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
-                        byte[] _data=new byte[size.ToInt32()];
+                    case PlatformID.MacOSX:
+                        byte[] _data= new byte[size.ToInt32()];
                         Marshal.Copy(_data,0,dest,_data.Length);
                         break;
-                    case PlatformID.MacOSX:
-                        throw new NotImplementedException();
                     default:
                         _Memory._ZeroMemory(dest,size);
                         break;
@@ -2257,9 +2271,8 @@ namespace Saraff.Twain {
             internal static IntPtr Load(string fileName) {
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
-                        return _Platform.dlopen(fileName,0x01);
                     case PlatformID.MacOSX:
-                        throw new NotImplementedException();
+                        throw new NotSupportedException();
                     default:
                         return _Platform.LoadLibrary(fileName);
                 }
@@ -2272,10 +2285,8 @@ namespace Saraff.Twain {
             internal static void Unload(IntPtr hModule) {
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
-                        _Platform.dlclose(hModule);
-                        break;
                     case PlatformID.MacOSX:
-                        throw new NotImplementedException();
+                        break;
                     default:
                         _Platform.FreeLibrary(hModule);
                         break;
@@ -2291,9 +2302,8 @@ namespace Saraff.Twain {
             internal static IntPtr GetProcAddr(IntPtr hModule,string procName) {
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
-                        return _Platform.dlsym(hModule,procName);
                     case PlatformID.MacOSX:
-                        throw new NotImplementedException();
+                        throw new NotSupportedException();
                     default:
                         return _Platform.GetProcAddress(hModule,procName);
                 }
@@ -2307,15 +2317,6 @@ namespace Saraff.Twain {
 
             [DllImport("kernel32.dll",CharSet=CharSet.Ansi,ExactSpelling=true)]
             private static extern IntPtr GetProcAddress(IntPtr hModule,string procName);
-
-            [DllImport("libdl.so")]
-            private static extern IntPtr dlopen(string fileName,int flags);
-
-            [DllImport("libdl.so")]
-            private static extern bool dlclose(IntPtr hModule);
-
-            [DllImport("libdl.so")]
-            private static extern IntPtr dlsym(IntPtr hModule,string procName);
         }
 
         /// <summary>
