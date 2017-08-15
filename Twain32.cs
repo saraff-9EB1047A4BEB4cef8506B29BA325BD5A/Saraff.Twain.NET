@@ -132,6 +132,14 @@ namespace Saraff.Twain {
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
                     case PlatformID.MacOSX:
+                        this._dsmEntry = _DsmEntry.Create(IntPtr.Zero);
+                        try {
+                            if(this._dsmEntry.DsmRaw == null) {
+                                throw new InvalidOperationException("Cann't load DSM.");
+                            }
+                        } catch(Exception ex) {
+                            throw new TwainException("Cann't load DSM.",ex);
+                        }
                         break;
                     default:
                         string _twainDsm=Path.ChangeExtension(Path.Combine(Environment.SystemDirectory,"TWAINDSM"),".dll");
@@ -1106,17 +1114,23 @@ namespace Saraff.Twain {
                     IntPtr _pBitmap=_Memory.Lock(_hBitmap);
                     try {
                         _Image _img=null;
-                        switch(Environment.OSVersion.Platform) {
-                            case PlatformID.Unix:
-                                _img=Tiff.FromPtrToImage(_pBitmap,this.GetService(typeof(IStreamProvider)) as IStreamProvider);
-                                break;
-                            case PlatformID.MacOSX:
-                                _img = Pict.FromPtrToImage(_pBitmap,this.GetService(typeof(IStreamProvider)) as IStreamProvider);
-                                break;
-                            default:
-                                _img=DibToImage.WithStream(_pBitmap,this.GetService(typeof(IStreamProvider)) as IStreamProvider);
-                                break;
+
+                        IImageHandler _handler = this.GetService(typeof(IImageHandler)) as IImageHandler;
+                        if(_handler == null) {
+                            switch(Environment.OSVersion.Platform) {
+                                case PlatformID.Unix:
+                                    _handler = new Tiff();
+                                    break;
+                                case PlatformID.MacOSX:
+                                    _handler = new Pict();
+                                    break;
+                                default:
+                                    _handler = new DibToImage();
+                                    break;
+                            }
                         }
+                        _img = _handler.PtrToStream(_pBitmap,this.GetService(typeof(IStreamProvider)) as IStreamProvider);
+
                         this._images.Add(_img);
                         if(this._OnEndXfer(new EndXferEventArgs(_img))) {
                             return;

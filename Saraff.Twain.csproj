@@ -66,6 +66,7 @@
     <Compile Include="TwainCapabilities.cs" />
     <Compile Include="TwainDefs.cs" />
     <Compile Include="TwainException.cs" />
+    <Compile Include="_ImageHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">

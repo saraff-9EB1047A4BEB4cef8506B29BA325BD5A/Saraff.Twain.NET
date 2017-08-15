@@ -6,32 +6,16 @@ using System.Text;
 
 namespace Saraff.Twain {
 
-    internal sealed class Pict {
-        private const int BufferSize=256*1024; //256K
+    internal sealed class Pict:_ImageHandler {
 
-        private static Pict FromPtr(IntPtr ptr) {
+        protected override int GetSize() {
             throw new NotImplementedException();
         }
 
-        public static Stream FromPtrToImage(IntPtr ptr,IStreamProvider provider) {
-            Pict _pict=Pict.FromPtr(ptr);
-            Stream _stream=provider!=null?provider.GetStream():new MemoryStream();
-            BinaryWriter _writer=new BinaryWriter(_stream);
-
-            int _tiffSize=_pict._GetSize();
-            byte[] _buffer=new byte[Pict.BufferSize];
-
-            for(int _offset=0, _len=0; _offset<_tiffSize; _offset+=_len) {
-                _len=Math.Min(Pict.BufferSize,_tiffSize-_offset);
-                Marshal.Copy((IntPtr)(ptr.ToInt64()+_offset),_buffer,0,_len);
-                _writer.Write(_buffer,0,_len);
+        protected override int BufferSize {
+            get {
+                return 256 * 1024; //256K
             }
-
-            return _stream;
-        }
-
-        private int _GetSize() {
-            throw new NotImplementedException();
         }
     }
 }

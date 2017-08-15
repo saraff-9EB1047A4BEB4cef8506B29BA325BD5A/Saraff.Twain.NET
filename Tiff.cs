@@ -39,92 +39,89 @@ using System.Collections.ObjectModel;
 
 namespace Saraff.Twain {
 
-    internal sealed class Tiff {
-        private const int BufferSize=256*1024; //256K
-        private TiffHeader _header;
-        private Tiff.Ifd _ifd;
+    internal sealed class Tiff:_ImageHandler {
 
-        private static Tiff FromPtr(IntPtr ptr) {
-            Tiff _tiff=new Tiff {
-                _header=(TiffHeader)Marshal.PtrToStructure(ptr,typeof(TiffHeader))
-            };
-            if(_tiff._header.magic==MagicValues.BigEndian) {
+        protected override void PtrToStreamCore(IntPtr ptr,Stream stream) {
+            if(this.Header.magic == MagicValues.BigEndian) {
                 throw new NotSupportedException();
             }
-            _tiff._ifd=Ifd.FromPtr((IntPtr)(ptr.ToInt64()+_tiff._header.dirOffset),ptr);
-            return _tiff;
+            base.PtrToStreamCore(ptr,stream);
         }
 
-        public static Stream FromPtrToImage(IntPtr ptr,IStreamProvider provider) {
-            Tiff _tiff=Tiff.FromPtr(ptr);
-            Stream _stream=provider!=null?provider.GetStream():new MemoryStream();
-            BinaryWriter _writer = new BinaryWriter(_stream);
-
-            int _tiffSize=_tiff._GetSize();
-            byte[] _buffer = new byte[Tiff.BufferSize];
-
-            for(int _offset=0, _len=0; _offset<_tiffSize; _offset+=_len) {
-                _len=Math.Min(Tiff.BufferSize,_tiffSize-_offset);
-                Marshal.Copy((IntPtr)(ptr.ToInt64()+_offset),_buffer,0,_len);
-                _writer.Write(_buffer,0,_len);
-            }
-
-            return _stream;
-        }
-
-        private int _GetSize() {
-            int _size=0;
-            for(Tiff.Ifd _idf=this.ImageFileDirectory; _idf!=null; _idf=_idf.NextIfd) {
-                if(_idf.Offset+_idf.Size>_size) {
-                    _size=_idf.Offset+_idf.Size;
-                }
-
-                Tiff.IfdEntry _stripOffsetsTag=null,_stripByteCountsTag=null;
-                Tiff.IfdEntry _freeOffsets=null,_freeByteCounts=null;
-                Tiff.IfdEntry _tileOffsets=null,_tileByteCounts=null;
-                foreach(IfdEntry _entry in _idf) {
-                    if(_entry.DataOffset+_entry.DataSize>_size) {
-                        _size=_entry.DataOffset+_entry.DataSize;
+        protected override int GetSize() {
+            if(!this.HandlerState.ContainsKey("TIFFSIZE")) {
+                int _size = 0;
+                for(Tiff.Ifd _idf = this.ImageFileDirectory; _idf != null; _idf = _idf.NextIfd) {
+                    if(_idf.Offset + _idf.Size > _size) {
+                        _size = _idf.Offset + _idf.Size;
                     }
-                    switch(_entry.Tag) {
-                        case TiffTags.STRIPOFFSETS:
-                            _stripOffsetsTag=_entry;
-                            break;
-                        case TiffTags.STRIPBYTECOUNTS:
-                            _stripByteCountsTag=_entry;
-                            break;
-                        case TiffTags.FREEOFFSETS:
-                            _freeOffsets=_entry;
-                            break;
-                        case TiffTags.FREEBYTECOUNTS:
-                            _freeByteCounts=_entry;
-                            break;
-                        case TiffTags.TILEOFFSETS:
-                            _tileOffsets=_entry;
-                            break;
-                        case TiffTags.TILEBYTECOUNTS:
-                            _tileByteCounts=_entry;
-                            break;
+
+                    Tiff.IfdEntry _stripOffsetsTag = null, _stripByteCountsTag = null;
+                    Tiff.IfdEntry _freeOffsets = null, _freeByteCounts = null;
+                    Tiff.IfdEntry _tileOffsets = null, _tileByteCounts = null;
+                    foreach(IfdEntry _entry in _idf) {
+                        if(_entry.DataOffset + _entry.DataSize > _size) {
+                            _size = _entry.DataOffset + _entry.DataSize;
+                        }
+                        switch(_entry.Tag) {
+                            case TiffTags.STRIPOFFSETS:
+                                _stripOffsetsTag = _entry;
+                                break;
+                            case TiffTags.STRIPBYTECOUNTS:
+                                _stripByteCountsTag = _entry;
+                                break;
+                            case TiffTags.FREEOFFSETS:
+                                _freeOffsets = _entry;
+                                break;
+                            case TiffTags.FREEBYTECOUNTS:
+                                _freeByteCounts = _entry;
+                                break;
+                            case TiffTags.TILEOFFSETS:
+                                _tileOffsets = _entry;
+                                break;
+                            case TiffTags.TILEBYTECOUNTS:
+                                _tileByteCounts = _entry;
+                                break;
+                        }
                     }
-                }
-                foreach(IfdEntry[] _item in new Tiff.IfdEntry[][] { new[] { _stripOffsetsTag,_stripByteCountsTag },new[] { _freeOffsets,_freeByteCounts },new[] { _tileOffsets,_tileByteCounts } }) {
-                    if(_item[0]!=null&&_item[1]!=null&&_item[0].Length==_item[1].Length) {
-                        for(int i=0; i<_item[0].Length; i++) {
-                            int _dataOffset=Convert.ToInt32(_item[0][i]);
-                            int _dataSize=Convert.ToInt32(_item[1][i]);
-                            if(_dataOffset+_dataSize>_size) {
-                                _size=_dataOffset+_dataSize;
+                    foreach(IfdEntry[] _item in new Tiff.IfdEntry[][] { new[] { _stripOffsetsTag,_stripByteCountsTag },new[] { _freeOffsets,_freeByteCounts },new[] { _tileOffsets,_tileByteCounts } }) {
+                        if(_item[0] != null && _item[1] != null && _item[0].Length == _item[1].Length) {
+                            for(int i = 0; i < _item[0].Length; i++) {
+                                int _dataOffset = Convert.ToInt32(_item[0][i]);
+                                int _dataSize = Convert.ToInt32(_item[1][i]);
+                                if(_dataOffset + _dataSize > _size) {
+                                    _size = _dataOffset + _dataSize;
+                                }
                             }
                         }
                     }
                 }
+                this.HandlerState.Add("TIFFSIZE",_size);
             }
-            return _size;
+            return (int)this.HandlerState["TIFFSIZE"];
+        }
+
+        protected override int BufferSize {
+            get {
+                return 256 * 1024; //256K
+            }
+        }
+
+        private TiffHeader Header {
+            get {
+                if(!this.HandlerState.ContainsKey("TiffHeader")) {
+                    this.HandlerState.Add("TiffHeader",Marshal.PtrToStructure(this.ImagePointer,typeof(TiffHeader)));
+                }
+                return this.HandlerState["TiffHeader"] as TiffHeader;
+            }
         }
 
         private Tiff.Ifd ImageFileDirectory {
             get {
-                return this._ifd;
+                if(!this.HandlerState.ContainsKey("ImageFileDirectory")) {
+                    this.HandlerState.Add("ImageFileDirectory",Ifd.FromPtr((IntPtr)(this.ImagePointer.ToInt64() + this.Header.dirOffset),this.ImagePointer));
+                }
+                return this.HandlerState["ImageFileDirectory"] as Tiff.Ifd;
             }
         }
 
