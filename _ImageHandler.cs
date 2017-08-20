@@ -6,12 +6,24 @@ using System.Text;
 
 namespace Saraff.Twain {
 
+    /// <summary>
+    /// Base class to processing of a acquired image.
+    /// </summary>
+    /// <seealso cref="Saraff.Twain.IImageHandler" />
     internal abstract class _ImageHandler:IImageHandler {
         private Dictionary<string,object> _state = null;
         private const string _ImagePointer = "ImagePointer";
 
         #region IImageHandler
 
+        /// <summary>
+        /// Convert a block of unmanaged memory to stream.
+        /// </summary>
+        /// <param name="ptr">The pointer to block of unmanaged memory.</param>
+        /// <param name="provider">The provider of a streams.</param>
+        /// <returns>
+        /// Stream that contains data of a image.
+        /// </returns>
         public Stream PtrToStream(IntPtr ptr,IStreamProvider provider) {
             this._state = new Dictionary<string,object> {
                 {_ImageHandler._ImagePointer, ptr}
@@ -24,6 +36,11 @@ namespace Saraff.Twain {
 
         #endregion
 
+        /// <summary>
+        /// Convert a block of unmanaged memory to stream.
+        /// </summary>
+        /// <param name="ptr">The pointer to block of unmanaged memory.</param>
+        /// <param name="provider">The provider of a streams.</param>
         protected virtual void PtrToStreamCore(IntPtr ptr,Stream stream) {
             BinaryWriter _writer = new BinaryWriter(stream);
 
@@ -37,18 +54,40 @@ namespace Saraff.Twain {
             }
         }
 
+        /// <summary>
+        /// Gets the size of a image data.
+        /// </summary>
+        /// <returns>Size of a image data.</returns>
         protected abstract int GetSize();
 
+        /// <summary>
+        /// Gets the size of the buffer.
+        /// </summary>
+        /// <value>
+        /// The size of the buffer.
+        /// </value>
         protected abstract int BufferSize {
             get;
         }
 
+        /// <summary>
+        /// Gets the state of the handler.
+        /// </summary>
+        /// <value>
+        /// The state of the handler.
+        /// </value>
         protected Dictionary<string,object> HandlerState {
             get {
                 return this._state;
             }
         }
 
+        /// <summary>
+        /// Gets the pointer to unmanaged memory that contain image data.
+        /// </summary>
+        /// <value>
+        /// The image pointer.
+        /// </value>
         protected IntPtr ImagePointer {
             get {
                 return (IntPtr)this.HandlerState[_ImageHandler._ImagePointer];
@@ -56,8 +95,17 @@ namespace Saraff.Twain {
         }
     }
 
+    /// <summary>
+    /// Provides processing of a acquired image.
+    /// </summary>
     public interface IImageHandler {
 
+        /// <summary>
+        /// Convert a block of unmanaged memory to stream.
+        /// </summary>
+        /// <param name="ptr">The pointer to block of unmanaged memory.</param>
+        /// <param name="provider">The provider of a streams.</param>
+        /// <returns>Stream that contains data of a image.</returns>
         Stream PtrToStream(IntPtr ptr,IStreamProvider provider);
     }
 

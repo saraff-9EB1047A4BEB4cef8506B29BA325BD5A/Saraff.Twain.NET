@@ -41,6 +41,11 @@ namespace Saraff.Twain {
 
     internal sealed class DibToImage:_ImageHandler {
 
+        /// <summary>
+        /// Convert a block of unmanaged memory to stream.
+        /// </summary>
+        /// <param name="ptr">The pointer to block of unmanaged memory.</param>
+        /// <param name="stream"></param>
         protected override void PtrToStreamCore(IntPtr ptr,Stream stream) {
             BinaryWriter _writer = new BinaryWriter(stream);
 
@@ -63,6 +68,12 @@ namespace Saraff.Twain {
 
         }
 
+        /// <summary>
+        /// Gets the size of a image data.
+        /// </summary>
+        /// <returns>
+        /// Size of a image data.
+        /// </returns>
         protected override int GetSize() {
             if(!this.HandlerState.ContainsKey("DIBSIZE")) {
                 BITMAPINFOHEADER _header = this.Header;
@@ -78,6 +89,12 @@ namespace Saraff.Twain {
             return (int)this.HandlerState["DIBSIZE"];
         }
 
+        /// <summary>
+        /// Gets the size of the buffer.
+        /// </summary>
+        /// <value>
+        /// The size of the buffer.
+        /// </value>
         protected override int BufferSize {
             get {
                 return 256 * 1024; //256K
