@@ -39,48 +39,75 @@ using System.Collections.Generic;
 
 namespace Saraff.Twain {
 
-    internal sealed class DibToImage {
-        private const int BufferSize=256*1024; //256K
+    internal sealed class DibToImage:_ImageHandler {
 
-        public static Stream WithStream(IntPtr dibPtr,IStreamProvider provider) {
-            Stream _stream=provider!=null?provider.GetStream():new MemoryStream();
-            BinaryWriter _writer=new BinaryWriter(_stream);
-
-            BITMAPINFOHEADER _bmi=(BITMAPINFOHEADER)Marshal.PtrToStructure(dibPtr,typeof(BITMAPINFOHEADER));
-
-            int _extra=0;
-            if(_bmi.biCompression==0) {
-                int _bytesPerRow=((_bmi.biWidth*_bmi.biBitCount)>>3);
-                _extra=Math.Max(_bmi.biHeight*(_bytesPerRow+((_bytesPerRow&0x3)!=0?4-_bytesPerRow&0x3:0))-_bmi.biSizeImage,0);
-            }
-
-            int _dibSize=_bmi.biSize+_bmi.biSizeImage+_extra+(_bmi.ClrUsed<<2);
+        /// <summary>
+        /// Convert a block of unmanaged memory to stream.
+        /// </summary>
+        /// <param name="ptr">The pointer to block of unmanaged memory.</param>
+        /// <param name="stream"></param>
+        protected override void PtrToStreamCore(IntPtr ptr,Stream stream) {
+            BinaryWriter _writer = new BinaryWriter(stream);
 
             #region BITMAPFILEHEADER
 
+            BITMAPINFOHEADER _header = this.Header;
+
             _writer.Write((ushort)0x4d42);
-            _writer.Write(14+_dibSize);
+            _writer.Write(14 + this.GetSize());
             _writer.Write(0);
-            _writer.Write(14+_bmi.biSize+(_bmi.ClrUsed<<2));
+            _writer.Write(14 + _header.biSize + (_header.ClrUsed << 2));
 
             #endregion
 
             #region BITMAPINFO and pixel data
 
-            byte[] _buffer = new byte[DibToImage.BufferSize];
-            for(int _offset = 0, _len = 0; _offset<_dibSize; _offset+=_len) {
-                _len=Math.Min(DibToImage.BufferSize,_dibSize-_offset);
-                Marshal.Copy((IntPtr)(dibPtr.ToInt64()+_offset),_buffer,0,_len);
-                _writer.Write(_buffer,0,_len);
-            }
+            base.PtrToStreamCore(ptr,stream);
 
             #endregion
 
-            return _stream;
         }
 
-        public static Stream WithStream(IntPtr dibPtr) {
-            return DibToImage.WithStream(dibPtr,null);
+        /// <summary>
+        /// Gets the size of a image data.
+        /// </summary>
+        /// <returns>
+        /// Size of a image data.
+        /// </returns>
+        protected override int GetSize() {
+            if(!this.HandlerState.ContainsKey("DIBSIZE")) {
+                BITMAPINFOHEADER _header = this.Header;
+
+                int _extra = 0;
+                if(_header.biCompression == 0) {
+                    int _bytesPerRow = ((_header.biWidth * _header.biBitCount) >> 3);
+                    _extra = Math.Max(_header.biHeight * (_bytesPerRow + ((_bytesPerRow & 0x3) != 0 ? 4 - _bytesPerRow & 0x3 : 0)) - _header.biSizeImage,0);
+                }
+
+                this.HandlerState.Add("DIBSIZE",_header.biSize + _header.biSizeImage + _extra + (_header.ClrUsed << 2));
+            }
+            return (int)this.HandlerState["DIBSIZE"];
+        }
+
+        /// <summary>
+        /// Gets the size of the buffer.
+        /// </summary>
+        /// <value>
+        /// The size of the buffer.
+        /// </value>
+        protected override int BufferSize {
+            get {
+                return 256 * 1024; //256K
+            }
+        }
+
+        private BITMAPINFOHEADER Header {
+            get {
+                if(!this.HandlerState.ContainsKey("BITMAPINFOHEADER")) {
+                    this.HandlerState.Add("BITMAPINFOHEADER",Marshal.PtrToStructure(this.ImagePointer,typeof(BITMAPINFOHEADER)));
+                }
+                return this.HandlerState["BITMAPINFOHEADER"] as BITMAPINFOHEADER;
+            }
         }
 
         [StructLayout(LayoutKind.Sequential,Pack=2)]
@@ -109,17 +136,5 @@ namespace Saraff.Twain {
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Provides instances of the <see cref="System.IO.Stream"/> for data writing.
-    /// </summary>
-    public interface IStreamProvider {
-
-        /// <summary>
-        /// Gets the stream.
-        /// </summary>
-        /// <returns>The stream.</returns>
-        Stream GetStream();
     }
 }
