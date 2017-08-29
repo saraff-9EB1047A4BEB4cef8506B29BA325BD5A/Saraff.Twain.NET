@@ -120,4 +120,9 @@ namespace Saraff.Twain {
         /// <returns>The stream.</returns>
         Stream GetStream();
     }
+
+    public interface IImageFactory<T> {
+
+        T Create(Stream stream);
+    }
 }

@@ -1660,6 +1660,10 @@ namespace Saraff.Twain {
                 this._image=image as _Image;
             }
 
+            public T CreateImage<T>(IImageFactory<T> factory) where T : class {
+                return factory.Create(this._image);
+            }
+
             /// <summary>
             /// Возвращает изображение.
             /// </summary>
@@ -2430,6 +2434,11 @@ namespace Saraff.Twain {
 
             public static implicit operator _Image(Stream stream) {
                 return new _Image { _stream=stream };
+            }
+
+            public static implicit operator Stream(_Image image) {
+                image._stream.Seek(0L,SeekOrigin.Begin);
+                return image._stream;
             }
 
             public static implicit operator Image(_Image value) {
