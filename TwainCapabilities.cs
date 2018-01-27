@@ -1,11 +1,11 @@
 ﻿/* Этот файл является частью библиотеки Saraff.Twain.NET
  * © SARAFF SOFTWARE (Кирножицкий Андрей), 2011.
- * Saraff.Twain.NET - свободная программа: вы можете перераспространять ее и/или
+ * Saraff.TwainX.NET - свободная программа: вы можете перераспространять ее и/или
  * изменять ее на условиях Меньшей Стандартной общественной лицензии GNU в том виде,
  * в каком она была опубликована Фондом свободного программного обеспечения;
  * либо версии 3 лицензии, либо (по вашему выбору) любой более поздней
  * версии.
- * Saraff.Twain.NET распространяется в надежде, что она будет полезной,
+ * Saraff.TwainX.NET распространяется в надежде, что она будет полезной,
  * но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
  * или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. Подробнее см. в Меньшей Стандартной
  * общественной лицензии GNU.
@@ -13,18 +13,18 @@
  * вместе с этой программой. Если это не так, см.
  * <http://www.gnu.org/licenses/>.)
  * 
- * This file is part of Saraff.Twain.NET.
+ * This file is part of Saraff.TwainX.NET.
  * © SARAFF SOFTWARE (Kirnazhytski Andrei), 2011.
  * Saraff.Twain.NET is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * Saraff.Twain.NET is distributed in the hope that it will be useful,
+ * Saraff.TwainX.NET is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  * You should have received a copy of the GNU Lesser General Public License
- * along with Saraff.Twain.NET. If not, see <http://www.gnu.org/licenses/>.
+ * along with Saraff.TwainX.NET. If not, see <http://www.gnu.org/licenses/>.
  * 
  * PLEASE SEND EMAIL TO:  twain@saraff.ru.
  */
@@ -35,7 +35,7 @@ using System.Reflection;
 using System.Drawing;
 using System.Diagnostics;
 
-namespace Saraff.Twain {
+namespace Saraff.TwainX {
 
     /// <summary>
     /// Набор возможностей (Capabilities).
@@ -44,7 +44,7 @@ namespace Saraff.Twain {
     public sealed class TwainCapabilities:MarshalByRefObject {
         private Dictionary<TwCap,Type> _caps=new Dictionary<TwCap,Type>();
 
-        internal TwainCapabilities(Twain32 twain) {
+        internal TwainCapabilities(TwainX twain) {
             MethodInfo _сreateCapability=typeof(TwainCapabilities).GetMethod("CreateCapability",BindingFlags.Instance|BindingFlags.NonPublic);
             foreach(PropertyInfo _prop in typeof(TwainCapabilities).GetProperties()) {
                 object[] _attrs=_prop.GetCustomAttributes(typeof(CapabilityAttribute),false);
@@ -56,7 +56,7 @@ namespace Saraff.Twain {
             }
         }
 
-        private Capability<T> CreateCapability<T>(Twain32 twain,TwCap cap) {
+        private Capability<T> CreateCapability<T>(TwainX twain,TwCap cap) {
             return Activator.CreateInstance(typeof(Capability<T>),new object[] { twain,cap }) as Capability<T>;
         }
 
@@ -1568,12 +1568,12 @@ namespace Saraff.Twain {
         [DebuggerDisplay("{ToString()}")]
         private class Capability<T>:ICapability<T>,ICapability2<T> {
 
-            public Capability(Twain32 twain,TwCap cap) {
+            public Capability(TwainX twain,TwCap cap) {
                 this._Twain32=twain;
                 this._Cap=cap;
             }
 
-            public Twain32.Enumeration Get() {
+            public TwainX.Enumeration Get() {
                 return this.ToEnumeration(this._Twain32.GetCap(this._Cap));
             }
 
@@ -1631,7 +1631,7 @@ namespace Saraff.Twain {
             /// Устанавливает ограничение на значения указанной возможности.
             /// </summary>
             /// <param name="value">Устанавливаемое значение.</param>
-            public void SetConstraint(Twain32.Range value) {
+            public void SetConstraint(TwainX.Range value) {
                 if(value.CurrentValue.GetType()!=typeof(T)) {
                     throw new ArgumentException();
                 }
@@ -1642,7 +1642,7 @@ namespace Saraff.Twain {
             /// Устанавливает ограничение на значения указанной возможности.
             /// </summary>
             /// <param name="value">Устанавливаемое значение.</param>
-            public void SetConstraint(Twain32.Enumeration value) {
+            public void SetConstraint(TwainX.Enumeration value) {
                 if(value.Items==null||value.Items.Length==0||value.Items[0].GetType()!=typeof(T)) {
                     throw new ArgumentException();
                 }
@@ -1661,7 +1661,7 @@ namespace Saraff.Twain {
                 return (this.IsSupported()&operation)==operation;
             }
 
-            protected Twain32 _Twain32 {
+            protected TwainX _Twain32 {
                 get;
                 private set;
             }
@@ -1671,8 +1671,8 @@ namespace Saraff.Twain {
                 private set;
             }
 
-            private Twain32.Enumeration ToEnumeration(object value) {
-                Twain32.Enumeration _val=Twain32.Enumeration.FromObject(value);
+            private TwainX.Enumeration ToEnumeration(object value) {
+                TwainX.Enumeration _val=TwainX.Enumeration.FromObject(value);
                 for(int i=0; i<_val.Count; i++) {
                     _val[i]=typeof(T).IsEnum?(T)_val[i]:Convert.ChangeType(_val[i],typeof(T));
                 }
@@ -1709,7 +1709,7 @@ namespace Saraff.Twain {
         /// Возвращает значения возможности (capability).
         /// </summary>
         /// <returns>Значения возможности (capability).</returns>
-        Twain32.Enumeration Get();
+        TwainX.Enumeration Get();
 
         /// <summary>
         /// Возвращает текущее значение возможности (capability).
@@ -1745,13 +1745,13 @@ namespace Saraff.Twain {
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstraint(Twain32.Range value);
+        void SetConstraint(TwainX.Range value);
 
         /// <summary>
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstraint(Twain32.Enumeration value);
+        void SetConstraint(TwainX.Enumeration value);
 
         /// <summary>
         /// Сбрасывает текущее значение возможности (capability) в значение по умолчанию.
@@ -1782,7 +1782,7 @@ namespace Saraff.Twain {
         /// Возвращает значения возможности (capability).
         /// </summary>
         /// <returns>Значения возможности (capability).</returns>
-        Twain32.Enumeration Get();
+        TwainX.Enumeration Get();
 
         /// <summary>
         /// Возвращает текущие значения возможности (capability).
@@ -1824,13 +1824,13 @@ namespace Saraff.Twain {
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstraint(Twain32.Range value);
+        void SetConstraint(TwainX.Range value);
 
         /// <summary>
         /// Устанавливает ограничение на значения указанной возможности.
         /// </summary>
         /// <param name="value">Устанавливаемое значение.</param>
-        void SetConstraint(Twain32.Enumeration value);
+        void SetConstraint(TwainX.Enumeration value);
 
         /// <summary>
         /// Сбрасывает текущее значение возможности (capability) в значение по умолчанию.

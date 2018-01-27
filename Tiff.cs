@@ -1,11 +1,11 @@
 ﻿/* Этот файл является частью библиотеки Saraff.Twain.NET
  * © SARAFF SOFTWARE (Кирножицкий Андрей), 2011.
- * Saraff.Twain.NET - свободная программа: вы можете перераспространять ее и/или
+ * Saraff.TwainX.NET - свободная программа: вы можете перераспространять ее и/или
  * изменять ее на условиях Меньшей Стандартной общественной лицензии GNU в том виде,
  * в каком она была опубликована Фондом свободного программного обеспечения;
  * либо версии 3 лицензии, либо (по вашему выбору) любой более поздней
  * версии.
- * Saraff.Twain.NET распространяется в надежде, что она будет полезной,
+ * Saraff.TwainX.NET распространяется в надежде, что она будет полезной,
  * но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
  * или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. Подробнее см. в Меньшей Стандартной
  * общественной лицензии GNU.
@@ -13,18 +13,18 @@
  * вместе с этой программой. Если это не так, см.
  * <http://www.gnu.org/licenses/>.)
  * 
- * This file is part of Saraff.Twain.NET.
+ * This file is part of Saraff.TwainX.NET.
  * © SARAFF SOFTWARE (Kirnazhytski Andrei), 2011.
  * Saraff.Twain.NET is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * Saraff.Twain.NET is distributed in the hope that it will be useful,
+ * Saraff.TwainX.NET is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  * You should have received a copy of the GNU Lesser General Public License
- * along with Saraff.Twain.NET. If not, see <http://www.gnu.org/licenses/>.
+ * along with Saraff.TwainX.NET. If not, see <http://www.gnu.org/licenses/>.
  * 
  * PLEASE SEND EMAIL TO:  twain@saraff.ru.
  */
@@ -37,7 +37,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Collections.ObjectModel;
 
-namespace Saraff.Twain {
+namespace Saraff.TwainX {
 
     internal sealed class Tiff:_ImageHandler {
 
@@ -128,7 +128,7 @@ namespace Saraff.Twain {
         private TiffHeader Header {
             get {
                 if(!this.HandlerState.ContainsKey("TiffHeader")) {
-                    this.HandlerState.Add("TiffHeader",Marshal.PtrToStructure(this.ImagePointer,typeof(TiffHeader)));
+                    this.HandlerState.Add("TiffHeader",Marshal.PtrToStructure<TiffHeader>(this.ImagePointer));
                 }
                 return this.HandlerState["TiffHeader"] as TiffHeader;
             }
@@ -217,12 +217,12 @@ namespace Saraff.Twain {
             private Array _data;
 
             public static Tiff.IfdEntry FromPtr(IntPtr ptr,IntPtr baseAddr) {
-                TiffDirEntry _entry=(TiffDirEntry)Marshal.PtrToStructure(ptr,typeof(TiffDirEntry));
+                TiffDirEntry _entry=(TiffDirEntry)Marshal.PtrToStructure<TiffDirEntry>(ptr);
 
                 Tiff.IfdEntry _ifdEntry=new Tiff.IfdEntry {
                     Tag=_entry.tag,
                     DataType=_entry.type,
-                    _data=Array.CreateInstance(TiffDataTypeHelper.Typeof(_entry.type),_entry.count<=int.MaxValue?_entry.count:0)
+                    _data=Array.CreateInstance(TiffDataTypeHelper.Typeof(_entry.type),_entry.count<=int.MaxValue?(int)_entry.count:0)
                 };
 
                 IntPtr _dataPtr=(IntPtr)(((_ifdEntry.DataSize=(int)(TiffDataTypeHelper.Sizeof(_entry.type)*_ifdEntry._data.Length))>4)?baseAddr.ToInt64()+_entry.offset:ptr.ToInt64()+8);
@@ -276,17 +276,17 @@ namespace Saraff.Twain {
             }
 
             private void Load(IntPtr ptr,IntPtr baseAddr) {
-                ushort _count=(ushort)Marshal.PtrToStructure(ptr,typeof(ushort));
+                ushort _count=Marshal.PtrToStructure<ushort>(ptr);
                 IntPtr _ptr=(IntPtr)(ptr.ToInt64()+sizeof(ushort));
-                for(int i=0,_size=Marshal.SizeOf(typeof(TiffDirEntry)); i<_count; i++,_ptr=(IntPtr)(_ptr.ToInt64()+_size)) {
+                for(int i=0,_size=Marshal.SizeOf<TiffDirEntry>(); i<_count; i++,_ptr=(IntPtr)(_ptr.ToInt64()+_size)) {
                     this.Add(Tiff.IfdEntry.FromPtr(_ptr,baseAddr));
                 }
-                int _nextIdfOffset=(int)Marshal.PtrToStructure(_ptr,typeof(int));
+                int _nextIdfOffset=Marshal.PtrToStructure<int>(_ptr);
                 if(_nextIdfOffset!=0) {
                     this.NextIfd=Ifd.FromPtr((IntPtr)(baseAddr.ToInt64()+_nextIdfOffset),baseAddr);
                 }
                 this.Offset=(int)(ptr.ToInt64()-baseAddr.ToInt64());
-                this.Size=6+Marshal.SizeOf(typeof(Tiff.TiffDirEntry))*_count;
+                this.Size=6+Marshal.SizeOf<Tiff.TiffDirEntry>()*_count;
             }
 
             public int Offset {

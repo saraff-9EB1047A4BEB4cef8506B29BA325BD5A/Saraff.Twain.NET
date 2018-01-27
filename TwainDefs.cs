@@ -1,11 +1,11 @@
 ﻿/* Этот файл является частью библиотеки Saraff.Twain.NET
  * © SARAFF SOFTWARE (Кирножицкий Андрей), 2011.
- * Saraff.Twain.NET - свободная программа: вы можете перераспространять ее и/или
+ * Saraff.TwainX.NET - свободная программа: вы можете перераспространять ее и/или
  * изменять ее на условиях Меньшей Стандартной общественной лицензии GNU в том виде,
  * в каком она была опубликована Фондом свободного программного обеспечения;
  * либо версии 3 лицензии, либо (по вашему выбору) любой более поздней
  * версии.
- * Saraff.Twain.NET распространяется в надежде, что она будет полезной,
+ * Saraff.TwainX.NET распространяется в надежде, что она будет полезной,
  * но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
  * или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. Подробнее см. в Меньшей Стандартной
  * общественной лицензии GNU.
@@ -13,18 +13,18 @@
  * вместе с этой программой. Если это не так, см.
  * <http://www.gnu.org/licenses/>.)
  * 
- * This file is part of Saraff.Twain.NET.
+ * This file is part of Saraff.TwainX.NET.
  * © SARAFF SOFTWARE (Kirnazhytski Andrei), 2011.
  * Saraff.Twain.NET is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * Saraff.Twain.NET is distributed in the hope that it will be useful,
+ * Saraff.TwainX.NET is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  * You should have received a copy of the GNU Lesser General Public License
- * along with Saraff.Twain.NET. If not, see <http://www.gnu.org/licenses/>.
+ * along with Saraff.TwainX.NET. If not, see <http://www.gnu.org/licenses/>.
  * 
  * PLEASE SEND EMAIL TO:  twain@saraff.ru.
  */
@@ -35,7 +35,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Drawing;
 
-namespace Saraff.Twain {
+namespace Saraff.TwainX {
 
     #region Generic Constants
 
@@ -749,9 +749,9 @@ namespace Saraff.Twain {
         /// <param name="value">Значение.</param>
         /// <returns>Экземпляр объекта.</returns>
         internal static object ValueToTw<T>(TwType type,T value) {
-            int _size=Marshal.SizeOf(typeof(T));
+            int _size=Marshal.SizeOf<T>();
             IntPtr _mem=Marshal.AllocHGlobal(_size);
-            Twain32._Memory.ZeroMemory(_mem,(IntPtr)_size);
+            TwainX._Memory.ZeroMemory(_mem,(IntPtr)_size);
             try {
                 Marshal.StructureToPtr(value,_mem,true);
                 return Marshal.PtrToStructure(_mem,TwTypeHelper.TypeOf(type));
@@ -767,12 +767,12 @@ namespace Saraff.Twain {
         /// <param name="value">Экземпляр объекта.</param>
         /// <returns>Значение.</returns>
         internal static T ValueFromTw<T>(object value) {
-            int _size=Math.Max(Marshal.SizeOf(typeof(T)),Marshal.SizeOf(value));
+            int _size=Math.Max(Marshal.SizeOf<T>(),Marshal.SizeOf(value));
             IntPtr _mem=Marshal.AllocHGlobal(_size);
-            Twain32._Memory.ZeroMemory(_mem,(IntPtr)_size);
+            TwainX._Memory.ZeroMemory(_mem,(IntPtr)_size);
             try {
                 Marshal.StructureToPtr(value,_mem,true);
-                return (T)Marshal.PtrToStructure(_mem,typeof(T));
+                return (T)Marshal.PtrToStructure<T>(_mem);
             } finally {
                 Marshal.FreeHGlobal(_mem);
             }
@@ -2359,9 +2359,7 @@ namespace Saraff.Twain {
             return this.Value;
         }
 
-        public static implicit operator string(TwStr32 value) {
-            return value!=null?value.Value:null;
-        }
+        public static implicit operator string(TwStr32 value) => value?.Value;
 
         public static implicit operator TwStr32(string value) {
             return new TwStr32 {
@@ -2384,9 +2382,7 @@ namespace Saraff.Twain {
             return this.Value;
         }
 
-        public static implicit operator string(TwStr64 value) {
-            return value!=null?value.Value:null;
-        }
+        public static implicit operator string(TwStr64 value) => value?.Value;
 
         public static implicit operator TwStr64(string value) {
             return new TwStr64 {
@@ -2409,9 +2405,7 @@ namespace Saraff.Twain {
             return this.Value;
         }
 
-        public static implicit operator string(TwStr128 value) {
-            return value!=null?value.Value:null;
-        }
+        public static implicit operator string(TwStr128 value) => value?.Value;
 
         public static implicit operator TwStr128(string value) {
             return new TwStr128 {
@@ -2434,9 +2428,7 @@ namespace Saraff.Twain {
             return this.Value;
         }
 
-        public static implicit operator string(TwStr255 value) {
-            return value!=null?value.Value:null;
-        }
+        public static implicit operator string(TwStr255 value) => value?.Value;
 
         public static implicit operator TwStr255(string value) {
             return new TwStr255 {
@@ -2459,9 +2451,7 @@ namespace Saraff.Twain {
             return this.Value;
         }
 
-        public static implicit operator string(TwUni512 value) {
-            return value!=null?value.Value:null;
-        }
+        public static implicit operator string(TwUni512 value) => value?.Value;
 
         public static implicit operator TwUni512(string value) {
             return new TwUni512 {
@@ -2484,9 +2474,7 @@ namespace Saraff.Twain {
             return this.Value;
         }
 
-        public static implicit operator string(TwStr1024 value) {
-            return value!=null?value.Value:null;
-        }
+        public static implicit operator string(TwStr1024 value) => value?.Value;
 
         public static implicit operator TwStr1024(string value) {
             return new TwStr1024 {
@@ -2909,7 +2897,7 @@ namespace Saraff.Twain {
                     _result[i]=TwTypeHelper.CastToCommon(this.ItemType,TwTypeHelper.ValueToTw<long>(this.ItemType,_data&_mask));
                 }
             } else {
-                IntPtr _data=Twain32._Memory.Lock(this.Item);
+                IntPtr _data=TwainX._Memory.Lock(this.Item);
                 try {
                     for(int i=0; i<this.NumItems; i++) {
                         if(this.ItemType!=TwType.Handle) {
@@ -2920,7 +2908,7 @@ namespace Saraff.Twain {
                         }
                     }
                 } finally {
-                    Twain32._Memory.Unlock(this.Item);
+                    TwainX._Memory.Unlock(this.Item);
                 }
             }
             return _result.Length==1?_result[0]:_result;
@@ -2930,7 +2918,7 @@ namespace Saraff.Twain {
 
         public void Dispose() {
             if(this.Item!=IntPtr.Zero&&!this._IsValue) {
-                Twain32._Memory.Free(this.Item);
+                TwainX._Memory.Free(this.Item);
                 this.Item=IntPtr.Zero;
             }
         }
@@ -2958,8 +2946,8 @@ namespace Saraff.Twain {
         /// <param name="info">Набор элементов расширенного описания изображения.</param>
         /// <returns>Указатель на блок неуправляемой памяти.</returns>
         public static IntPtr ToPtr(TwInfo[] info) {
-            var _twExtImageInfoSize=Marshal.SizeOf(typeof(TwExtImageInfo));
-            var _twInfoSize=Marshal.SizeOf(typeof(TwInfo));
+            var _twExtImageInfoSize=Marshal.SizeOf<TwExtImageInfo>();
+            var _twInfoSize=Marshal.SizeOf<TwInfo>();
             var _data=Marshal.AllocHGlobal(_twExtImageInfoSize+(_twInfoSize*info.Length));
             Marshal.StructureToPtr(new TwExtImageInfo {NumInfos=(uint)info.Length},_data,true);
             for(int i=0; i<info.Length; i++) {
@@ -3064,14 +3052,14 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,string value,TwType type) {
             this.Cap=cap;
             this.ConType=TwOn.One;
-            int _twOneCustumValueSize=Marshal.SizeOf(typeof(TwOneCustumValue));
-            this.Handle=Twain32._Memory.Alloc(_twOneCustumValueSize+Marshal.SizeOf(TwTypeHelper.TypeOf(type)));
-            IntPtr _ptr=Twain32._Memory.Lock(this.Handle);
+            int _twOneCustumValueSize=Marshal.SizeOf<TwOneCustumValue>();
+            this.Handle=TwainX._Memory.Alloc(_twOneCustumValueSize+Marshal.SizeOf(TwTypeHelper.TypeOf(type)));
+            IntPtr _ptr=TwainX._Memory.Lock(this.Handle);
             try {
                 Marshal.StructureToPtr(new TwOneCustumValue {ItemType=type},_ptr,true);
                 Marshal.StructureToPtr(TwTypeHelper.CastToTw(type,value),(IntPtr)(_ptr.ToInt64()+_twOneCustumValueSize),true);
             } finally {
-                Twain32._Memory.Unlock(this.Handle);
+                TwainX._Memory.Unlock(this.Handle);
             }
         }
 
@@ -3095,17 +3083,17 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,TwArray array,object[] arrayValue) {
             this.Cap=cap;
             this.ConType=TwOn.Array;
-            int _twArraySize=Marshal.SizeOf(typeof(TwArray));
+            int _twArraySize=Marshal.SizeOf<TwArray>();
             int _twItemSize=Marshal.SizeOf(TwTypeHelper.TypeOf(array.ItemType));
-            this.Handle=Twain32._Memory.Alloc(_twArraySize+(_twItemSize*arrayValue.Length));
-            IntPtr _pTwArray=Twain32._Memory.Lock(this.Handle);
+            this.Handle=TwainX._Memory.Alloc(_twArraySize+(_twItemSize*arrayValue.Length));
+            IntPtr _pTwArray=TwainX._Memory.Lock(this.Handle);
             try {
                 Marshal.StructureToPtr(array,_pTwArray,true);
                 for(long i=0,_ptr=_pTwArray.ToInt64()+_twArraySize; i<arrayValue.Length; i++,_ptr+=_twItemSize) {
                     Marshal.StructureToPtr(TwTypeHelper.CastToTw(array.ItemType,arrayValue[i]),(IntPtr)_ptr,true);
                 }
             } finally {
-                Twain32._Memory.Unlock(this.Handle);
+                TwainX._Memory.Unlock(this.Handle);
             }
         }
 
@@ -3118,17 +3106,17 @@ namespace Saraff.Twain {
         public TwCapability(TwCap cap,TwEnumeration enumeration,object[] enumerationValue) {
             this.Cap=cap;
             this.ConType=TwOn.Enum;
-            int _twEnumerationSize=Marshal.SizeOf(typeof(TwEnumeration));
+            int _twEnumerationSize=Marshal.SizeOf<TwEnumeration>();
             int _twItemSize=Marshal.SizeOf(TwTypeHelper.TypeOf(enumeration.ItemType));
-            this.Handle=Twain32._Memory.Alloc(_twEnumerationSize+(_twItemSize*enumerationValue.Length));
-            IntPtr _pTwEnumeration=Twain32._Memory.Lock(this.Handle);
+            this.Handle=TwainX._Memory.Alloc(_twEnumerationSize+(_twItemSize*enumerationValue.Length));
+            IntPtr _pTwEnumeration=TwainX._Memory.Lock(this.Handle);
             try {
                 Marshal.StructureToPtr(enumeration,_pTwEnumeration,true);
                 for(long i=0,_ptr=_pTwEnumeration.ToInt64()+_twEnumerationSize; i<enumerationValue.Length; i++,_ptr+=_twItemSize) {
                     Marshal.StructureToPtr(TwTypeHelper.CastToTw(enumeration.ItemType,enumerationValue[i]),(IntPtr)_ptr,true);
                 }
             } finally {
-                Twain32._Memory.Unlock(this.Handle);
+                TwainX._Memory.Unlock(this.Handle);
             }
         }
 
@@ -3137,17 +3125,17 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Экземпляр TwArray, TwEnumeration, _TwRange или _TwOneValue.</returns>
         public object GetValue() {
-            IntPtr _ptr=Twain32._Memory.Lock(this.Handle);
+            IntPtr _ptr=TwainX._Memory.Lock(this.Handle);
             try {
                 switch(this.ConType) {
                     case TwOn.Array:
-                        return new __TwArray((TwArray)Marshal.PtrToStructure(_ptr,typeof(TwArray)),(IntPtr)(_ptr.ToInt64()+Marshal.SizeOf(typeof(TwArray))));
+                        return new __TwArray(Marshal.PtrToStructure<TwArray>(_ptr),(IntPtr)(_ptr.ToInt64()+Marshal.SizeOf<TwArray>()));
                     case TwOn.Enum:
-                        return new __TwEnumeration((TwEnumeration)Marshal.PtrToStructure(_ptr,typeof(TwEnumeration)),(IntPtr)(_ptr.ToInt64()+Marshal.SizeOf(typeof(TwEnumeration))));
+                        return new __TwEnumeration(Marshal.PtrToStructure<TwEnumeration>(_ptr),(IntPtr)(_ptr.ToInt64()+Marshal.SizeOf<TwEnumeration>()));
                     case TwOn.Range:
-                        return Marshal.PtrToStructure(_ptr,typeof(TwRange));
+                        return Marshal.PtrToStructure<TwRange>(_ptr);
                     case TwOn.One:
-                        TwOneCustumValue _value=Marshal.PtrToStructure(_ptr,typeof(TwOneCustumValue)) as TwOneCustumValue;
+                        TwOneCustumValue _value=Marshal.PtrToStructure<TwOneCustumValue>(_ptr);
                         switch(_value.ItemType) {
                             case TwType.Str32:
                             case TwType.Str64:
@@ -3155,14 +3143,14 @@ namespace Saraff.Twain {
                             case TwType.Str255:
                             case TwType.Str1024:
                             case TwType.Uni512:
-                                return Marshal.PtrToStructure((IntPtr)(_ptr.ToInt64()+Marshal.SizeOf(typeof(TwOneCustumValue))),TwTypeHelper.TypeOf(_value.ItemType)).ToString();
+                                return Marshal.PtrToStructure((IntPtr)(_ptr.ToInt64()+Marshal.SizeOf<TwOneCustumValue>()),TwTypeHelper.TypeOf(_value.ItemType)).ToString();
                             default:
-                                return Marshal.PtrToStructure(_ptr,typeof(TwOneValue));
+                                return Marshal.PtrToStructure<TwOneValue>(_ptr);
                         }
                 }
                 return null;
             } finally {
-                Twain32._Memory.Unlock(this.Handle);
+                TwainX._Memory.Unlock(this.Handle);
             }
         }
 
@@ -3173,7 +3161,7 @@ namespace Saraff.Twain {
         /// </summary>
         public void Dispose() {
             if(this.Handle!=IntPtr.Zero) {
-                Twain32._Memory.Free(this.Handle);
+                TwainX._Memory.Free(this.Handle);
                 this.Handle=IntPtr.Zero;
             }
         }
@@ -3181,12 +3169,12 @@ namespace Saraff.Twain {
         #endregion
 
         private void _SetValue<T>(T value) {
-            this.Handle=Twain32._Memory.Alloc(Marshal.SizeOf(typeof(T)));
-            IntPtr _ptr=Twain32._Memory.Lock(this.Handle);
+            this.Handle=TwainX._Memory.Alloc(Marshal.SizeOf<T>());
+            IntPtr _ptr=TwainX._Memory.Lock(this.Handle);
             try {
                 Marshal.StructureToPtr(value,_ptr,true);
             } finally {
-                Twain32._Memory.Unlock(this.Handle);
+                TwainX._Memory.Unlock(this.Handle);
             }
         }
     }
@@ -3461,11 +3449,11 @@ namespace Saraff.Twain {
         [MarshalAs(UnmanagedType.ByValArray,SizeConst=256)]
         public TwElement8[] Colors;
 
-        public static implicit operator Twain32.ColorPalette(TwPalette8 palette) {
-            return Twain32.ColorPalette.Create(palette);
+        public static implicit operator TwainX.ColorPalette(TwPalette8 palette) {
+            return TwainX.ColorPalette.Create(palette);
         }
 
-        public static implicit operator TwPalette8(Twain32.ColorPalette palette) {
+        public static implicit operator TwPalette8(TwainX.ColorPalette palette) {
             TwPalette8 _result=new TwPalette8 {
                 PaletteType=palette.PaletteType,
                 NumColors=(ushort)palette.Colors.Length,
@@ -3506,7 +3494,7 @@ namespace Saraff.Twain {
         public byte Channel3;
 
         public static implicit operator Color(TwElement8 element) {
-            return Color.FromArgb(element.Channel1,element.Channel2,element.Channel3);
+            return Color.FromArgb(255,element.Channel1,element.Channel2,element.Channel3);
         }
 
         public static implicit operator TwElement8(Color color) {
