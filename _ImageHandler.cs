@@ -41,11 +41,16 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="ptr">The pointer to block of unmanaged memory.</param>
         /// <param name="provider">The provider of a streams.</param>
-        protected virtual void PtrToStreamCore(IntPtr ptr,Stream stream) {
+        protected virtual void PtrToStreamCore(IntPtr ptr, Stream stream) {
             BinaryWriter _writer = new BinaryWriter(stream);
 
             int _size = this.GetSize();
             byte[] _buffer = new byte[this.BufferSize];
+            
+            // Allocate the end stream size to reduce RAM fragmentation
+            MemoryStream memoryStream = stream as MemoryStream;
+            if (memoryStream != null)
+                memoryStream.Capacity = _size;
 
             for(int _offset = 0, _len = 0; _offset < _size; _offset += _len) {
                 _len = Math.Min(this.BufferSize,_size - _offset);
