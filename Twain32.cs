@@ -1162,20 +1162,15 @@ namespace Saraff.Twain {
                 do {
                     _pxfr.Count=0;
 
-                    TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
-                        Format=((this.Capabilities.ImageFileFormat.IsSupported()&TwQC.GetCurrent)!=0)?this.Capabilities.ImageFileFormat.GetCurrent():TwFF.Bmp,
-                        FileName=Path.GetTempFileName()
-                    };
                     SetupFileXferEventArgs _args=new SetupFileXferEventArgs();
                     if(this._OnSetupFileXfer(_args)) {
                         return;
                     }
-                    if(!string.IsNullOrEmpty(_args.FileName)) {
-                        _fileXfer.FileName=_args.FileName;
-                    }
-                    if((this.Capabilities.ImageFileFormat.IsSupported()&TwQC.GetCurrent)!=0) {
-                        _fileXfer.Format=this.Capabilities.ImageFileFormat.GetCurrent();
-                    }
+
+                    TwSetupFileXfer _fileXfer=new TwSetupFileXfer {
+                        Format=this.Capabilities.ImageFileFormat.IsSupported(TwQC.GetCurrent)?this.Capabilities.ImageFileFormat.GetCurrent():TwFF.Bmp,
+                        FileName=string.IsNullOrEmpty(_args.FileName)?Path.GetTempFileName():_args.FileName
+                    };
 
                     for(TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Control,TwDAT.SetupFileXfer,TwMSG.Set,ref _fileXfer); _rc!=TwRC.Success; ) {
                         throw new TwainException(this._GetTwainStatus(),_rc);
