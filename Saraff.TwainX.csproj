@@ -1,22 +1,25 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>Saraff.TwainX.NET</PackageId>
     <Company>SARAFF SOFTWARE</Company>
     <Product>Saraff.TwainX.NET</Product>
-    <AssemblyVersion>1.0.27.614</AssemblyVersion>
-    <FileVersion>1.0.27.614</FileVersion>
+    <AssemblyVersion>1.0.29.693</AssemblyVersion>
+    <FileVersion>1.0.29.693</FileVersion>
     <Authors>Copyright © SARAFF 2011</Authors>
-    <Version>1.0.27.614</Version>
+    <Version>1.0.29.693</Version>
     <Description>Allows you to control work of flatbed scanner, web and digital camera and any other TWAIN device from .NET environment. You can use this library in your programs written in any programming languages compatible with .NET technology.</Description>
     <PackageProjectUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET/tree/twainx</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET/tree/twainx</RepositoryUrl>
-    <PackageLicenseUrl>http://www.gnu.org/licenses/lgpl-3.0.txt</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET.git</RepositoryUrl>
+    <PackageLicenseUrl></PackageLicenseUrl>
     <Copyright>Copyright © SARAFF 2011</Copyright>
     <PackageTags>TWAIN TWAIN.NET C# .NET FREE Open Source OSS Toolkit VB VB.NET Visual Basic WPF x64 scan .NETCore .NETStandard</PackageTags>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>sign.snk</AssemblyOriginatorKeyFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>

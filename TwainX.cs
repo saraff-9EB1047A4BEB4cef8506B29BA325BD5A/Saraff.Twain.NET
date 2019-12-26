@@ -790,7 +790,7 @@ namespace Saraff.TwainX {
             TwCapability _cap = null;
             if(value is string) {
                 object[] _attrs = typeof(TwCap).GetField(capability.ToString()).GetCustomAttributes(typeof(TwTypeAttribute),false);
-                if(_attrs.Length>0) {
+                if(_attrs?.Length>0) {
                     _cap=new TwCapability(capability,(string)value,((TwTypeAttribute)_attrs[0]).TwType);
                 } else {
                     _cap=new TwCapability(capability,(string)value,TwTypeHelper.TypeOf(value));
@@ -803,12 +803,12 @@ namespace Saraff.TwainX {
         }
 
         private void _SetCapCore(TwCap capability,TwMSG msg,object[] value) {
-            var _attrs = typeof(TwCap).GetField(capability.ToString()).GetCustomAttributes(typeof(TwTypeAttribute),false);
+            var _attrs = typeof(TwCap).GetField(capability.ToString())?.GetCustomAttributes(typeof(TwTypeAttribute),false);
             this._SetCapCore(
                 new TwCapability(
                     capability,
                     new TwArray() {
-                        ItemType=_attrs.Length>0 ? ((TwTypeAttribute)(_attrs[0])).TwType : TwTypeHelper.TypeOf(value[0]),
+                        ItemType=_attrs?.Length>0 ? ((TwTypeAttribute)(_attrs[0])).TwType : TwTypeHelper.TypeOf(value[0]),
                         NumItems=(uint)value.Length
                     },
                     value),
@@ -820,12 +820,12 @@ namespace Saraff.TwainX {
         }
 
         private void _SetCapCore(TwCap capability,TwMSG msg,Enumeration value) {
-            var _attrs = typeof(TwCap).GetField(capability.ToString()).GetCustomAttributes(typeof(TwTypeAttribute),false);
+            var _attrs = typeof(TwCap).GetField(capability.ToString())?.GetCustomAttributes(typeof(TwTypeAttribute),false);
             this._SetCapCore(
                 new TwCapability(
                     capability,
                     new TwEnumeration {
-                        ItemType=_attrs.Length>0 ? ((TwTypeAttribute)(_attrs[0])).TwType : TwTypeHelper.TypeOf(value[0]),
+                        ItemType=_attrs?.Length>0 ? ((TwTypeAttribute)(_attrs[0])).TwType : TwTypeHelper.TypeOf(value[0]),
                         NumItems=(uint)value.Count,
                         CurrentIndex=(uint)value.CurrentIndex,
                         DefaultIndex=(uint)value.DefaultIndex
