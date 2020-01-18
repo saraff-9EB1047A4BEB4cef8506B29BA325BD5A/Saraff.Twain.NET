@@ -2646,18 +2646,18 @@ namespace Saraff.Twain {
             /// <param name="value">Экземпляр <see cref="Range"/>.</param>
             /// <returns>Экземпляр <see cref="Enumeration"/>.</returns>
             public static Enumeration FromRange(Range value) {
-                int _currentIndex=0,_defaultIndex=0;
-                object[] _items=new object[(int)((Convert.ToSingle(value.MaxValue)-Convert.ToSingle(value.MinValue))/Convert.ToSingle(value.StepSize))];
-                for(int i=0; i<_items.Length; i++) {
-                    _items[i]=Convert.ToSingle(value.MinValue)+(Convert.ToSingle(value.StepSize)*(float)i);
-                    if(Convert.ToSingle(_items[i])==Convert.ToSingle(value.CurrentValue)) {
-                        _currentIndex=i;
+                int _currentIndex = 0, _defaultIndex = 0;
+                object[] _items = new object[(int)((Convert.ToSingle(value.MaxValue) - Convert.ToSingle(value.MinValue)) / Convert.ToSingle(value.StepSize)) + 1];
+                for(int i = 0; i < _items.Length; i++) {
+                    _items[i] = Convert.ToSingle(value.MinValue) + (Convert.ToSingle(value.StepSize) * i);
+                    if(Convert.ToSingle(_items[i]) == Convert.ToSingle(value.CurrentValue)) {
+                        _currentIndex = i;
                     }
-                    if(Convert.ToSingle(_items[i])==Convert.ToSingle(value.DefaultValue)) {
-                        _defaultIndex=i;
+                    if(Convert.ToSingle(_items[i]) == Convert.ToSingle(value.DefaultValue)) {
+                        _defaultIndex = i;
                     }
                 }
-                return Enumeration.CreateEnumeration(_items,_currentIndex,_defaultIndex);
+                return Enumeration.CreateEnumeration(_items, _currentIndex, _defaultIndex);
             }
 
             /// <summary>
