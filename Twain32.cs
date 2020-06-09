@@ -44,7 +44,7 @@ using System.IO;
 namespace Saraff.Twain {
 
     /// <summary>
-    /// Обеспечивает возможность работы с TWAIN-источниками.
+    /// Provides the ability to work with TWAIN sources.
     /// </summary>
     [ToolboxBitmap(typeof(Twain32),"Resources.scanner.bmp")]
     [DebuggerDisplay("ProductName = {_appid.ProductName.Value}, Version = {_appid.Version.Info}, DS = {_srcds.ProductName}")]
@@ -52,14 +52,14 @@ namespace Saraff.Twain {
     [DefaultProperty("AppProductName")]
     public sealed class Twain32:Component {
         private _DsmEntry _dsmEntry;
-        private IntPtr _hTwainDll; //дескриптор модуля twain_32.dll
+        private IntPtr _hTwainDll; //module descriptor twain_32.dll
         private IContainer _components=new Container();
-        private IntPtr _hwnd; //дескриптор родительского окна.
-        private TwIdentity _appid; //идентификатор приложения.
-        private TwIdentity _srcds; //идентификатор текущего источника данных.
-        private _MessageFilter _filter; //фильтр событий WIN32
-        private TwIdentity[] _sources=new TwIdentity[0]; //массив доступных источников данных.
-        private ApplicationContext _context=null; //контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
+        private IntPtr _hwnd; //handle to the parent window
+        private TwIdentity _appid; //application identifier
+        private TwIdentity _srcds; //identifier of the current data source
+        private _MessageFilter _filter; //WIN32 event filter
+        private TwIdentity[] _sources=new TwIdentity[0]; //an array of available data sources
+        private ApplicationContext _context=null; //application context. used if there is no main message processing cycle
         private Collection<_Image> _images=new Collection<_Image>();
         private TwainStateFlag _twainState;
         private bool _isTwain2Enable=IntPtr.Size!=4||Environment.OSVersion.Platform==PlatformID.Unix||Environment.OSVersion.Platform==PlatformID.MacOSX;
@@ -121,15 +121,15 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Открывает менеджер источников данных.
+        /// Opens the data source manager
         /// </summary>
-        /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
+        /// <returns>True if the operation was successful; otherwise, false.</returns>
         public bool OpenDSM() {
             if((this._TwainState&TwainStateFlag.DSMOpen)==0) {
 
-                #region Загружаем DSM, получаем адрес точки входа DSM_Entry и приводим ее к соответствующим делегатам
+                #region We load DSM, we receive the address of the entry point DSM_Entry and we bring it to the appropriate delegates
 
-                switch(Environment.OSVersion.Platform) {
+                switch (Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
                     case PlatformID.MacOSX:
                         this._dsmEntry = _DsmEntry.Create(IntPtr.Zero);
@@ -183,9 +183,9 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Отображает диалоговое окно для выбора источника данных.
+        /// Displays a dialog box for selecting a data source.
         /// </summary>
-        /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
+        /// <returns>True if the operation was successful; otherwise, false.</returns>
         public bool SelectSource() {
             if(Environment.OSVersion.Platform==PlatformID.Unix) {
                 throw new NotSupportedException("DG_CONTROL / DAT_IDENTITY / MSG_USERSELECT is not available on Linux.");
@@ -211,9 +211,9 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Открывает источник данных.
+        /// Opens a data source.
         /// </summary>
-        /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
+        /// <returns>True if the operation was successful; otherwise, false.</returns>
         public bool OpenDataSource() {
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0 && (this._TwainState&TwainStateFlag.DSOpen)==0) {
                 for(TwRC _rc=this._dsmEntry.DsmInvoke(this._AppId,TwDG.Control,TwDAT.Identity,TwMSG.OpenDS,ref this._srcds); _rc!=TwRC.Success; ) {
@@ -238,7 +238,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Регестрирует обработчик событий источника данных.
+        /// Registers a data source event handler.
         /// </summary>
         private void _RegisterCallback() {
             TwCallback2 _callback=new TwCallback2 {
@@ -251,9 +251,9 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Активирует источник данных.
+        /// Activates a data source.
         /// </summary>
-        /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
+        /// <returns>True if the operation was successful; otherwise, false.</returns>
         private bool _EnableDataSource() {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0 && (this._TwainState&TwainStateFlag.DSEnabled)==0) {
                 TwUserInterface _guif=new TwUserInterface() {
@@ -274,7 +274,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Получает изображение с источника данных.
+        /// Gets an image from a data source.
         /// </summary>
         public void Acquire() {
             if(this.OpenDSM()) {
@@ -299,9 +299,9 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Деактивирует источник данных.
+        /// Deactivates the data source.
         /// </summary>
-        /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
+        /// <returns>True if the operation was successful; otherwise, false.</returns>
         private bool _DisableDataSource() {
             if((this._TwainState&TwainStateFlag.DSEnabled)!=0) {
                 try {
@@ -326,9 +326,9 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Закрывает источник данных.
+        /// Closes the data source.
         /// </summary>
-        /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
+        /// <returns>True if the operation was successful; otherwise, false.</returns>
         public bool CloseDataSource() {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0 && (this._TwainState&TwainStateFlag.DSEnabled)==0) {
                 this._images.Clear();
@@ -342,9 +342,9 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Закрывает менежер источников данных.
+        /// Closes the data source manager.
         /// </summary>
-        /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
+        /// <returns>True if the operation was successful; otherwise, false.</returns>
         public bool CloseDSM() {
             if((this._TwainState&TwainStateFlag.DSEnabled)!=0) {
                 this._DisableDataSource();
@@ -372,16 +372,16 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает отсканированое изображение.
+        /// Returns the scanned image.
         /// </summary>
-        /// <param name="index">Индекс изображения.</param>
-        /// <returns>Экземпляр изображения.</returns>
+        /// <param name="index">Image index.</param>
+        /// <returns>Instance of the image.</returns>
         public Image GetImage(int index) {
             return this._images[index];
         }
 
         /// <summary>
-        /// Возвращает количество отсканированных изображений.
+        /// Returns the number of scanned images.
         /// </summary>
         [Browsable(false)]
         public int ImageCount {
@@ -391,22 +391,22 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает или устанавливает значение, указывающее на необходимость деактивации источника данных после получения изображения.
+        /// Gets or sets a value indicating the need to deactivate the data source after receiving the image.
         /// </summary>
         [DefaultValue(true)]
         [Category("Behavior")]
-        [Description("Возвращает или устанавливает значение, указывающее на необходимость деактивации источника данных после получения изображения.")]
+        [Description("Gets or sets a value indicating the need to deactivate the data source after receiving the image.")]
         public bool DisableAfterAcquire {
             get;
             set;
         }
 
         /// <summary>
-        /// Возвращает или устанавливает значение, указывающее на необходимость использования TWAIN 2.0.
+        /// Gets or sets a value indicating whether to use TWAIN 2.0.
         /// </summary>
         [DefaultValue(false)]
         [Category("Behavior")]
-        [Description("Возвращает или устанавливает значение, указывающее на необходимость использования TWAIN 2.0.")]
+        [Description("Gets or sets a value indicating whether to use TWAIN 2.0.")]
         public bool IsTwain2Enable {
             get {
                 return this._isTwain2Enable;
@@ -435,7 +435,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает истину, если DSM поддерживает TWAIN 2.0; иначе лож.
+        /// Returns true if DSM supports TWAIN 2.0; otherwise false.
         /// </summary>
         [Browsable(false)]
         public bool IsTwain2Supported {
@@ -450,7 +450,7 @@ namespace Saraff.Twain {
         #region Information of sorces
 
         /// <summary>
-        /// Возвращает или устанавливает индекс текущего источника данных.
+        /// Gets or sets the index of the current data source.
         /// </summary>
         [Browsable(false)]
         [ReadOnly(true)]
@@ -473,16 +473,16 @@ namespace Saraff.Twain {
                     if((this._TwainState&TwainStateFlag.DSOpen)==0) {
                         this._srcds=this._sources[value];
                     } else {
-                        throw new TwainException("Источник данных уже открыт.");
+                        throw new TwainException("The data source is already open.");
                     }
                 } else {
-                    throw new TwainException("Менеджер источников данных не открыт.");
+                    throw new TwainException("Data Source Manager is not open.");
                 }
             }
         }
 
         /// <summary>
-        /// Возвращает количество источников данных.
+        /// Returns the number of data sources.
         /// </summary>
         [Browsable(false)]
         public int SourcesCount {
@@ -492,36 +492,36 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает имя источника данных по указанному индексу.
+        /// Returns the name of the data source at the specified index.
         /// </summary>
-        /// <param name="index">Индекс.</param>
-        /// <returns>Имя источника данных.</returns>
+        /// <param name="index">Index.</param>
+        /// <returns>The name of the data source.</returns>
         public string GetSourceProductName(int index) {
             return this._sources[index].ProductName;
         }
 
         /// <summary>
-        /// Возвращает описание указанного источника. Gets the source identity.
+        /// Gets a description of the specified source.
         /// </summary>
-        /// <param name="index">Индекс. The index.</param>
-        /// <returns>Описание источника данных.</returns>
+        /// <param name="index">Index.</param>
+        /// <returns>Description of the data source.</returns>
         public Identity GetSourceIdentity(int index) {
             return new Identity(this._sources[index]);
         }
 
         /// <summary>
-        /// Возвращает истину, если указанный источник поддерживает TWAIN 2.0; иначе лож.
+        /// Returns true if the specified source supports TWAIN 2.0; otherwise false.
         /// </summary>
-        /// <param name="index">Индекс.</param>
-        /// <returns>Истина, если указанный источник поддерживает TWAIN 2.0; иначе лож.</returns>
+        /// <param name="index">Index</param>
+        /// <returns>True if the specified source supports TWAIN 2.0; otherwise false.</returns>
         public bool GetIsSourceTwain2Compatible(int index) {
             return (this._sources[index].SupportedGroups&TwDG.DS2)!=0;
         }
 
         /// <summary>
-        /// Устанавливает указанный источник данных в качестве источника данных по умолчанию.
+        /// Sets the specified data source as the default data source.
         /// </summary>
-        /// <param name="index">Индекс.</param>
+        /// <param name="index">Index.</param>
         public void SetDefaultSource(int index) {
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0) {
                 if((this._TwainState&TwainStateFlag.DSOpen)==0) {
@@ -531,10 +531,10 @@ namespace Saraff.Twain {
                         throw new TwainException(this._GetTwainStatus(),_rc);
                     }
                 } else {
-                    throw new TwainException("Источник данных уже открыт. Необходимо сперва закрыть источник данных.");
+                    throw new TwainException("The data source is already open. You must first close the data source.");
                 }
             } else {
-                throw new TwainException("DSM не открыт.");
+                throw new TwainException("DSM is not open.");
             }
         }
 
@@ -543,9 +543,9 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>Index of default Data Source.</returns>
         /// <exception cref="TwainException">
-        /// Не удалось найти источник данных по умолчанию.
+        /// Could not find default data source.
         /// or
-        /// DSM не открыт.
+        /// DSM is not open.
         /// </exception>
         public int GetDefaultSource() {
             if((this._TwainState&TwainStateFlag.DSMOpen)!=0) {
@@ -558,9 +558,9 @@ namespace Saraff.Twain {
                         return i;
                     }
                 }
-                throw new TwainException("Не удалось найти источник данных по умолчанию.");
+                throw new TwainException("Could not find default data source.");
             } else {
-                throw new TwainException("DSM не открыт.");
+                throw new TwainException("DSM is not open.");
             }
         }
 
@@ -569,7 +569,7 @@ namespace Saraff.Twain {
         #region Properties of source
 
         /// <summary>
-        /// Возвращает идентификатор приложения.
+        /// Gets the application identifier.
         /// </summary>
         [Browsable(false)]
         [ReadOnly(true)]
@@ -608,10 +608,10 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает или устанавливает имя приложения.
+        /// Gets or sets the name of the application.
         /// </summary>
         [Category("Behavior")]
-        [Description("Возвращает или устанавливает имя приложения.")]
+        [Description("Gets or sets the name of the application.")]
         public string AppProductName {
             get {
                 return this._AppId.ProductName;
@@ -622,11 +622,11 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает или устанавливает значение указывающие на необходимость отображения UI TWAIN-источника.
+        /// Gets or sets a value indicating whether to display the UI of the TWAIN source.
         /// </summary>
         [Category("Behavior")]
         [DefaultValue(true)]
-        [Description("Возвращает или устанавливает значение указывающие на необходимость отображения UI TWAIN-источника.")]
+        [Description("Gets or sets a value indicating whether to display the UI of the TWAIN source.")]
         public bool ShowUI {
             get;
             set;
@@ -640,25 +640,25 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает или устанавливает родительское окно для TWAIN-источника.
+        /// Gets or sets the parent window for the TWAIN source.
         /// </summary>
         /// <value>
         /// Окно.
         /// </value>
         [Category("Behavior")]
         [DefaultValue(false)]
-        [Description("Возвращает или устанавливает родительское окно для TWAIN-источника.")]
+        [Description("Gets or sets the parent window for the TWAIN source.")]
         public IWin32Window Parent {
             get;
             set;
         }
 
         /// <summary>
-        /// Возвращает или устанавливает используемый приложением язык. Get or set the primary language for your application.
+        /// Gets or sets the language used by the application. Get or set the primary language for your application.
         /// </summary>
         [Category("Culture")]
         [DefaultValue(TwLanguage.RUSSIAN)]
-        [Description("Возвращает или устанавливает используемый приложением язык. Get or set the primary language for your application.")]
+        [Description("Gets or sets the language used by the application. Get or set the primary language for your application.")]
         public TwLanguage Language {
             get {
                 return this._AppId.Version.Language;
@@ -669,11 +669,11 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает или устанавливает страну происхождения приложения. Get or set the primary country where your application is intended to be distributed.
+        /// Get or set the primary country where your application is intended to be distributed.
         /// </summary>
         [Category("Culture")]
         [DefaultValue(TwCountry.BELARUS)]
-        [Description("Возвращает или устанавливает страну происхождения приложения. Get or set the primary country where your application is intended to be distributed.")]
+        [Description("Get or set the primary country where your application is intended to be distributed.")]
         public TwCountry Country {
             get {
                 return this._AppId.Version.Country;
@@ -684,7 +684,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает или устанавливает кадр физического расположения изображения.
+        /// Gets or sets the frame of the physical location of the image.
         /// </summary>
         [Browsable(false)]
         [ReadOnly(true)]
@@ -707,7 +707,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает набор возможностей (Capabilities).
+        /// Returns a set of capabilities (Capabilities).
         /// </summary>
         [Browsable(false)]
         [ReadOnly(true)]
@@ -721,7 +721,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает набор операций для работы с цветовой палитрой.
+        /// Returns a set of operations for working with a color palette.
         /// </summary>
         [Browsable(false)]
         [ReadOnly(true)]
@@ -731,20 +731,20 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает разрешения, поддерживаемые источником данных.
+        /// Gets the permissions supported by the data source.
         /// </summary>
-        /// <returns>Коллекция значений.</returns>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <returns>Collection of values.</returns>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         [Obsolete("Use Twain32.Capabilities.XResolution.Get() instead.",true)]
         public Enumeration GetResolutions() {
             return Enumeration.FromObject(this.GetCap(TwCap.XResolution));
         }
 
         /// <summary>
-        /// Устанавливает текущее разрешение.
+        /// Sets the current resolution.
         /// </summary>
-        /// <param name="value">Разрешение.</param>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <param name="value">Resolution.</param>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         [Obsolete("Use Twain32.Capabilities.XResolution.Set(value) and Twain32.Capabilities.YResolution.Set(value) instead.",true)]
         public void SetResolutions(float value) {
             this.SetCap(TwCap.XResolution,value);
@@ -752,10 +752,10 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает типы пикселей, поддерживаемые источником данных.
+        /// Returns the pixel types supported by the data source.
         /// </summary>
-        /// <returns>Коллекция значений.</returns>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <returns>Collection of values.</returns>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         [Obsolete("Use Twain32.Capabilities.PixelType.Get() instead.",true)]
         public Enumeration GetPixelTypes() {
             Enumeration _val=Enumeration.FromObject(this.GetCap(TwCap.IPixelType));
@@ -766,20 +766,20 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Устанавливает текущий тип пикселей.
+        /// Sets the current type of pixels.
         /// </summary>
-        /// <param name="value">Тип пикселей.</param>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <param name="value">Type of pixels.</param>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         [Obsolete("Use Twain32.Capabilities.PixelType.Set(value) instead.",true)]
         public void SetPixelType(TwPixelType value) {
             this.SetCap(TwCap.IPixelType,value);
         }
 
         /// <summary>
-        /// Возвращает единицы измерения, используемые источником данных.
+        /// Returns the units used by the data source.
         /// </summary>
-        /// <returns>Единицы измерения.</returns>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <returns>Units.</returns>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         [Obsolete("Use Twain32.Capabilities.Units.Get() instead.",true)]
         public Enumeration GetUnitOfMeasure() {
             Enumeration _val=Enumeration.FromObject(this.GetCap(TwCap.IUnits));
@@ -790,10 +790,10 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Устанавливает текущую единицу измерения, используемую источником данных.
+        /// Sets the current unit of measure used by the data source.
         /// </summary>
-        /// <param name="value">Единица измерения.</param>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <param name="value">Unit of measurement.</param>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         [Obsolete("Use Twain32.Capabilities.Units.Set(value) instead.",true)]
         public void SetUnitOfMeasure(TwUnits value) {
             this.SetCap(TwCap.IUnits,value);
@@ -804,11 +804,11 @@ namespace Saraff.Twain {
         #region All capabilities
 
         /// <summary>
-        /// Возвращает флаги, указывающие на поддерживаемые источником данных операции, для указанного значения capability.
+        /// Returns flags indicating operations supported by the data source for the specified capability value.
         /// </summary>
-        /// <param name="capability">Значение перечисдения TwCap.</param>
-        /// <returns>Набор флагов.</returns>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <param name="capability">The value of the TwCap enumeration.</param>
+        /// <returns>Set of flags.</returns>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         public TwQC IsCapSupported(TwCap capability) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=new TwCapability(capability);
@@ -822,17 +822,17 @@ namespace Saraff.Twain {
                     _cap.Dispose();
                 }
             } else {
-                throw new TwainException("Источник данных не открыт.");
+                throw new TwainException("The data source is not open.");
             }
         }
 
         /// <summary>
-        /// Возвращает значение для указанного capability (возможность).
+        /// Returns the value for the specified capability.
         /// </summary>
-        /// <param name="capability">Значение перечисления TwCap.</param>
-        /// <param name="msg">Значение перечисления TwMSG.</param>
-        /// <returns>В зависимости от значение capability, могут быть возвращены: тип-значение, массив, <see cref="Twain32.Range">диапазон</see>, <see cref="Twain32.Enumeration">перечисление</see>.</returns>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <param name="capability">The value of the TwCap enumeration.</param>
+        /// <param name="msg">The value of the TwMSG enumeration.</param>
+        /// <returns>Depending on the value of capability, the following can be returned: type-value, array, <see cref="Twain32.Range">range</see>, <see cref="Twain32.Enumeration">transfer</see>.</returns>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         private object _GetCapCore(TwCap capability,TwMSG msg) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=new TwCapability(capability);
@@ -864,45 +864,45 @@ namespace Saraff.Twain {
                     _cap.Dispose();
                 }
             } else {
-                throw new TwainException("Источник данных не открыт.");
+                throw new TwainException("The data source is not open.");
             }
         }
 
         /// <summary>
-        /// Возвращает значения указанной возможности (capability).
+        /// Gets the values of the specified feature (capability).
         /// </summary>
-        /// <param name="capability">Значение перечисления TwCap.</param>
-        /// <returns>В зависимости от значение capability, могут быть возвращены: тип-значение, массив, <see cref="Twain32.Range">диапазон</see>, <see cref="Twain32.Enumeration">перечисление</see>.</returns>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <param name="capability">The value of the TwCap enumeration.</param>
+        /// <returns>Depending on the value of capability, the following can be returned: type-value, array, <see cref="Twain32.Range">range</see>, <see cref="Twain32.Enumeration">transfer</see>.</returns>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         public object GetCap(TwCap capability) {
             return this._GetCapCore(capability,TwMSG.Get);
         }
 
         /// <summary>
-        /// Возвращает текущее значение для указанной возможности (capability).
+        /// Returns the current value for the specified feature. (capability).
         /// </summary>
-        /// <param name="capability">Значение перечисления TwCap.</param>
-        /// <returns>В зависимости от значение capability, могут быть возвращены: тип-значение, массив, <see cref="Twain32.Range">диапазон</see>, <see cref="Twain32.Enumeration">перечисление</see>.</returns>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <param name="capability">The value of the TwCap enumeration.</param>
+        /// <returns>Depending on the value of capability, the following can be returned: type-value, array, <see cref="Twain32.Range">range</see>, <see cref="Twain32.Enumeration">transfer</see>.</returns>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         public object GetCurrentCap(TwCap capability) {
             return this._GetCapCore(capability,TwMSG.GetCurrent);
         }
 
         /// <summary>
-        /// Возвращает значение по умолчанию для указанной возможности (capability).
+        /// Returns the default value for the specified feature. (capability).
         /// </summary>
-        /// <param name="capability">Значение перечисления TwCap.</param>
-        /// <returns>В зависимости от значение capability, могут быть возвращены: тип-значение, массив, <see cref="Twain32.Range">диапазон</see>, <see cref="Twain32.Enumeration">перечисление</see>.</returns>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <param name="capability">The value of the TwCap enumeration.</param>
+        /// <returns>Depending on the value of capability, the following can be returned: type-value, array, <see cref="Twain32.Range">range</see>, <see cref="Twain32.Enumeration">transfer</see>.</returns>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         public object GetDefaultCap(TwCap capability) {
             return this._GetCapCore(capability,TwMSG.GetDefault);
         }
 
         /// <summary>
-        /// Сбрасывает текущее значение для указанного <see cref="TwCap">capability</see> в значение по умолчанию.
+        /// Resets the current value for the specified <see cref="TwCap">capability</see> to default value.
         /// </summary>
-        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <param name="capability">Listing Value <see cref="TwCap"/>.</param>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         public void ResetCap(TwCap capability) {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=new TwCapability(capability);
@@ -915,14 +915,14 @@ namespace Saraff.Twain {
                     _cap.Dispose();
                 }
             } else {
-                throw new TwainException("Источник данных не открыт.");
+                throw new TwainException("The data source is not open.");
             }
         }
 
         /// <summary>
-        /// Сбрасывает текущее значение всех текущих значений в значения по умолчанию.
+        /// Resets the current value of all current values to the default values.
         /// </summary>
-        /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
+        /// <exception cref="TwainException">It is activated in case of an error during the operation.</exception>
         public void ResetAllCap() {
             if((this._TwainState&TwainStateFlag.DSOpen)!=0) {
                 TwCapability _cap=new TwCapability(TwCap.SupportedCaps);
@@ -935,7 +935,7 @@ namespace Saraff.Twain {
                     _cap.Dispose();
                 }
             } else {
-                throw new TwainException("Источник данных не открыт.");
+                throw new TwainException("The data source is not open.");
             }
         }
 
@@ -950,7 +950,7 @@ namespace Saraff.Twain {
                     cap.Dispose();
                 }
             } else {
-                throw new TwainException("Источник данных не открыт.");
+                throw new TwainException("The data source is not open.");
             }
         }
 
@@ -1003,81 +1003,81 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Устанавливает значение для указанного <see cref="TwCap">capability</see>
+        /// Sets the value for the specified <see cref="TwCap">capability</see>
         /// </summary>
-        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="value">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        /// <param name="capability">Listing Value <see cref="TwCap"/>.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="TwainException">Occurs when the data source is not open.</exception>
         public void SetCap(TwCap capability,object value) {
             this._SetCapCore(capability,TwMSG.Set,value);
         }
 
         /// <summary>
-        /// Устанавливает значение для указанного <see cref="TwCap">capability</see>
+        /// Sets the value for the specified <see cref="TwCap">capability</see>
         /// </summary>
-        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="value">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        /// <param name="capability">Listing Value <see cref="TwCap"/>.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="TwainException">Occurs when the data source is not open.</exception>
         public void SetCap(TwCap capability,object[] value) {
             this._SetCapCore(capability,TwMSG.Set,value);
         }
 
         /// <summary>
-        /// Устанавливает значение для указанного <see cref="TwCap">capability</see>
+        /// Sets the value for the specified <see cref="TwCap">capability</see>
         /// </summary>
-        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="value">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        /// <param name="capability">Listing Value <see cref="TwCap"/>.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="TwainException">Occurs when the data source is not open.</exception>
         public void SetCap(TwCap capability,Range value) {
             this._SetCapCore(capability,TwMSG.Set,value);
         }
 
         /// <summary>
-        /// Устанавливает значение для указанного <see cref="TwCap">capability</see>
+        /// Sets the value for the specified <see cref="TwCap">capability</see>
         /// </summary>
-        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="value">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        /// <param name="capability">Listing Value <see cref="TwCap"/>.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="TwainException">Occurs when the data source is not open.</exception>
         public void SetCap(TwCap capability,Enumeration value) {
             this._SetCapCore(capability,TwMSG.Set,value);
         }
 
         /// <summary>
-        /// Устанавливает ограничение на значения указанной возможности.
+        /// Sets a limit on the values of the specified feature.
         /// </summary>
-        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="value">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        /// <param name="capability">Listing Value <see cref="TwCap"/>.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="TwainException">Occurs when the data source is not open.</exception>
         public void SetConstraintCap(TwCap capability,object value) {
             this._SetCapCore(capability,TwMSG.SetConstraint,value);
         }
 
         /// <summary>
-        /// Устанавливает ограничение на значения указанной возможности.
+        /// Sets a limit on the values of the specified feature.
         /// </summary>
-        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="value">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        /// <param name="capability">Listing Value <see cref="TwCap"/>.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="TwainException">Occurs when the data source is not open.</exception>
         public void SetConstraintCap(TwCap capability,object[] value) {
             this._SetCapCore(capability,TwMSG.SetConstraint,value);
         }
 
         /// <summary>
-        /// Устанавливает ограничение на значения указанной возможности.
+        /// Sets a limit on the values of the specified feature.
         /// </summary>
-        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="value">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        /// <param name="capability">Listing Value <see cref="TwCap"/>.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="TwainException">Occurs when the data source is not open.</exception>
         public void SetConstraintCap(TwCap capability,Range value) {
             this._SetCapCore(capability,TwMSG.SetConstraint,value);
         }
 
         /// <summary>
-        /// Устанавливает ограничение на значения указанной возможности.
+        /// Sets a limit on the values of the specified feature.
         /// </summary>
-        /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
-        /// <param name="value">Устанавливаемое значение.</param>
-        /// <exception cref="TwainException">Возникает в случае, если источник данных не открыт.</exception>
+        /// <param name="capability">Listing Value <see cref="TwCap"/>.</param>
+        /// <param name="value">The value to set.</param>
+        /// <exception cref="TwainException">Occurs when the data source is not open.</exception>
         public void SetConstraintCap(TwCap capability,Enumeration value) {
             this._SetCapCore(capability,TwMSG.SetConstraint,value);
         }
@@ -1087,7 +1087,7 @@ namespace Saraff.Twain {
         #region DG_IMAGE / IMAGExxxxXFER / MSG_GET operation
 
         /// <summary>
-        /// Выполняет передачу изображения (Native Mode Transfer).
+        /// Performs image transfer (Native Mode Transfer).
         /// </summary>
         private void _NativeTransferPictures() {
             if(this._srcds.Id==0) {
@@ -1149,7 +1149,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Выполняет передачу изображения (Disk File Mode Transfer).
+        /// Performs image transfer (Disk File Mode Transfer).
         /// </summary>
         private void _FileTransferPictures() {
             if(this._srcds.Id==0) {
@@ -1201,7 +1201,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Выполняет передачу изображения (Buffered Memory Mode Transfer and Memory File Mode Transfer).
+        /// Performs image transfer (Buffered Memory Mode Transfer and Memory File Mode Transfer).
         /// </summary>
         private void _MemoryTransferPictures(bool isMemFile) {
             if(this._srcds.Id==0) {
@@ -1237,7 +1237,7 @@ namespace Saraff.Twain {
 
                     IntPtr _hMem=_Memory.Alloc((int)_memBufSize.Preferred);
                     if(_hMem==IntPtr.Zero) {
-                        throw new TwainException("Ошибка выделениия памяти.");
+                        throw new TwainException("Error allocating memory.");
                     }
                     try {
                         TwMemory _mem=new TwMemory {
@@ -1286,15 +1286,15 @@ namespace Saraff.Twain {
         #region DS events handler
 
         /// <summary>
-        /// Обработчик событий источника данных.
+        /// A data source event handler.
         /// </summary>
-        /// <param name="appId">Описание приложения.</param>
-        /// <param name="srcId">Описание источника данных.</param>
-        /// <param name="dg">Описание группы данных.</param>
-        /// <param name="dat">Описание данных.</param>
-        /// <param name="msg">Сообщение.</param>
-        /// <param name="data">Данные.</param>
-        /// <returns>Результат обработники события.</returns>
+        /// <param name="appId">Description of the application.</param>
+        /// <param name="srcId">Description of the data source.</param>
+        /// <param name="dg">Description of the data group.</param>
+        /// <param name="dat">Description of the data.</param>
+        /// <param name="msg">Message.</param>
+        /// <param name="data">Data.</param>
+        /// <returns>Result event handlers.</returns>
         private TwRC _TwCallbackProc(TwIdentity srcId,TwIdentity appId,TwDG dg,TwDAT dat,TwMSG msg,IntPtr data) {
             try {
                 if(appId==null||appId.Id!=this._AppId.Id) {
@@ -1317,10 +1317,10 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Внутренний обработчик событий источника данных.
+        /// An internal data source event handler.
         /// </summary>
-        /// <param name="msg">Сообщение.</param>
-        /// <param name="endAction">Действие, завершающее обработку события.</param>
+        /// <param name="msg">Message.</param>
+        /// <param name="endAction">The action that completes the processing of the event.</param>
         private void _TwCallbackProcCore(TwMSG msg,Action<bool> endAction) {
             try {
                 switch(msg) {
@@ -1441,7 +1441,7 @@ namespace Saraff.Twain {
         #endregion
 
         /// <summary>
-        /// Получает описание всех доступных источников данных.
+        /// Gets a description of all available data sources.
         /// </summary>
         private void _GetAllSorces() {
             List<TwIdentity> _src=new List<TwIdentity>();
@@ -1475,7 +1475,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает или устанавливает значение флагов состояния.
+        /// Gets or sets the value of the status flags.
         /// </summary>
         private TwainStateFlag _TwainState {
             get {
@@ -1492,7 +1492,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает код состояния TWAIN.
+        /// Returns the TWAIN status code.
         /// </summary>
         /// <returns></returns>
         private TwCC _GetTwainStatus() {
@@ -1502,9 +1502,9 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает описание полученного изображения.
+        /// Returns a description of the received image.
         /// </summary>
-        /// <returns>Описание изображения.</returns>
+        /// <returns>Description of the image.</returns>
         private ImageInfo _GetImageInfo() {
             TwImageInfo _imageInfo=new TwImageInfo();
             TwRC _rc=this._dsmEntry.DsInvoke(this._AppId,this._srcds,TwDG.Image,TwDAT.ImageInfo,TwMSG.Get,ref _imageInfo);
@@ -1515,10 +1515,10 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает расширенного описание полученного изображения.
+        /// Returns an extended description of the resulting image.
         /// </summary>
-        /// <param name="extInfo">Набор кодов расширенного описания изображения для которых требуется получить описание.</param>
-        /// <returns>Расширенное описание изображения.</returns>
+        /// <param name="extInfo">A set of codes for the extended image description for which you want to get a description.</param>
+        /// <returns>Extended image description.</returns>
         private ExtImageInfo _GetExtImageInfo(TwEI[] extInfo) {
             TwInfo[] _info=new TwInfo[extInfo.Length];
             for(int i=0; i<extInfo.Length; i++) {
@@ -1538,7 +1538,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Флаги состояния.
+        /// State flags.
         /// </summary>
         [Flags]
         public enum TwainStateFlag {
@@ -1567,73 +1567,73 @@ namespace Saraff.Twain {
         #region Events
 
         /// <summary>
-        /// Возникает в момент окончания сканирования. Occurs when the acquire is completed.
+        /// Occurs when the acquire is completed.
         /// </summary>
         [Category("Action")]
-        [Description("Возникает в момент окончания сканирования. Occurs when the acquire is completed.")]
+        [Description("Occurs when the acquire is completed.")]
         public event EventHandler AcquireCompleted;
 
         /// <summary>
-        /// Возникает в момент получения ошибки в процессе сканирования. Occurs when error received during acquire.
+        /// Occurs when error received during acquire.
         /// </summary>
         [Category("Action")]
-        [Description("Возникает в момент получения ошибки в процессе сканирования. Occurs when error received during acquire.")]
+        [Description("Occurs when error received during acquire.")]
         public event EventHandler<AcquireErrorEventArgs> AcquireError;
 
         /// <summary>
-        /// Возникает в момент окончания получения изображения приложением. Occurs when the transfer into application was completed (Native Mode Transfer).
+        /// Occurs when the transfer into application was completed (Native Mode Transfer).
         /// </summary>
         [Category("Native Mode Action")]
-        [Description("Возникает в момент окончания получения изображения приложением. Occurs when the transfer into application was completed (Native Mode Transfer).")]
+        [Description("Occurs when the transfer into application was completed (Native Mode Transfer).")]
         public event EventHandler<EndXferEventArgs> EndXfer;
 
         /// <summary>
-        /// Возникает в момент окончания получения изображения источником.
+        /// Occurs when the transfer was completed.
         /// </summary>
         [Category("Action")]
-        [Description("Возникает в момент окончания получения изображения источником. Occurs when the transfer was completed.")]
+        [Description("Occurs when the transfer was completed.")]
         public event EventHandler<XferDoneEventArgs> XferDone;
 
         /// <summary>
-        /// Возникает в момент установки размера буфера памяти. Occurs when determined size of buffer to use during the transfer (Memory Mode Transfer and MemFile Mode Transfer).
+        /// Occurs when determined size of buffer to use during the transfer (Memory Mode Transfer and MemFile Mode Transfer).
         /// </summary>
         [Category("Memory Mode Action")]
-        [Description("Возникает в момент установки размера буфера памяти. Occurs when determined size of buffer to use during the transfer (Memory Mode Transfer and MemFile Mode Transfer).")]
+        [Description("Occurs when determined size of buffer to use during the transfer (Memory Mode Transfer and MemFile Mode Transfer).")]
         public event EventHandler<SetupMemXferEventArgs> SetupMemXferEvent;
 
         /// <summary>
-        /// Возникает в момент получения очередного блока данных. Occurs when the memory block for the data was recived (Memory Mode Transfer and MemFile Mode Transfer).
+        /// Occurs when the memory block for the data was recived (Memory Mode Transfer and MemFile Mode Transfer).
         /// </summary>
         [Category("Memory Mode Action")]
-        [Description("Возникает в момент получения очередного блока данных. Occurs when the memory block for the data was recived (Memory Mode Transfer and MemFile Mode Transfer).")]
+        [Description("Occurs when the memory block for the data was recived (Memory Mode Transfer and MemFile Mode Transfer).")]
         public event EventHandler<MemXferEventArgs> MemXferEvent;
 
         /// <summary>
-        /// Возникает в момент, когда необходимо задать имя файла изображения. Occurs when you need to specify the filename (File Mode Transfer).
+        /// Occurs when you need to specify the filename (File Mode Transfer).
         /// </summary>
         [Category("File Mode Action")]
-        [Description("Возникает в момент, когда необходимо задать имя файла изображения. Occurs when you need to specify the filename. (File Mode Transfer)")]
+        [Description("Occurs when you need to specify the filename. (File Mode Transfer)")]
         public event EventHandler<SetupFileXferEventArgs> SetupFileXferEvent;
 
         /// <summary>
-        /// Возникает в момент окончания получения файла изображения приложением. Occurs when the transfer into application was completed (File Mode Transfer).
+        /// Occurs when the transfer into application was completed (File Mode Transfer).
         /// </summary>
         [Category("File Mode Action")]
-        [Description("Возникает в момент окончания получения файла изображения приложением. Occurs when the transfer into application was completed (File Mode Transfer).")]
+        [Description("Occurs when the transfer into application was completed (File Mode Transfer).")]
         public event EventHandler<FileXferEventArgs> FileXferEvent;
 
         /// <summary>
-        /// Возникает в момент изменения состояния twain-устройства. Occurs when TWAIN state was changed.
+        /// Occurs when TWAIN state was changed.
         /// </summary>
         [Category("Behavior")]
-        [Description("Возникает в момент изменения состояния twain-устройства. Occurs when TWAIN state was changed.")]
+        [Description("Occurs when TWAIN state was changed.")]
         public event EventHandler<TwainStateEventArgs> TwainStateChanged;
 
         /// <summary>
-        /// Возникает в момент, когда источник уведомляет приложение о произошедшем событии. Occurs when enabled the source sends this message to the Application to alert it that some event has taken place.
+        /// Occurs when enabled the source sends this message to the Application to alert it that some event has taken place.
         /// </summary>
         [Category("Behavior")]
-        [Description("Возникает в момент, когда источник уведомляет приложение о произошедшем событии. Occurs when enabled the source sends this message to the Application to alert it that some event has taken place.")]
+        [Description("Occurs when enabled the source sends this message to the Application to alert it that some event has taken place.")]
         public event EventHandler<DeviceEventEventArgs> DeviceEvent;
 
         #endregion
@@ -1641,16 +1641,16 @@ namespace Saraff.Twain {
         #region Events Args
 
         /// <summary>
-        /// Аргументы события EndXfer.
+        /// Arguments for the EndXfer event.
         /// </summary>
         [Serializable]
         public sealed class EndXferEventArgs:SerializableCancelEventArgs {
             private _Image _image;
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса.
+            /// Initializes a new instance of the class.
             /// </summary>
-            /// <param name="image">Изображение.</param>
+            /// <param name="image">Image.</param>
             internal EndXferEventArgs(object image) {
                 this._image=image as _Image;
             }
@@ -1660,7 +1660,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает изображение.
+            /// Returns the image.
             /// </summary>
             public Image Image {
                 get {
@@ -1670,7 +1670,7 @@ namespace Saraff.Twain {
 
 #if !NET2            
             /// <summary>
-            /// Возвращает изображение.
+            /// Returns the image.
             /// </summary>
             public System.Windows.Media.ImageSource ImageSource {
                 get {
@@ -1681,58 +1681,58 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Аргументы события XferDone.
+        /// Arguments for the XferDone event.
         /// </summary>
         public sealed class XferDoneEventArgs:SerializableCancelEventArgs {
             private GetImageInfoCallback _imageInfoMethod;
             private GetExtImageInfoCallback _extImageInfoMethod;
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса <see cref="XferDoneEventArgs"/>.
+            /// Initializes a new instance of the class <see cref="XferDoneEventArgs"/>.
             /// </summary>
-            /// <param name="method1">Метод обратного вызова для получения описания изображения.</param>
-            /// <param name="method2">Метод обратного вызова для получения расширенного описания изображения.</param>
+            /// <param name="method1">Callback method to get image description.</param>
+            /// <param name="method2">Callback method to get an extended image description.</param>
             internal XferDoneEventArgs(GetImageInfoCallback method1,GetExtImageInfoCallback method2) {
                 this._imageInfoMethod=method1;
                 this._extImageInfoMethod=method2;
             }
 
             /// <summary>
-            /// Возвращает описание полученного изображения.
+            /// Returns a description of the received image.
             /// </summary>
-            /// <returns>Описание изображения.</returns>
+            /// <returns>Description of the image.</returns>
             public ImageInfo GetImageInfo() {
                 return this._imageInfoMethod();
             }
 
             /// <summary>
-            /// Возвращает расширенного описание полученного изображения.
+            /// Returns an extended description of the resulting image.
             /// </summary>
-            /// <param name="extInfo">Набор кодов расширенного описания изображения для которых требуется получить описание.</param>
-            /// <returns>Расширенное описание изображения.</returns>
+            /// <param name="extInfo">A set of codes for the extended image description for which you want to get a description.</param>
+            /// <returns>Extended image description.</returns>
             public ExtImageInfo GetExtImageInfo(params TwEI[] extInfo) {
                 return this._extImageInfoMethod(extInfo);
             }
         }
 
         /// <summary>
-        /// Аргументы события SetupMemXferEvent.
+        /// Arguments for the SetupMemXferEvent event.
         /// </summary>
         [Serializable]
         public sealed class SetupMemXferEventArgs:SerializableCancelEventArgs {
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса <see cref="SetupMemXferEventArgs"/>.
+            /// Initializes a new instance of the class <see cref="SetupMemXferEventArgs"/>.
             /// </summary>
-            /// <param name="info">Описание изображения.</param>
-            /// <param name="bufferSize">Размер буфера памяти для передачи данных.</param>
+            /// <param name="info">Description of the image.</param>
+            /// <param name="bufferSize">The size of the memory buffer for data transfer.</param>
             internal SetupMemXferEventArgs(ImageInfo info,uint bufferSize) {
                 this.ImageInfo=info;
                 this.BufferSize=bufferSize;
             }
 
             /// <summary>
-            /// Возвращает описание изображения.
+            /// Returns a description of the image.
             /// </summary>
             public ImageInfo ImageInfo {
                 get;
@@ -1740,7 +1740,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает размер буфера памяти для передачи данных.
+            /// Gets the size of the memory buffer for data transfer.
             /// </summary>
             public uint BufferSize {
                 get;
@@ -1749,23 +1749,23 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Аргументы события MemXferEvent.
+        /// Arguments for the MemXferEvent event.
         /// </summary>
         [Serializable]
         public sealed class MemXferEventArgs:SerializableCancelEventArgs {
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса <see cref="MemXferEventArgs"/>.
+            /// Initializes a new instance of the class <see cref="MemXferEventArgs"/>.
             /// </summary>
-            /// <param name="info">Описание изображения.</param>
-            /// <param name="image">Фрагмент данных изображения.</param>
+            /// <param name="info">Description of the image.</param>
+            /// <param name="image">A fragment of image data.</param>
             internal MemXferEventArgs(ImageInfo info,ImageMemXfer image) {
                 this.ImageInfo=info;
                 this.ImageMemXfer=image;
             }
 
             /// <summary>
-            /// Возвращает описание изображения.
+            /// Returns a description of the image.
             /// </summary>
             public ImageInfo ImageInfo {
                 get;
@@ -1773,7 +1773,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает фрагмент данных изображения.
+            /// Returns a piece of image data.
             /// </summary>
             public ImageMemXfer ImageMemXfer {
                 get;
@@ -1782,19 +1782,19 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Аргументы события SetupFileXferEvent.
+        /// Arguments for the SetupFileXferEvent event.
         /// </summary>
         [Serializable]
         public sealed class SetupFileXferEventArgs:SerializableCancelEventArgs {
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса <see cref="SetupFileXferEventArgs"/>.
+            /// Initializes a new instance of the class <see cref="SetupFileXferEventArgs"/>.
             /// </summary>
             internal SetupFileXferEventArgs() {
             }
 
             /// <summary>
-            /// Возвращает или устанавливает имя файла изображения.
+            /// Gets or sets the name of the image file.
             /// </summary>
             public string FileName {
                 get;
@@ -1803,21 +1803,21 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Аргументы события FileXferEvent.
+        /// Arguments for the FileXferEvent event.
         /// </summary>
         [Serializable]
         public sealed class FileXferEventArgs:SerializableCancelEventArgs {
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса <see cref="FileXferEventArgs"/>.
+            /// Initializes a new instance of the class <see cref="FileXferEventArgs"/>.
             /// </summary>
-            /// <param name="image">Описание файла изображения.</param>
+            /// <param name="image">Description of the image file.</param>
             internal FileXferEventArgs(ImageFileXfer image) {
                 this.ImageFileXfer=image;
             }
 
             /// <summary>
-            /// Возвращает описание файла изображения.
+            /// Returns a description of the image file.
             /// </summary>
             public ImageFileXfer ImageFileXfer {
                 get;
@@ -1826,21 +1826,21 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Аргументы события TwainStateChanged.
+        /// Arguments for the TwainStateChanged event.
         /// </summary>
         [Serializable]
         public sealed class TwainStateEventArgs:EventArgs {
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса.
+            /// Initializes a new instance of the class.
             /// </summary>
-            /// <param name="flags">Флаги состояния.</param>
+            /// <param name="flags">State flags.</param>
             internal TwainStateEventArgs(TwainStateFlag flags) {
                 this.TwainState=flags;
             }
 
             /// <summary>
-            /// Возвращает флаги состояния twain-устройства.
+            /// Returns the status flags of a twain device.
             /// </summary>
             public TwainStateFlag TwainState {
                 get;
@@ -1849,7 +1849,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Аргументы события DeviceEvent.
+        /// Arguments for the DeviceEvent event.
         /// </summary>
         public sealed class DeviceEventEventArgs:EventArgs {
             private TwDeviceEvent _deviceEvent;
@@ -1959,21 +1959,21 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Аргументы события AcquireError.
+        /// Arguments for the AcquireError event.
         /// </summary>
         [Serializable]
         public sealed class AcquireErrorEventArgs:EventArgs {
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса.
+            /// Initializes a new instance of the class.
             /// </summary>
-            /// <param name="ex">Экземпляр класса исключения.</param>
+            /// <param name="ex">An instance of the exception class.</param>
             internal AcquireErrorEventArgs(TwainException ex) {
                 this.Exception=ex;
             }
 
             /// <summary>
-            /// Возвращает экземпляр класса исключения.
+            /// Gets an instance of the exception class.
             /// </summary>
             public TwainException Exception {
                 get;
@@ -1989,10 +1989,10 @@ namespace Saraff.Twain {
         public class SerializableCancelEventArgs:EventArgs {
 
             /// <summary>
-            /// Получает или задает значение, показывающее, следует ли отменить событие. Gets or sets a value indicating whether the event should be canceled.
+            /// Gets or sets a value indicating whether the event should be canceled.
             /// </summary>
             /// <value>
-            /// Значение <c>true</c>, если событие следует отменить, в противном случае — значение <c>false</c>. <c>true</c> if cancel; otherwise, <c>false</c>.
+            /// <c>true</c> if cancel; otherwise, <c>false</c>.
             /// </value>
             public bool Cancel {
                 get;
@@ -2005,14 +2005,14 @@ namespace Saraff.Twain {
         #region Nested classes
 
         /// <summary>
-        /// Точки входа для работы с DSM.
+        /// Entry points for working with DSM.
         /// </summary>
         private sealed class _DsmEntry {
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса <see cref="_DsmEntry"/>.
+            /// Initializes a new instance of the class <see cref="_DsmEntry"/>.
             /// </summary>
-            /// <param name="ptr">Указатель на DSM_Entry.</param>
+            /// <param name="ptr">Pointer to DSM_Entry.</param>
             private _DsmEntry(IntPtr ptr) {
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
@@ -2037,20 +2037,20 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Создает и возвращает новый экземпляр класса <see cref="_DsmEntry"/>.
+            /// Creates and returns a new instance of the class <see cref="_DsmEntry"/>.
             /// </summary>
-            /// <param name="ptr">Указатель на DSM_Entry.</param>
-            /// <returns>Экземпляр класса <see cref="_DsmEntry"/>.</returns>
+            /// <param name="ptr">Pointer to DSM_Entry.</param>
+            /// <returns>Class instance <see cref="_DsmEntry"/>.</returns>
             public static _DsmEntry Create(IntPtr ptr) {
                 return new _DsmEntry(ptr);
             }
 
             /// <summary>
-            /// Приводит указатель к требуемомы делегату.
+            /// Casts a pointer to the requested delegate.
             /// </summary>
-            /// <typeparam name="T">Требуемый делегат.</typeparam>
-            /// <param name="ptr">Указатель на DSM_Entry.</param>
-            /// <returns>Делегат.</returns>
+            /// <typeparam name="T">Delegate Required.</typeparam>
+            /// <param name="ptr">Pointer to DSM_Entry.</param>
+            /// <returns>Delegate.</returns>
             private static T CreateDelegate<T>(IntPtr ptr) where T:class {
                 return Marshal.GetDelegateForFunctionPointer(ptr,typeof(T)) as T;
             }
@@ -2150,16 +2150,16 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Точки входа для функций управления памятью.
+        /// Entry points for memory management functions.
         /// </summary>
         internal sealed class _Memory {
             private static TwEntryPoint _entryPoint;
 
             /// <summary>
-            /// Выделяет блок памяти указанного размера.
+            /// Allocates a memory block of the specified size.
             /// </summary>
-            /// <param name="size">Размер блока памяти.</param>
-            /// <returns>Дескриптор памяти.</returns>
+            /// <param name="size">The size of the memory block.</param>
+            /// <returns>Memory descriptor.</returns>
             public static IntPtr Alloc(int size) {
                 if(_Memory._entryPoint!=null&&_Memory._entryPoint.MemoryAllocate!=null) {
                     return _Memory._entryPoint.MemoryAllocate(size);
@@ -2174,9 +2174,9 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Освобождает память.
+            /// Frees up memory.
             /// </summary>
-            /// <param name="handle">Дескриптор памяти.</param>
+            /// <param name="handle">Memory descriptor.</param>
             public static void Free(IntPtr handle) {
                 if(_Memory._entryPoint!=null&&_Memory._entryPoint.MemoryFree!=null) {
                     _Memory._entryPoint.MemoryFree(handle);
@@ -2193,10 +2193,10 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Выполняет блокировку памяти.
+            /// Performs a memory lock.
             /// </summary>
-            /// <param name="handle">Дескриптор памяти.</param>
-            /// <returns>Указатель на блок памяти.</returns>
+            /// <param name="handle">Memory descriptor.</param>
+            /// <returns>Pointer to a block of memory.</returns>
             public static IntPtr Lock(IntPtr handle) {
                 if(_Memory._entryPoint!=null&&_Memory._entryPoint.MemoryLock!=null) {
                     return _Memory._entryPoint.MemoryLock(handle);
@@ -2211,9 +2211,9 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Выполняет разблокировку памяти.
+            /// Unlocks memory.
             /// </summary>
-            /// <param name="handle">Дескриптор памяти.</param>
+            /// <param name="handle">Memory descriptor.</param>
             public static void Unlock(IntPtr handle) {
                 if(_Memory._entryPoint!=null&&_Memory._entryPoint.MemoryUnlock!=null) {
                     _Memory._entryPoint.MemoryUnlock(handle);
@@ -2243,9 +2243,9 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Устаначливает точки входа.
+            /// Sets entry points.
             /// </summary>
-            /// <param name="entry">Точки входа.</param>
+            /// <param name="entry">Entry points.</param>
             internal static void _SetEntryPoints(TwEntryPoint entry) {
                 _Memory._entryPoint=entry;
             }
@@ -2272,15 +2272,15 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Точки входа для функций платформы.
+        /// Entry points for platform features.
         /// </summary>
         internal sealed class _Platform {
 
             /// <summary>
-            /// Загружает указаную библиотеку в память процесса.
+            /// Loads the specified library into the process memory.
             /// </summary>
-            /// <param name="fileName">Имя библиотеки.</param>
-            /// <returns>Дескриптор модуля.</returns>
+            /// <param name="fileName">The name of the library.</param>
+            /// <returns>Module descriptor.</returns>
             internal static IntPtr Load(string fileName) {
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
@@ -2292,9 +2292,9 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Выгружает указаную библиотеку из памяти процесса.
+            /// Unloads the specified library from the process memory.
             /// </summary>
-            /// <param name="hModule">Дескриптор модуля</param>
+            /// <param name="hModule">Module descriptor</param>
             internal static void Unload(IntPtr hModule) {
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
@@ -2307,11 +2307,11 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает адрес указанной процедуры.
+            /// Returns the address of the specified procedure.
             /// </summary>
-            /// <param name="hModule">Дескриптор модуля.</param>
-            /// <param name="procName">Имя процедуры.</param>
-            /// <returns>Указатель на процедуру.</returns>
+            /// <param name="hModule">Module descriptor.</param>
+            /// <param name="procName">The name of the procedure.</param>
+            /// <returns>Pointer to a procedure.</returns>
             internal static IntPtr GetProcAddr(IntPtr hModule,string procName) {
                 switch(Environment.OSVersion.Platform) {
                     case PlatformID.Unix:
@@ -2333,7 +2333,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Фильтр win32-сообщений.
+        /// Win32 message filter.
         /// </summary>
         private sealed class _MessageFilter:IMessageFilter,IDisposable {
             private Twain32 _twain;
@@ -2461,7 +2461,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Диапазон значений.
+        /// Range of values.
         /// </summary>
         [Serializable]
         public sealed class Range {
@@ -2485,23 +2485,23 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Создает и возвращает экземпляр <see cref="Range"/>.
+            /// Creates and returns an instance <see cref="Range"/>.
             /// </summary>
-            /// <param name="range">Экземпляр <see cref="TwRange"/>.</param>
-            /// <returns>Экземпляр <see cref="Range"/>.</returns>
+            /// <param name="range">Instance <see cref="TwRange"/>.</param>
+            /// <returns>Instance <see cref="Range"/>.</returns>
             internal static Range CreateRange(TwRange range) {
                 return new Range(range);
             }
 
             /// <summary>
-            /// Создает и возвращает экземпляр <see cref="Range"/>.
+            /// Creates and returns an instance <see cref="Range"/>.
             /// </summary>
-            /// <param name="minValue">Минимальное значение.</param>
-            /// <param name="maxValue">Максимальное значение.</param>
-            /// <param name="stepSize">Шаг.</param>
-            /// <param name="defaultValue">Значение по умолчанию.</param>
-            /// <param name="currentValue">Текущее значение.</param>
-            /// <returns>Экземпляр <see cref="Range"/>.</returns>
+            /// <param name="minValue">Minimum value.</param>
+            /// <param name="maxValue">The maximum value.</param>
+            /// <param name="stepSize">Step.</param>
+            /// <param name="defaultValue">The default value.</param>
+            /// <param name="currentValue">Present value.</param>
+            /// <returns>Instance <see cref="Range"/>.</returns>
             public static Range CreateRange(object minValue,object maxValue,object stepSize,object defaultValue,object currentValue) {
                 return new Range() {
                     MinValue=minValue, MaxValue=maxValue, StepSize=stepSize, DefaultValue=defaultValue, CurrentValue=currentValue
@@ -2509,7 +2509,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает или устанавливает минимальное значение.
+            /// Gets or sets the minimum value.
             /// </summary>
             public object MinValue {
                 get;
@@ -2517,7 +2517,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает или устанавливает максимальное значение.
+            /// Gets or sets the maximum value.
             /// </summary>
             public object MaxValue {
                 get;
@@ -2525,7 +2525,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает или устанавливает шаг.
+            /// Gets or sets the step.
             /// </summary>
             public object StepSize {
                 get;
@@ -2533,7 +2533,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает или устанавливает значае по умолчанию.
+            /// Gets or sets the default value.
             /// </summary>
             public object DefaultValue {
                 get;
@@ -2541,7 +2541,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает или устанавливает текущее значение.
+            /// Gets or sets the current value.
             /// </summary>
             public object CurrentValue {
                 get;
@@ -2549,9 +2549,9 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Конвертирует экземпляр класса в экземпляр <see cref="TwRange"/>.
+            /// Converts an instance of a class to an instance <see cref="TwRange"/>.
             /// </summary>
-            /// <returns>Экземпляр <see cref="TwRange"/>.</returns>
+            /// <returns>Instance <see cref="TwRange"/>.</returns>
             internal TwRange ToTwRange() {
                 TwType _type=TwTypeHelper.TypeOf(this.CurrentValue.GetType());
                 return new TwRange() {
@@ -2566,7 +2566,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Перечисление.
+        /// Enumeration.
         /// </summary>
         [Serializable]
         public sealed class Enumeration {
@@ -2575,9 +2575,9 @@ namespace Saraff.Twain {
             /// <summary>
             /// Prevents a default instance of the <see cref="Enumeration"/> class from being created.
             /// </summary>
-            /// <param name="items">Элементы перечисления.</param>
-            /// <param name="currentIndex">Текущий индекс.</param>
-            /// <param name="defaultIndex">Индекс по умолчанию.</param>
+            /// <param name="items">Listing items.</param>
+            /// <param name="currentIndex">Current index.</param>
+            /// <param name="defaultIndex">The default index.</param>
             private Enumeration(object[] items,int currentIndex,int defaultIndex) {
                 this._items=items;
                 this.CurrentIndex=currentIndex;
@@ -2585,18 +2585,18 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Создает и возвращает экземпляр <see cref="Enumeration"/>.
+            /// Creates and returns an instance <see cref="Enumeration"/>.
             /// </summary>
-            /// <param name="items">Элементы перечисления.</param>
-            /// <param name="currentIndex">Текущий индекс.</param>
-            /// <param name="defaultIndex">Индекс по умолчанию.</param>
-            /// <returns>Экземпляр <see cref="Enumeration"/>.</returns>
+            /// <param name="items">Listing items.</param>
+            /// <param name="currentIndex">Current index.</param>
+            /// <param name="defaultIndex">The default index.</param>
+            /// <returns>Instance <see cref="Enumeration"/>.</returns>
             public static Enumeration CreateEnumeration(object[] items,int currentIndex,int defaultIndex) {
                 return new Enumeration(items,currentIndex,defaultIndex);
             }
 
             /// <summary>
-            /// Возвращает количество элементов.
+            /// Returns the number of items.
             /// </summary>
             public int Count {
                 get {
@@ -2605,7 +2605,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает текущий индекс.
+            /// Returns the current index.
             /// </summary>
             public int CurrentIndex {
                 get;
@@ -2613,7 +2613,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает индекс по умолчанию.
+            /// Returns the default index.
             /// </summary>
             public int DefaultIndex {
                 get;
@@ -2621,10 +2621,10 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает элемент по указанному индексу.
+            /// Returns the element at the specified index.
             /// </summary>
-            /// <param name="index">Индекс.</param>
-            /// <returns>Элемент по указанному индексу.</returns>
+            /// <param name="index">Index.</param>
+            /// <returns>The item at the specified index.</returns>
             public object this[int index] {
                 get {
                     return this._items[index];
@@ -2641,10 +2641,10 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Создает и возвращает экземпляр <see cref="Enumeration"/>.
+            /// Creates and returns an instance <see cref="Enumeration"/>.
             /// </summary>
-            /// <param name="value">Экземпляр <see cref="Range"/>.</param>
-            /// <returns>Экземпляр <see cref="Enumeration"/>.</returns>
+            /// <param name="value">Instance <see cref="Range"/>.</param>
+            /// <returns>Instance <see cref="Enumeration"/>.</returns>
             public static Enumeration FromRange(Range value) {
                 int _currentIndex = 0, _defaultIndex = 0;
                 object[] _items = new object[(int)((Convert.ToSingle(value.MaxValue) - Convert.ToSingle(value.MinValue)) / Convert.ToSingle(value.StepSize)) + 1];
@@ -2661,19 +2661,19 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Создает и возвращает экземпляр <see cref="Enumeration"/>.
+            /// Creates and returns an instance <see cref="Enumeration"/>.
             /// </summary>
-            /// <param name="value">Массив значений.</param>
-            /// <returns>Экземпляр <see cref="Enumeration"/>.</returns>
+            /// <param name="value">An array of values.</param>
+            /// <returns>Instance <see cref="Enumeration"/>.</returns>
             public static Enumeration FromArray(object[] value) {
                 return Enumeration.CreateEnumeration(value, 0, 0);
             }
 
             /// <summary>
-            /// Создает и возвращает экземпляр <see cref="Enumeration"/>.
+            /// Creates and returns an instance <see cref="Enumeration"/>.
             /// </summary>
-            /// <param name="value">Значение.</param>
-            /// <returns>Экземпляр <see cref="Enumeration"/>.</returns>
+            /// <param name="value">Value.</param>
+            /// <returns>Instance <see cref="Enumeration"/>.</returns>
             public static Enumeration FromOneValue(ValueType value) {
                 return Enumeration.CreateEnumeration(new object[] { value }, 0, 0);
             }
@@ -2696,7 +2696,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Описание изображения.
+        /// Description of the image.
         /// </summary>
         [Serializable]
         public sealed class ImageInfo {
@@ -2705,10 +2705,10 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Создает и возвращает новый экземпляр класса ImageInfo на основе экземпляра класса TwImageInfo.
+            /// Creates and returns a new instance of the ImageInfo class based on an instance of the TwImageInfo class.
             /// </summary>
-            /// <param name="info">Описание изображения.</param>
-            /// <returns>Экземпляр класса ImageInfo.</returns>
+            /// <param name="info">Description of the image.</param>
+            /// <returns>An instance of the ImageInfo class.</returns>
             internal static ImageInfo FromTwImageInfo(TwImageInfo info) {
 
                 return new ImageInfo {
@@ -2806,7 +2806,7 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Расширенное описание изображения.
+        /// Extended image description.
         /// </summary>
         [Serializable]
         public sealed class ExtImageInfo:Collection<ExtImageInfo.InfoItem> {
@@ -2815,10 +2815,10 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Создает и возвращает экземпляр класса ExtImageInfo из блока неуправляемой памяти.
+            /// Creates and returns an instance of the ExtImageInfo class from an unmanaged memory block.
             /// </summary>
-            /// <param name="ptr">Указатель на блок неуправляемой памяти.</param>
-            /// <returns>Экземпляр класса ExtImageInfo.</returns>
+            /// <param name="ptr">Pointer to an unmanaged memory block.</param>
+            /// <returns>An instance of the ExtImageInfo class.</returns>
             internal static ExtImageInfo FromPtr(IntPtr ptr) {
                 int _twExtImageInfoSize=Marshal.SizeOf(typeof(TwExtImageInfo));
                 int _twInfoSize=Marshal.SizeOf(typeof(TwInfo));
@@ -2833,11 +2833,11 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает элемент описания расширенной информации о изображении по его коду.
+            /// Returns a description element of the extended image information by its code.
             /// </summary>
-            /// <param name="infoId">Код элемента описания расширенной информации о изображении.</param>
-            /// <returns>Элемент описания расширенной информации о изображении.</returns>
-            /// <exception cref="System.Collections.Generic.KeyNotFoundException">Для указанного кода отсутствует соответствующий элемент.</exception>
+            /// <param name="infoId">Description element code for extended image information.</param>
+            /// <returns>Description element for extended image information.</returns>
+            /// <exception cref="System.Collections.Generic.KeyNotFoundException">There is no corresponding element for the specified code.</exception>
             public InfoItem this[TwEI infoId] {
                 get {
                     foreach(InfoItem _item in this) {
@@ -2850,7 +2850,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Элемент описания расширенной информации о изображении.
+            /// Description element for extended image information.
             /// </summary>
             [Serializable]
             [DebuggerDisplay("InfoId = {InfoId}, IsSuccess = {IsSuccess}, Value = {Value}")]
@@ -2860,10 +2860,10 @@ namespace Saraff.Twain {
                 }
 
                 /// <summary>
-                /// Создает и возвращает экземпляр класса элемента описания расширенной информации о изображении из внутреннего экземпляра класса элемента описания расширенной информации о изображении.
+                /// Creates and returns an instance class of an extended image information description element from an internal instance of an extended image information description element class.
                 /// </summary>
-                /// <param name="info">Внутрений экземпляр класса элемента описания расширенной информации о изображении.</param>
-                /// <returns>Экземпляр класса элемента описания расширенной информации о изображении.</returns>
+                /// <param name="info">An internal instance of the extended image information description element class.</param>
+                /// <returns>An instance of the extended image information description item class.</returns>
                 internal static InfoItem FromTwInfo(TwInfo info) {
                     return new InfoItem {
                         InfoId=info.InfoId,
@@ -2875,7 +2875,7 @@ namespace Saraff.Twain {
                 }
 
                 /// <summary>
-                /// Возвращает код расширенной информации о изображении.
+                /// Returns a code for extended image information.
                 /// </summary>
                 public TwEI InfoId {
                     get;
@@ -2883,7 +2883,7 @@ namespace Saraff.Twain {
                 }
 
                 /// <summary>
-                /// Возвращает true, если запрошенная информация не поддерживается источником данных; иначе, false.
+                /// Вreturns true if the requested information is not supported by the data source; otherwise false.
                 /// </summary>
                 public bool IsNotSupported {
                     get;
@@ -2891,7 +2891,7 @@ namespace Saraff.Twain {
                 }
 
                 /// <summary>
-                /// Возвращает true, если запрошенная информация поддерживается источником данных, но в данный момент недоступна; иначе, false.
+                /// Returns true if the requested information is supported by the data source but is currently unavailable; otherwise false.
                 /// </summary>
                 public bool IsNotAvailable {
                     get;
@@ -2899,7 +2899,7 @@ namespace Saraff.Twain {
                 }
 
                 /// <summary>
-                /// Возвращает true, если запрошенная информация была успешно извлечена; иначе, false.
+                /// Returns true if the requested information was successfully retrieved; otherwise false.
                 /// </summary>
                 public bool IsSuccess {
                     get;
@@ -2907,7 +2907,7 @@ namespace Saraff.Twain {
                 }
 
                 /// <summary>
-                /// Возвращает значение элемента.
+                /// Returns the value of an element.
                 /// </summary>
                 public object Value {
                     get;
@@ -3007,22 +3007,22 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Описание файла изображения.
+        /// Description of the image file.
         /// </summary>
         [Serializable]
         public sealed class ImageFileXfer {
 
             /// <summary>
-            /// Инициализирует новый экземпляр <see cref="ImageFileXfer"/>.
+            /// Initializes a new instance <see cref="ImageFileXfer"/>.
             /// </summary>
             private ImageFileXfer() {
             }
 
             /// <summary>
-            /// Создает и возвращает новый экземпляр <see cref="ImageFileXfer"/>.
+            /// Creates and returns a new instance <see cref="ImageFileXfer"/>.
             /// </summary>
-            /// <param name="data">Описание файла.</param>
-            /// <returns>Экземпляр <see cref="ImageFileXfer"/>.</returns>
+            /// <param name="data">File description.</param>
+            /// <returns>Instance <see cref="ImageFileXfer"/>.</returns>
             internal static ImageFileXfer Create(TwSetupFileXfer data) {
                 return new ImageFileXfer {
                     FileName=data.FileName,
@@ -3031,7 +3031,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает имя файла.
+            /// Returns the file name.
             /// </summary>
             public string FileName {
                 get;
@@ -3039,7 +3039,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Фозвращает формат файла.
+            /// Returns the file format.
             /// </summary>
             public TwFF Format {
                 get;
@@ -3048,23 +3048,23 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Набор операций для работы с цветовой палитрой.
+        /// A set of operations for working with a color palette.
         /// </summary>
         public sealed class TwainPalette:MarshalByRefObject {
             private Twain32 _twain;
 
             /// <summary>
-            /// Инициализирует новый экземпляр класса <see cref="TwainPalette"/>.
+            /// Initializes a new instance of the class <see cref="TwainPalette"/>.
             /// </summary>
-            /// <param name="twain">Экземпляр класса <see cref="TwainPalette"/>.</param>
+            /// <param name="twain">Class instance <see cref="TwainPalette"/>.</param>
             internal TwainPalette(Twain32 twain) {
                 this._twain=twain;
             }
 
             /// <summary>
-            /// Возвращает текущую цветовую палитру.
+            /// Returns the current color palette.
             /// </summary>
-            /// <returns>Экземпляр класса <see cref="TwainPalette"/>.</returns>
+            /// <returns>Class instance <see cref="TwainPalette"/>.</returns>
             public ColorPalette Get() {
                 TwPalette8 _palette=new TwPalette8();
                 TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Get,ref _palette);
@@ -3075,9 +3075,9 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает текущую цветовую палитру, используемую по умолчанию.
+            /// Returns the current default color palette.
             /// </summary>
-            /// <returns>Экземпляр класса <see cref="TwainPalette"/>.</returns>
+            /// <returns>Class instance <see cref="TwainPalette"/>.</returns>
             public ColorPalette GetDefault() {
                 TwPalette8 _palette=new TwPalette8();
                 TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.GetDefault,ref _palette);
@@ -3088,9 +3088,9 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Сбрасывает текущую цветовую палитру и устанавливает указанную.
+            /// Resets the current color palette and sets the specified one.
             /// </summary>
-            /// <param name="palette">Экземпляр класса <see cref="TwainPalette"/>.</param>
+            /// <param name="palette">Class instance <see cref="TwainPalette"/>.</param>
             public void Reset(ColorPalette palette) {
                 TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Reset,ref palette);
                 if(_rc!=TwRC.Success) {
@@ -3099,9 +3099,9 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Устанавливает указанную цветовую палитру.
+            /// Sets the specified color palette.
             /// </summary>
-            /// <param name="palette">Экземпляр класса <see cref="TwainPalette"/>.</param>
+            /// <param name="palette">Class instance <see cref="TwainPalette"/>.</param>
             public void Set(ColorPalette palette) {
                 TwRC _rc=this._twain._dsmEntry.DsInvoke(this._twain._AppId,this._twain._srcds,TwDG.Image,TwDAT.Palette8,TwMSG.Set,ref palette);
                 if(_rc!=TwRC.Success) {
@@ -3111,22 +3111,22 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Цветовая палитра.
+        /// Color palette.
         /// </summary>
         [Serializable]
         public sealed class ColorPalette {
 
             /// <summary>
-            /// Инициализирует новый экземпляр <see cref="ColorPalette"/>.
+            /// Initializes a new instance <see cref="ColorPalette"/>.
             /// </summary>
             private ColorPalette() {
             }
 
             /// <summary>
-            /// Создает и возвращает новый экземпляр <see cref="ColorPalette"/>.
+            /// Creates and returns a new instance <see cref="ColorPalette"/>.
             /// </summary>
-            /// <param name="palette">Цветовая палитра.</param>
-            /// <returns>Экземпляр <see cref="ColorPalette"/>.</returns>
+            /// <param name="palette">Color palette.</param>
+            /// <returns>Instance <see cref="ColorPalette"/>.</returns>
             internal static ColorPalette Create(TwPalette8 palette) {
                 Twain32.ColorPalette _result=new Twain32.ColorPalette {
                     PaletteType=palette.PaletteType,
@@ -3139,7 +3139,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает тип палитры.
+            /// Returns the type of palette.
             /// </summary>
             public TwPA PaletteType {
                 get;
@@ -3147,7 +3147,7 @@ namespace Saraff.Twain {
             }
 
             /// <summary>
-            /// Возвращает цвета, входящие в состав палитры.
+            /// Returns the colors that make up the palette.
             /// </summary>
             public Color[] Colors {
                 get;

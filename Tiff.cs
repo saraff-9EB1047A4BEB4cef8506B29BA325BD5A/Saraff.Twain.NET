@@ -143,7 +143,7 @@ namespace Saraff.Twain {
             }
         }
 
-        #region Вложенные типы
+        #region Nested Types
 
         /// <summary>
         /// TIFF header.
@@ -704,7 +704,7 @@ namespace Saraff.Twain {
 
         #endregion
 
-        #region Не используется
+        #region Not used
 
         private enum SubFileTypeValues {
             REDUCEDIMAGE=0x1, /* reduced resolution version */
