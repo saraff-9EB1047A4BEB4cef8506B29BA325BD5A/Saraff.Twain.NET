@@ -38,7 +38,8 @@ using System.Security.Permissions;
 namespace Saraff.Twain {
 
     /// <summary>
-    /// Класс исключения <see cref="TwainException"/>
+    /// Exception class <see cref="TwainException"/>
+    /// <para xml:lang="ru">Класс исключения <see cref="TwainException"/></para>
     /// </summary>
     [Serializable]
     [DebuggerDisplay("{Message}; ReturnCode = {ReturnCode}; ConditionCode = {ConditionCode}")]
@@ -72,18 +73,19 @@ namespace Saraff.Twain {
         /// <summary>
         /// Initializes a new instance of the <see cref="TwainException"/> class.
         /// </summary>
-        /// <param name="info">Объект <see cref="T:System.Runtime.Serialization.SerializationInfo" />, содержащий сериализованные данные объекта о выбрасываемом исключении.</param>
-        /// <param name="context">Объект <see cref="T:System.Runtime.Serialization.StreamingContext" />, содержащий контекстные сведения об источнике или назначении.</param>
+        /// <param name="info">An object <see cref="T:System.Runtime.Serialization.SerializationInfo" />, containing serialized object data about the thrown exception.<para xml:lang="ru">Объект <see cref="T:System.Runtime.Serialization.SerializationInfo" />, содержащий сериализованные данные объекта о выбрасываемом исключении.</para></param>
+        /// <param name="context">An object <see cref="T:System.Runtime.Serialization.StreamingContext" />, containing contextual information about the source or destination.<para xml:lang="ru">Объект <see cref="T:System.Runtime.Serialization.StreamingContext" />, содержащий контекстные сведения об источнике или назначении.</para></param>
         internal TwainException(SerializationInfo info,StreamingContext context) : base(info,context) {
             this.ConditionCode=(TwCC)info.GetValue("ConditionCode",typeof(TwCC));
             this.ReturnCode=(TwRC)info.GetValue("ReturnCode",typeof(TwRC));
         }
 
         /// <summary>
-        /// При переопределении в производном классе задает сведения об исключении для <see cref="T:System.Runtime.Serialization.SerializationInfo" />.
+        /// When overridden in a derived class, sets the exception information for <see cref="T:System.Runtime.Serialization.SerializationInfo" />.
+        /// <para xml:lang="ru">При переопределении в производном классе задает сведения об исключении для <see cref="T:System.Runtime.Serialization.SerializationInfo" />.</para>
         /// </summary>
-        /// <param name="info">Объект <see cref="T:System.Runtime.Serialization.SerializationInfo" />, содержащий сериализованные данные объекта о выбрасываемом исключении.</param>
-        /// <param name="context">Объект <see cref="T:System.Runtime.Serialization.StreamingContext" />, содержащий контекстные сведения об источнике или назначении.</param>
+        /// <param name="info">An object <see cref="T:System.Runtime.Serialization.SerializationInfo" />, containing serialized object data about the thrown exception.<para xml:lang="ru">Объект <see cref="T:System.Runtime.Serialization.SerializationInfo" />, содержащий сериализованные данные объекта о выбрасываемом исключении.</para></param>
+        /// <param name="context">An object <see cref="T:System.Runtime.Serialization.StreamingContext" />, containing contextual information about the source or destination.<para xml:lang="ru">Объект <see cref="T:System.Runtime.Serialization.StreamingContext" />, содержащий контекстные сведения об источнике или назначении.</para></param>
         /// <PermissionSet>
         ///   <IPermission class="System.Security.Permissions.FileIOPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" version="1" Read="*AllFiles*" PathDiscovery="*AllFiles*" />
         ///   <IPermission class="System.Security.Permissions.SecurityPermission, mscorlib, Version=2.0.3600.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" version="1" Flags="SerializationFormatter" />
@@ -96,7 +98,8 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает код состояния операции. Get condition code.
+        /// Returns the operation status code. Get condition code.
+        /// <para xml:lang="ru">Возвращает код состояния операции. Get condition code.</para>
         /// </summary>
         public TwCC ConditionCode {
             get;
@@ -104,7 +107,8 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает код результата операции. Get return code.
+        /// Returns the result code of the operation. Get return code.
+        /// <para xml:lang="ru">Возвращает код результата операции. Get return code.</para>
         /// </summary>
         public TwRC ReturnCode {
             get;

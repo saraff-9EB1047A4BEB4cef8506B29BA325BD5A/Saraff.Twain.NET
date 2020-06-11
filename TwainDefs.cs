@@ -596,7 +596,8 @@ namespace Saraff.Twain {
     }
 
     /// <summary>
-    /// Вспомогательный класс для типов twain.
+    /// Helper class for twain types.
+    /// <para xml:lang="ru">Вспомогательный класс для типов twain.</para>
     /// </summary>
     internal sealed class TwTypeHelper {
         private static Dictionary<TwType,Type> _typeof=new Dictionary<TwType,Type> {
@@ -627,19 +628,21 @@ namespace Saraff.Twain {
         };
 
         /// <summary>
-        /// Возвращает соответствующий twain-типу управляемый тип.
+        /// Returns the corresponding twain type of the managed type.
+        /// <para xml:lang="ru">Возвращает соответствующий twain-типу управляемый тип.</para>
         /// </summary>
-        /// <param name="type">Код типа данный twain.</param>
-        /// <returns>Управляемый тип.</returns>
+        /// <param name="type">Type code given by twain.<para xml:lang="ru">Код типа данный twain.</para></param>
+        /// <returns>Managed type.<para xml:lang="ru">Управляемый тип.</para></returns>
         internal static Type TypeOf(TwType type) {
             return TwTypeHelper._typeof[type];
         }
 
         /// <summary>
-        /// Возвращает соответствующий управляемому типу twain-тип.
+        /// Returns the corresponding twain type for the managed type.
+        /// <para xml:lang="ru">Возвращает соответствующий управляемому типу twain-тип.</para>
         /// </summary>
-        /// <param name="type">Управляемый тип.</param>
-        /// <returns>Код типа данный twain.</returns>
+        /// <param name="type">Managed type.<para xml:lang="ru">Управляемый тип.</para></param>
+        /// <returns>Type code given by twain.<para xml:lang="ru">Код типа данный twain.</para></returns>
         internal static TwType TypeOf(Type type) {
             Type _type=type.IsEnum?Enum.GetUnderlyingType(type):type;
             foreach(var _item in TwTypeHelper._typeof) {
@@ -660,10 +663,11 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает соответствующий объекту twain-тип.
+        /// Returns the corresponding twain type.
+        /// <para xml:lang="ru">Возвращает соответствующий объекту twain-тип.</para>
         /// </summary>
-        /// <param name="obj">Объект.</param>
-        /// <returns>Код типа данный twain.</returns>
+        /// <param name="obj">An object.<para xml:lang="ru">Объект.</para></param>
+        /// <returns>Type code given by twain.<para xml:lang="ru">Код типа данный twain.</para></returns>
         internal static TwType TypeOf(object obj) {
             if(obj is string) {
                 return TwTypeHelper._typeofAux[((string)obj).Length];
@@ -672,20 +676,22 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает размер twain-типа в неуправляемом блоке памяти.
+        /// Returns the size of a twain type in an unmanaged memory block.
+        /// <para xml:lang="ru">Возвращает размер twain-типа в неуправляемом блоке памяти.</para>
         /// </summary>
-        /// <param name="type">Код типа данный twain.</param>
-        /// <returns>Размер в байтах.</returns>
+        /// <param name="type">Type code given by twain.<para xml:lang="ru">Код типа данный twain.</para></param>
+        /// <returns>Size in bytes.<para xml:lang="ru">Размер в байтах.</para></returns>
         internal static int SizeOf(TwType type) {
             return Marshal.SizeOf(TwTypeHelper._typeof[type]);
         }
 
         /// <summary>
-        /// Приводит внутренние типы компонента к общим типам среды.
+        /// Converts internal component types to common environment types.
+        /// <para xml:lang="ru">Приводит внутренние типы компонента к общим типам среды.</para>
         /// </summary>
-        /// <param name="type">Код twain-типа.</param>
-        /// <param name="value">Экземпляр объекта.</param>
-        /// <returns>Экземпляр объекта.</returns>
+        /// <param name="type">Twain type code.<para xml:lang="ru">Код twain-типа.</para></param>
+        /// <param name="value">Instance of the object.<para xml:lang="ru">Экземпляр объекта.</para></param>
+        /// <returns>Instance of the object.<para xml:lang="ru">Экземпляр объекта.</para></returns>
         internal static object CastToCommon(TwType type,object value) {
             switch(type) {
                 case TwType.Bool:
@@ -706,11 +712,12 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Приводит общие типы среды к внутренним типам компонента.
+        /// Converts generic media types to internal component types.
+        /// <para xml:lang="ru">Приводит общие типы среды к внутренним типам компонента.</para>
         /// </summary>
-        /// <param name="type">Код twain-типа.</param>
-        /// <param name="value">Экземпляр объекта.</param>
-        /// <returns>Экземпляр объекта.</returns>
+        /// <param name="type">Twain type code.<para xml:lang="ru">Код twain-типа.</para></param>
+        /// <param name="value">Instance of the object.<para xml:lang="ru">Экземпляр объекта.</para></param>
+        /// <returns>Instance of the object.<para xml:lang="ru">Экземпляр объекта.</para></returns>
         internal static object CastToTw(TwType type,object value) {
             switch(type) {
                 case TwType.Bool:
@@ -742,12 +749,13 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Выполняет преобразование значения в экземпляр внутреннего типа компонента.
+        /// Converts a value to an instance of the component's internal type.
+        /// <para xml:lang="ru">Выполняет преобразование значения в экземпляр внутреннего типа компонента.</para>
         /// </summary>
         /// <typeparam name="T">Тип значения.</typeparam>
-        /// <param name="type">Код twain-типа.</param>
-        /// <param name="value">Значение.</param>
-        /// <returns>Экземпляр объекта.</returns>
+        /// <param name="type">Twain type code.<para xml:lang="ru">Код twain-типа.</para></param>
+        /// <param name="value">Value.<para xml:lang="ru">Значение.</para></param>
+        /// <returns>Instance of the object.<para xml:lang="ru">Экземпляр объекта.</para></returns>
         internal static object ValueToTw<T>(TwType type,T value) {
             int _size=Marshal.SizeOf(typeof(T));
             IntPtr _mem=Marshal.AllocHGlobal(_size);
@@ -761,11 +769,12 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Выполняет преобразование экземпляра внутреннего типа компонента в значение.
+        /// Converts an instance of an internal component type to a value.
+        /// <para xml:lang="ru">Выполняет преобразование экземпляра внутреннего типа компонента в значение.</para>
         /// </summary>
         /// <typeparam name="T">Тип значения.</typeparam>
-        /// <param name="value">Экземпляр объекта.</param>
-        /// <returns>Значение.</returns>
+        /// <param name="value">Instance of the object.<para xml:lang="ru">Экземпляр объекта.</para></param>
+        /// <returns>Value.<para xml:lang="ru">Значение.</para></returns>
         internal static T ValueFromTw<T>(object value) {
             int _size=Math.Max(Marshal.SizeOf(typeof(T)),Marshal.SizeOf(value));
             IntPtr _mem=Marshal.AllocHGlobal(_size);
@@ -797,7 +806,7 @@ namespace Saraff.Twain {
     /// </summary>
     public enum TwCap:ushort {
         /* image data sources MAY support these caps */
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         XferCount=0x0001,			// all data sources are REQUIRED to support these caps
         ICompression=0x0100,		// ICAP_...
         IPixelType=0x0101,
@@ -989,7 +998,7 @@ namespace Saraff.Twain {
         PrinterIndexTrigger=0x104D,
         PrinterStringPreview=0x104E,
         SheetCount= 0x104F // Controls the number of sheets scanned (compare to CAP_XFERCOUNT that controls images)
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
@@ -1034,19 +1043,19 @@ namespace Saraff.Twain {
         /// </summary>
         SetConstraint = 0x0020,
 
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         ConstrainAble=0x0040,
         GetHelp=0x0100,
         GetLabel=0x0200,
         GetLabelEnum=0x0400
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Language Constants
     /// </summary>
     public enum TwLanguage:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         DANISH=0,             /* Danish                 */
         DUTCH=1,              /* Dutch                  */
         ENGLISH=2,            /* International English  */
@@ -1162,14 +1171,14 @@ namespace Saraff.Twain {
         TRIPURI=111,
         URDU=112,
         VIETNAMESE=113
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Country Constantsz
     /// </summary>
     public enum TwCountry:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         AFGHANISTAN=1001,
         ALGERIA=213,
         AMERICANSAMOA=684,
@@ -1410,14 +1419,14 @@ namespace Saraff.Twain {
         UKRAINE=380,
         USVIRGINIS=340,
         VIETNAM=84
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Unit of measure
     /// </summary>
     public enum TwUnits:ushort { //ICAP_UNITS values (UN_ means UNits)
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Inches=0,
         Centimeters=1,
         Picas=2,
@@ -1425,7 +1434,7 @@ namespace Saraff.Twain {
         Twips=4,
         Pixels=5,
         Millimeters=6
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
@@ -1437,7 +1446,7 @@ namespace Saraff.Twain {
         /// Black and white
         /// </summary>
         BW=0, /* Black and White */
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Gray=1,
         RGB=2,
         Palette=3,
@@ -1450,14 +1459,14 @@ namespace Saraff.Twain {
         SRGB=10,
         SCRGB=11,
         INFRARED=16
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Compression values
     /// </summary>
     public enum TwCompression:ushort { //ICAP_COMPRESSION values (CP_ means ComPression )
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         PackBits=1,
 
@@ -1503,14 +1512,14 @@ namespace Saraff.Twain {
         BitFields=12,
         Zip=13,
         Jpeg2000=14
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Extended Image Info Attributes.
     /// </summary>
     public enum TwEI:ushort { //TWEI_xxxx
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         BarCodeX=0x1200,
         BarCodeY=0x1201,
         BarCodeText=0x1202,
@@ -1586,19 +1595,19 @@ namespace Saraff.Twain {
         PaperCount=0x1249,
         PrinterText=0x124A,
         TwainDirectMetadata=0x124B // Metadata returned in TWAIN Direct JSON format
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_XFERMECH values (SX_ means Setup XFer)
     /// </summary>
     public enum TwSX:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Native=0,
         File=1,
         Memory=2,
         MemFile=4    /* added 1.91 */
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
@@ -1617,7 +1626,7 @@ namespace Saraff.Twain {
     /// ICAP_SUPPORTEDSIZES values (SS_ means Supported Sizes).
     /// </summary>
     public enum TwSS:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         A4Letter=1,
         B5Letter=2,
@@ -1679,14 +1688,14 @@ namespace Saraff.Twain {
         C10=51,
         USStatement=52,
         BusinessCard=53
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_IMAGEFILEFORMAT values (FF_means File Format).
     /// </summary>
     public enum TwFF:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
 
         /// <summary>
         /// Tagged Image File Format.
@@ -1761,25 +1770,25 @@ namespace Saraff.Twain {
         /// PDF/raster.
         /// </summary>
         PdfRaster = 17 // Added support for PDF/raster
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// Palette types for TW_PALETTE8.
     /// </summary>
     public enum TwPA:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         RGB=0,
         Gray=1,
         CMY=2
- #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+ #pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
    }
 
     /// <summary>
     /// CAP_DEVICEEVENT values (DE_ means device event).
     /// </summary>
     public enum TwDE:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         CustomEvents=0x8000,
         CheckAutomaticCapture=0,
         CheckBattery=1,
@@ -1798,91 +1807,91 @@ namespace Saraff.Twain {
         LampFailure=14,
         PowerSave=15,
         PowerSaveNotify=16
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_DUPLEX values.
     /// </summary>
     public enum TwDX:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,          // TWDX_NONE
         OnePassDuplex=1, // TWDX_1PASSDUPLEX
         TwoPassDuplex=2  // TWDX_2PASSDUPLEX
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_AUTODISCARDBLANKPAGES values.
     /// </summary>
     public enum TwBP:int {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Disable=-2, // TWBP_DISABLE
         Auto=-1  // TWBP_AUTO
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_AUTOSIZE values.
     /// </summary>
     public enum TwAS:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         Current=2
- #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+ #pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
    }
 
     /// <summary>
     /// ICAP_FLIPROTATION values (FR_ means flip rotation).
     /// </summary>
     public enum TwFR:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Book=0,
         Fanfold=1
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_IMAGEMERGE values.
     /// </summary>
     public enum TwIM:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         FrontOnTop=1,
         FrontOnBottom=2,
         FrontOnLeft=3,
         FrontOnRight=4
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_CAMERASIDE and TWEI_PAGESIDE values.
     /// </summary>
     public enum TwCS:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Both=0,
         Top=1,
         Bottom=2
- #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+ #pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
    }
 
     /// <summary>
     /// CAP_CLEARBUFFERS values.
     /// </summary>
     public enum TwCB:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Auto=0,
         Clear=1,
         NoClear=2
- #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+ #pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
    }
 
     /// <summary>
     /// ICAP_SUPPORTEDBARCODETYPES and TWEI_BARCODETYPE values.
     /// </summary>
     public enum TwBT:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Code3Of9=0,
         Code2Of5Interleaved=1,
         Code2Of5NonInterleaved=2,
@@ -1904,26 +1913,26 @@ namespace Saraff.Twain {
         CodaBarWithStartStop=18,
         MaxiCode=19,
         QRCode=20
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_BARCODESEARCHMODE values.
     /// </summary>
     public enum TwBD:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Horz=0,
         Vert=1,
         HorzVert=2,
         VertHorz=3
- #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+ #pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
    }
 
     /// <summary>
     /// ICAP_FILTER values.
     /// </summary>
     public enum TwFT:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Red=0,
         Green=1,
         Blue=2,
@@ -1933,57 +1942,57 @@ namespace Saraff.Twain {
         Magenta=6,
         Yellow=7,
         Black=8
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_ICCPROFILE values.
     /// </summary>
     public enum TwIC:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Link=1,
         Embed=2
- #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+ #pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
    }
 
     /// <summary>
     /// ICAP_PLANARCHUNKY values.
     /// </summary>
     public enum TwPC:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Chunky=0,
         Planar=1
- #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+ #pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
    }
 
     /// <summary>
     /// ICAP_BITORDER values.
     /// </summary>
     public enum TwBO:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         LsbFirst=0,
         MsbFirst=1
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_JPEGQUALITY values.
     /// </summary>
     public enum TwJQ:short {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Unknown=-4,
         Low=-3,
         Medium=-2,
         High=-1
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_JPEGSUBSAMPLING values.
     /// </summary>
     public enum TwJS:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         _444Ycbcr=0,
         _444Rgb=1,
         _422=2,
@@ -1992,37 +2001,37 @@ namespace Saraff.Twain {
         _420=5,
         _410=6,
         _311=7
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_PIXELFLAVOR values.
     /// </summary>
     public enum TwPF:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Chocolate=0,
         Vanilla=1
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_FLASHUSED2 values.
     /// </summary>
     public enum TwFL:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Off=1,
         On=2,
         Auto=3,
         RedEye=4
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_IMAGEFILTER values.
     /// </summary>
     public enum TwIF:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         LowPass=2,
@@ -2030,24 +2039,24 @@ namespace Saraff.Twain {
         HighPass=4,
         Text=BandPass,
         FineLine=HighPass
- #pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+ #pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
    }
 
     /// <summary>
     /// ICAP_LIGHTPATH values.
     /// </summary>
     public enum TwLP:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Reflective=0,
         Transmissive=1
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
   }
 
     /// <summary>
     /// ICAP_LIGHTSOURCE values.
     /// </summary>
     public enum TwLS:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Red=0,
         Green=1,
         Blue=2,
@@ -2055,73 +2064,73 @@ namespace Saraff.Twain {
         White=4,
         UV=5,
         IR=6
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_NOISEFILTER values.
     /// </summary>
     public enum TwNF:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         LonePixel=2,
         MajorityRule=3
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_OVERSCAN values.
     /// </summary>
     public enum TwOV:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         TopBottom=2,
         LeftRight=3,
         All=4
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_DOUBLEFEEDDETECTION.
     /// </summary>
     public enum TwDF:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Ultrasonic=0,
         ByLength=1,
         Infrared=2
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_DOUBLEFEEDDETECTIONSENSITIVITY.
     /// </summary>
     public enum TwUS:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Low=0,
         Medium=1,
         High=2
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_DOUBLEFEEDDETECTIONRESPONSE.
     /// </summary>
     public enum TwDP:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Stop=0,
         StopAndWait=1,
         Sound=2,
         DoNotImprint=3
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_PRINTER values.
     /// </summary>
     public enum TwPR:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         ImprinterTopBefore=0,
         ImprinterTopAfter=1,
         ImprinterBottomBefore=2,
@@ -2130,25 +2139,25 @@ namespace Saraff.Twain {
         EndorserTopAfter=5,
         EndorserBottomBefore=6,
         EndorserBottomAfter=7
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_PRINTERMODE values.
     /// </summary>
     public enum TwPM:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         SingleString=0,
         MultiString=1,
         CompoundString=2
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_ORIENTATION values.
     /// </summary>
     public enum TwOR:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Rot0=0,
         Rot90=1,
         Rot180=2,
@@ -2158,60 +2167,60 @@ namespace Saraff.Twain {
         Auto=4,
         AutoText=5,
         AutoPicture=6
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_BITDEPTHREDUCTION values.
     /// </summary>
     public enum TwBR:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Threshold=0,
         Halftone=1,
         CustHalftone=2,
         Diffusion=3,
         DynamicThreshold=4
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_SEGMENTED values.
     /// </summary>
     public enum TwSG:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Auto=1,
         Manual=2
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_FEEDERALIGNMENT values.
     /// </summary>
     public enum TwFA:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Left=1,
         Center=2,
         Right=3
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_FEEDERORDER values.
     /// </summary>
     public enum TwFO:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         FirstPageFirst=0,
         LastPageFirst=1
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_FEEDERPOCKET values.
     /// </summary>
     public enum TwFP:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         PocketError=0,
         Pocket1=1,
         Pocket2=2,
@@ -2229,106 +2238,106 @@ namespace Saraff.Twain {
         Pocket14=14,
         Pocket15=15,
         Pocket16=16
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_PAPERHANDLING values.
     /// </summary>
     public enum TwPH:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Normal=0,
         Fragile=1,
         Thick=2,
         Trifold=3,
         Photograph=4
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// ICAP_FEEDERTYPE values.
     /// </summary>
     public enum TwFE:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         General=0,
         Photo=1,
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// TWEI_PATCHCODE values.
     /// </summary>
     public enum TwPch:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Patch1=0,
         Patch2=1,
         Patch3=2,
         Patch4=3,
         Patch6=4,
         PatchT=5
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_BATTERYMINUTES values.
     /// </summary>
     public enum TwBM1:int {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Infinite=-2,
         CannotReport=-1
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_BATTERYPERCENTAGE values.
     /// </summary>
     public enum TwBM2:short {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Infinite=-2,
         CannotReport=-1
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_POWERSUPPLY values.
     /// </summary>
     public enum TwPS:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         External=0,
         Battery=1
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_JOBCONTROL values.
     /// </summary>
     public enum TwJC:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         None=0,
         Jsic=1,
         Jsis=2,
         Jsxc=3,
         Jsxs=4
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_INDICATORSMODE values.
     /// </summary>
     public enum TwCI:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Info=0,
         Warning=1,
         Error=2,
         WarmUp=3
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     /// <summary>
     /// CAP_ALARMS values.
     /// </summary>
     public enum TwAL:ushort {
-#pragma warning disable CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning disable CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
         Alarm=0,
         FeederError=1,
         FeederWarning=2,
@@ -2338,7 +2347,7 @@ namespace Saraff.Twain {
         PatchCode=6,
         Power=7,
         Skew=8
-#pragma warning restore CS1591 // Отсутствует комментарий XML для открытого видимого типа или члена
+#pragma warning restore CS1591 // Missing XML comment for public visible type or member / Отсутствует комментарий XML для открытого видимого типа или члена
     }
 
     #endregion
@@ -2346,7 +2355,8 @@ namespace Saraff.Twain {
     #region Type Definitions
 
     /// <summary>
-    /// Строка фиксированной длинны 32 символа.
+    /// A string of fixed length 32 characters.
+    /// <para xml:lang="ru">Строка фиксированной длинны 32 символа.</para>
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
@@ -2371,7 +2381,8 @@ namespace Saraff.Twain {
     }
 
     /// <summary>
-    /// Строка фиксированной длинны 64 символа.
+    /// A fixed-length string of 64 characters.
+    /// <para xml:lang="ru">Строка фиксированной длинны 64 символа.</para>
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
@@ -2396,7 +2407,8 @@ namespace Saraff.Twain {
     }
 
     /// <summary>
-    /// Строка фиксированной длинны 128 символов.
+    /// A string of fixed length 128 characters.
+    /// <para xml:lang="ru">Строка фиксированной длинны 128 символов.</para>
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
@@ -2421,7 +2433,8 @@ namespace Saraff.Twain {
     }
 
     /// <summary>
-    /// Строка фиксированной длинны 255 символов.
+    /// A string of fixed length 255 characters.
+    /// <para xml:lang="ru">Строка фиксированной длинны 255 символов.</para>
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
@@ -2446,7 +2459,8 @@ namespace Saraff.Twain {
     }
 
     /// <summary>
-    /// Строка юникода фиксированной длинны 512 символов.
+    /// A Unicode string of fixed length 512 characters.
+    /// <para xml:lang="ru">Строка юникода фиксированной длинны 512 символов.</para>
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Unicode)]
@@ -2471,7 +2485,8 @@ namespace Saraff.Twain {
     }
 
     /// <summary>
-    /// Строка фиксированной длинны 1024 символов.
+    /// A fixed-length string of 1024 characters.
+    /// <para xml:lang="ru">Строка фиксированной длинны 1024 символов.</para>
     /// </summary>
     [DebuggerDisplay("{Value}")]
     [StructLayout(LayoutKind.Sequential,Pack=2,CharSet=CharSet.Ansi)]
@@ -2527,28 +2542,32 @@ namespace Saraff.Twain {
     internal struct TwFix32 {									// TW_FIX32
 
         /// <summary>
-        /// Целая часть.
+        /// The whole part.
+        /// <para xml:lang="ru">Целая часть.</para>
         /// </summary>
         public short Whole;
 
         /// <summary>
-        /// Дробная часть.
+        /// Fractional part.
+        /// <para xml:lang="ru">Дробная часть.</para>
         /// </summary>
         public ushort Frac;
 
         /// <summary>
-        /// Приводит тип к числу с плавающей запятой.
+        /// Coerces the type to a floating point number.
+        /// <para xml:lang="ru">Приводит тип к числу с плавающей запятой.</para>
         /// </summary>
-        /// <returns>Число с плавающей точкой.</returns>
+        /// <returns>Floating point number.<para xml:lang="ru">Число с плавающей точкой.</para></returns>
         private float ToFloat() {
             return (float)this.Whole+((float)this.Frac/65536.0f);
         }
 
         /// <summary>
-        /// Создает экземпляр TwFix32 из числа с плавающей точкой.
+        /// Creates an instance of TwFix32 from a floating-point number.
+        /// <para xml:lang="ru">Создает экземпляр TwFix32 из числа с плавающей точкой.</para>
         /// </summary>
-        /// <param name="f">Число с плавающей точкой.</param>
-        /// <returns>Экземпляр TwFix32.</returns>
+        /// <param name="f">Floating point number.<para xml:lang="ru">Число с плавающей точкой.</para></param>
+        /// <returns>Instance of TwFix32.<para xml:lang="ru">Экземпляр TwFix32.</para></returns>
         public static implicit operator TwFix32(float f) {
             int i=(int)((f*65536.0f)+0.5f);
             return new TwFix32() {
@@ -2558,10 +2577,11 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Создает экземпляр TwFix32 из целого числа.
+        /// Creates an instance of TwFix32 from an integer.
+        /// <para xml:lang="ru">Создает экземпляр TwFix32 из целого числа.</para>
         /// </summary>
-        /// <param name="value">Целое число.</param>
-        /// <returns>Экземпляр TwFix32.</returns>
+        /// <param name="value">Integer.<para xml:lang="ru">Целое число.</para></param>
+        /// <returns>Instance of TwFix32.<para xml:lang="ru">Экземпляр TwFix32.</para></returns>
         public static explicit operator TwFix32(uint value) {
             return new TwFix32() {
                 Whole=(short)(value&0x0000ffff),
@@ -2570,19 +2590,21 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Приводит тип к числу с плавающей запятой.
+        /// Coerces the type to a floating point number.
+        /// <para xml:lang="ru">Приводит тип к числу с плавающей запятой.</para>
         /// </summary>
-        /// <param name="value">Экземпляр TwFix32.</param>
-        /// <returns>Число с плавающей точкой.</returns>
+        /// <param name="value">Instance of TwFix32.<para xml:lang="ru">Экземпляр TwFix32.</para></param>
+        /// <returns>Floating point number.<para xml:lang="ru">Число с плавающей точкой.</para></returns>
         public static implicit operator float(TwFix32 value) {
             return value.ToFloat();
         }
 
         /// <summary>
-        /// Приводит тип к целому числу.
+        /// Converts a type to an integer.
+        /// <para xml:lang="ru">Приводит тип к целому числу.</para>
         /// </summary>
-        /// <param name="value">Экземпляр TwFix32.</param>
-        /// <returns>Целое число.</returns>
+        /// <param name="value">Instance of TwFix32.<para xml:lang="ru">Экземпляр TwFix32.</para></param>
+        /// <returns>Integer.<para xml:lang="ru">Целое число.</para></returns>
         public static explicit operator uint(TwFix32 value) {
             return (uint)(ushort)value.Whole+((uint)value.Frac<<16);
         }
@@ -2890,7 +2912,8 @@ namespace Saraff.Twain {
         public IntPtr Item;
 
         /// <summary>
-        /// Возвращает true, если значение элемента является дескриптором неуправляемой памяти; иначе, false.
+        /// Returns true if the element value is an unmanaged memory descriptor; otherwise false.
+        /// <para xml:lang="ru">Возвращает true, если значение элемента является дескриптором неуправляемой памяти; иначе, false.</para>
         /// </summary>
         private bool _IsValue {
             get {
@@ -2899,9 +2922,10 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает значение элемента.
+        /// Returns the value of an element.
+        /// <para xml:lang="ru">Возвращает значение элемента.</para>
         /// </summary>
-        /// <returns>Значение элемента.</returns>
+        /// <returns>The value of the item.<para xml:lang="ru">Значение элемента.</para></returns>
         public object GetValue() {
             var _result=new object[this.NumItems];
             if(this._IsValue) {
@@ -2945,7 +2969,8 @@ namespace Saraff.Twain {
     internal class TwExtImageInfo {
 
         /// <summary>
-        /// Количество элементов расширенного описания изображения.
+        /// The number of elements in the extended image description.
+        /// <para xml:lang="ru">Количество элементов расширенного описания изображения.</para>
         /// </summary>
         public uint NumInfos;
 
@@ -2953,10 +2978,11 @@ namespace Saraff.Twain {
         //public TwInfo[] Info;
 
         /// <summary>
-        /// Выполняет преображование в неуправляемый блок памяти.
+        /// Converts to an unmanaged memory block.
+        /// <para xml:lang="ru">Выполняет преображование в неуправляемый блок памяти.</para>
         /// </summary>
-        /// <param name="info">Набор элементов расширенного описания изображения.</param>
-        /// <returns>Указатель на блок неуправляемой памяти.</returns>
+        /// <param name="info">A set of elements for an extended image description.<para xml:lang="ru">Набор элементов расширенного описания изображения.</para></param>
+        /// <returns>Pointer to an unmanaged memory block.<para xml:lang="ru">Указатель на блок неуправляемой памяти.</para></returns>
         public static IntPtr ToPtr(TwInfo[] info) {
             var _twExtImageInfoSize=Marshal.SizeOf(typeof(TwExtImageInfo));
             var _twInfoSize=Marshal.SizeOf(typeof(TwInfo));
@@ -2981,17 +3007,20 @@ namespace Saraff.Twain {
         public TwFrame Frame;
 
         /// <summary>
-        /// Номер документа.
+        /// Document Number.
+        /// <para xml:lang="ru">Номер документа.</para>
         /// </summary>
         public uint DocumentNumber;
 
         /// <summary>
-        /// Номер страницы.
+        /// Page number.
+        /// <para xml:lang="ru">Номер страницы.</para>
         /// </summary>
         public uint PageNumber; //Reset when you go to next document
 
         /// <summary>
-        /// Номер кадра.
+        /// Frame number.
+        /// <para xml:lang="ru">Номер кадра.</para>
         /// </summary>
         public uint FrameNumber; //Reset when you go to next page
     }
@@ -3133,9 +3162,10 @@ namespace Saraff.Twain {
         }
 
         /// <summary>
-        /// Возвращает результат для указаной возможности.
+        /// Returns the result for the specified feature.
+        /// <para xml:lang="ru">Возвращает результат для указаной возможности.</para>
         /// </summary>
-        /// <returns>Экземпляр TwArray, TwEnumeration, _TwRange или _TwOneValue.</returns>
+        /// <returns>Instance TwArray, TwEnumeration, _TwRange or _TwOneValue.<para xml:lang="ru">Экземпляр TwArray, TwEnumeration, _TwRange или _TwOneValue.</para></returns>
         public object GetValue() {
             IntPtr _ptr=Twain32._Memory.Lock(this.Handle);
             try {
