@@ -39,6 +39,7 @@ namespace Saraff.Twain {
 
     /// <summary>
     /// A set of capabilities
+    /// <para xml:lang="ru">Набор возможностей (Capabilities).</para>
     /// </summary>
     [DebuggerDisplay("SupportedCaps = {SupportedCaps.Get().Count}")]
     public sealed class TwainCapabilities:MarshalByRefObject {
@@ -1609,16 +1610,18 @@ namespace Saraff.Twain {
 
             /// <summary>
             /// Sets a limit on the values of the specified feature.
+            /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
             /// </summary>
-            /// <param name="value">The value to set.</param>
+            /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
             public void SetConstraint(T value) {
                 this._Twain32.SetConstraintCap(this._Cap,value);
             }
 
             /// <summary>
             /// Sets a limit on the values of the specified feature.
+            /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
             /// </summary>
-            /// <param name="value">The value to set.</param>
+            /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
             public void SetConstraint(params T[] value) {
                 var _val = new object[value.Length];
                 for(var i = 0; i<_val.Length; i++) {
@@ -1629,8 +1632,9 @@ namespace Saraff.Twain {
 
             /// <summary>
             /// Sets a limit on the values of the specified feature.
+            /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
             /// </summary>
-            /// <param name="value">The value to set.</param>
+            /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
             public void SetConstraint(Twain32.Range value) {
                 if(value.CurrentValue.GetType()!=typeof(T)) {
                     throw new ArgumentException();
@@ -1640,8 +1644,9 @@ namespace Saraff.Twain {
 
             /// <summary>
             /// Sets a limit on the values of the specified feature.
+            /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
             /// </summary>
-            /// <param name="value">The value to set.</param>
+            /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
             public void SetConstraint(Twain32.Enumeration value) {
                 if(value.Items==null||value.Items.Length==0||value.Items[0].GetType()!=typeof(T)) {
                     throw new ArgumentException();
@@ -1701,153 +1706,178 @@ namespace Saraff.Twain {
 
     /// <summary>
     /// Presents an capability.
+    /// <para xml:lang="ru">Представляет возможность (Capability).</para>
     /// </summary>
-    /// <typeparam name="T">A type.</typeparam>
+    /// <typeparam name="T">Тип.</typeparam>
     public interface ICapability<T> {
 
         /// <summary>
         /// Returns capability values.
+        /// <para xml:lang="ru">Возвращает значения возможности (capability).</para>
         /// </summary>
-        /// <returns>Capability Values.</returns>
+        /// <returns>Capability Values.<para xml:lang="ru">Значения возможности (capability).</para></returns>
         Twain32.Enumeration Get();
 
         /// <summary>
         /// Returns the current capability value.
+        /// <para xml:lang="ru">Возвращает текущее значение возможности (capability).</para>
         /// </summary>
-        /// <returns>Current Capability Value.</returns>
+        /// <returns>Current Capability Value.<para xml:lang="ru">Текущее значение возможности (capability).</para></returns>
         T GetCurrent();
 
         /// <summary>
         /// Returns default value of feature (capability).
+        /// <para xml:lang="ru">Возвращает значение по умолчанию возможности (capability).</para>
         /// </summary>
-        /// <returns>Feature Default (capability).</returns>
+        /// <returns>Feature Default (capability).<para xml:lang="ru">Значение по умолчанию возможности (capability).</para></returns>
         T GetDefault();
 
         /// <summary>
         /// Sets the current value of the capability.
+        /// <para xml:lang="ru">Устанавливает текущее значение возможности (capability).</para>
         /// </summary>
-        /// <param name="value">Value.</param>
+        /// <param name="value">Value.<para xml:lang="ru">Значение.</para></param>
         void Set(T value);
 
         /// <summary>
         /// Sets a limit on the values of the specified feature.
+        /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
         /// </summary>
-        /// <param name="value">The value to set.</param>
+        /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
         void SetConstraint(T value);
 
         /// <summary>
         /// Sets a limit on the values of the specified feature.
+        /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
         /// </summary>
-        /// <param name="value">The value to set.</param>
+        /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
         void SetConstraint(params T[] value);
 
         /// <summary>
         /// Sets a limit on the values of the specified feature.
+        /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
         /// </summary>
-        /// <param name="value">The value to set.</param>
+        /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
         void SetConstraint(Twain32.Range value);
 
         /// <summary>
         /// Sets a limit on the values of the specified feature.
+        /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
         /// </summary>
-        /// <param name="value">The value to set.</param>
+        /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
         void SetConstraint(Twain32.Enumeration value);
 
         /// <summary>
         /// Resets the current capability value to the default value.
+        /// <para xml:lang="ru">Сбрасывает текущее значение возможности (capability) в значение по умолчанию.</para>
         /// </summary>
         void Reset();
 
         /// <summary>
         /// Returns a set of flags of supported operations.
+        /// <para xml:lang="ru">Возвращает набор флагов поддерживаемых операций.</para>
         /// </summary>
-        /// <returns>Set of flags of supported operations.</returns>
+        /// <returns>Set of flags of supported operations.<para xml:lang="ru">Набор флагов поддерживаемых операций.</para></returns>
         TwQC IsSupported();
 
         /// <summary>
         /// Determines whether the specified operation is supported.
+        /// <para xml:lang="ru">Определяет поддерживаются ли указанные операции.</para>
         /// </summary>
-        /// <param name="operation">A set of bit flags defining the required operations.</param>
-        /// <returns>True, if all specified operation is supported, otherwise false.</returns>
+        /// <param name="operation">A set of bit flags defining the required operations.<para xml:lang="ru">Набор битовых флагов, определяющих требуемые операйии.</para></param>
+        /// <returns>True, if all specified operation is supported, otherwise false.<para xml:lang="ru">Истина, если все указанные операции поддерживаются, иначе лож.</para></returns>
         bool IsSupported(TwQC operation);
     }
 
     /// <summary>
     /// Represents Capability.
+    /// <para xml:lang="ru">Представляет возможность (Capability).</para>
     /// </summary>
     /// <typeparam name="T">Тип.</typeparam>
     public interface ICapability2<T> {
 
         /// <summary>
         /// Returns the capability values.
+        /// <para xml:lang="ru">Возвращает значения возможности (capability).</para>
         /// </summary>
-        /// <returns>Values of capability.</returns>
+        /// <returns>Values of capability.<para xml:lang="ru">Значения возможности (capability).</para></returns>
         Twain32.Enumeration Get();
 
         /// <summary>
         /// Returns the current capability value.
+        /// <para xml:lang="ru">Возвращает текущие значения возможности (capability).</para>
         /// </summary>
-        /// <returns>Current values of capability.</returns>
+        /// <returns>Current values of capability.<para xml:lang="ru">Текущие значения возможности (capability).</para></returns>
         object[] GetCurrentArray();
 
         /// <summary>
         /// Returns the default values of capability.
+        /// <para xml:lang="ru">Возвращает значения по умолчанию возможности (capability).</para>
         /// </summary>
-        /// <returns>The default values are capability.</returns>
+        /// <returns>The default values are capability.<para xml:lang="ru">Значения по умолчанию возможности (capability).</para></returns>
         object[] GetDefaultArray();
 
         /// <summary>
         /// Sets the current value of capability.
+        /// <para xml:lang="ru">Устанавливает текущее значение возможности (capability).</para>
         /// </summary>
-        /// <param name="value">Value.</param>
+        /// <param name="value">Value.<para xml:lang="ru">Значение.</para></param>
         void Set(T value);
 
         /// <summary>
         /// Sets the current value of capability.
+        /// <para xml:lang="ru">Устанавливает текущее значение возможности (capability).</para>
         /// </summary>
-        /// <param name="value">Value.</param>
+        /// <param name="value">Value.<para xml:lang="ru">Значение.</para></param>
         void Set(params T[] value);
 
         /// <summary>
         /// Sets a limit on the values of the specified feature.
+        /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
         /// </summary>
-        /// <param name="value">The value to set.</param>
+        /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
         void SetConstraint(T value);
 
         /// <summary>
         /// Sets a limit on the values of the specified feature.
+        /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
         /// </summary>
-        /// <param name="value">The value to set.</param>
+        /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
         void SetConstraint(params T[] value);
 
         /// <summary>
         /// Sets a limit on the values of the specified feature.
+        /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
         /// </summary>
-        /// <param name="value">The value to set.</param>
+        /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
         void SetConstraint(Twain32.Range value);
 
         /// <summary>
         /// Sets a limit on the values of the specified feature.
+        /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
         /// </summary>
-        /// <param name="value">The value to set.</param>
+        /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
         void SetConstraint(Twain32.Enumeration value);
 
         /// <summary>
         /// Resets the current capability value to the default value.
+        /// <para xml:lang="ru">Сбрасывает текущее значение возможности (capability) в значение по умолчанию.</para>
         /// </summary>
         void Reset();
 
         /// <summary>
         /// Returns a set of flags of supported operations.
+        /// <para xml:lang="ru">Возвращает набор флагов поддерживаемых операций.</para>
         /// </summary>
-        /// <returns>Set of flags of supported operations.</returns>
+        /// <returns>Set of flags of supported operations.<para xml:lang="ru">Набор флагов поддерживаемых операций.</para></returns>
         TwQC IsSupported();
 
         /// <summary>
         /// Determines whether the specified operation is supported.
+        /// <para xml:lang="ru">Определяет поддерживаются ли указанные операции.</para>
         /// </summary>
-        /// <param name="operation">A set of bit flags defining the required operations. The operation.</param>
-        /// <returns>True, if all specified operation is supported, otherwise false.</returns>
+        /// <param name="operation">A set of bit flags defining the required operations. The operation.<para xml:lang="ru">Набор битовых флагов, определяющих требуемые операйии.</para></param>
+        /// <returns>True, if all specified operation is supported, otherwise false.<para xml:lang="ru">Истина, если все указанные операции поддерживаются, иначе лож.</para></returns>
         bool IsSupported(TwQC operation);
     }
 }
