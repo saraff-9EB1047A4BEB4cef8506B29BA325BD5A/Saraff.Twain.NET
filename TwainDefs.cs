@@ -3641,6 +3641,18 @@ namespace Saraff.Twain {
         public short Message;
     }
 
+    /// <summary>
+    /// Allows for a data source and application to pass custom data to each other.
+    /// </summary>
+    /// <remarks>TW_CUSTOMDSDATA</remarks>
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
+    internal class TwCustomDSData {
+
+        public uint InfoLength;
+
+        public IntPtr hData;
+    }
+
     [return: MarshalAs(UnmanagedType.U2)]
     internal delegate TwRC CallBackProc(TwIdentity srcId,TwIdentity appId,[MarshalAs(UnmanagedType.U4)]TwDG dg,[MarshalAs(UnmanagedType.U2)]TwDAT dat,[MarshalAs(UnmanagedType.U2)]TwMSG msg,IntPtr data);
 

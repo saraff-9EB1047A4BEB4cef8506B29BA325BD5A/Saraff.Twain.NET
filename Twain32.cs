@@ -1337,6 +1337,49 @@ namespace Saraff.Twain {
 
         #endregion
 
+        #region DG_CONTROL / DAT_CUSTOMDSDATA / MSG_xxx
+
+        /// <summary>
+        /// Get or set the Custom Data (DG_CONTROL / DAT_CUSTOMDSDATA / MSG_xxx).
+        /// </summary>
+        public byte[] CustomData {
+            get {
+                if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+                    TwCustomDSData _data = new TwCustomDSData { };
+                    TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.CustomDSData, TwMSG.Get, ref _data);
+                    if(_rc != TwRC.Success) {
+                        throw new TwainException(this._GetTwainStatus(), _rc);
+                    }
+                    byte[] _value = new byte[_data.InfoLength];
+                    Marshal.Copy(_Memory.Lock(_data.hData), _value, 0, _value.Length);
+                    _Memory.Unlock(_data.hData);
+                    _Memory.Free(_data.hData);
+                    return _value;
+                } else {
+                    throw new TwainException("Источник данных не открыт.");
+                }
+            }
+            set {
+                if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+                    TwCustomDSData _data = new TwCustomDSData {
+                        InfoLength = (uint)value.Length,
+                        hData = _Memory.Alloc(value.Length)
+                    };
+                    Marshal.Copy(value, 0, _Memory.Lock(_data.hData), value.Length);
+                    _Memory.Unlock(_data.hData);
+                    TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.CustomDSData, TwMSG.Get, ref _data);
+                    if(_rc != TwRC.Success) {
+                        throw new TwainException(this._GetTwainStatus(), _rc);
+                    }
+                    _Memory.Free(_data.hData);
+                } else {
+                    throw new TwainException("Источник данных не открыт.");
+                }
+            }
+        }
+
+        #endregion
+
         #region DS events handler
 
         /// <summary>
