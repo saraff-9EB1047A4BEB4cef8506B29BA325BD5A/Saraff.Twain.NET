@@ -1342,7 +1342,8 @@ namespace Saraff.Twain {
         /// <summary>
         /// Get or set the Custom Data (DG_CONTROL / DAT_CUSTOMDSDATA / MSG_xxx).
         /// </summary>
-        public byte[] CustomData {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        public byte[] CustomDSData {
             get {
                 if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
                     TwCustomDSData _data = new TwCustomDSData { };
