@@ -1368,7 +1368,7 @@ namespace Saraff.Twain {
                     };
                     Marshal.Copy(value, 0, _Memory.Lock(_data.hData), value.Length);
                     _Memory.Unlock(_data.hData);
-                    TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.CustomDSData, TwMSG.Get, ref _data);
+                    TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.CustomDSData, TwMSG.Set, ref _data);
                     if(_rc != TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(), _rc);
                     }
