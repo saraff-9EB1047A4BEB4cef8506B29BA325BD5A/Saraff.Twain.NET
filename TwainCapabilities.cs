@@ -42,24 +42,22 @@ namespace Saraff.Twain {
     /// <para xml:lang="ru">Набор возможностей (Capabilities).</para>
     /// </summary>
     [DebuggerDisplay("SupportedCaps = {SupportedCaps.Get().Count}")]
-    public sealed class TwainCapabilities:MarshalByRefObject {
-        private Dictionary<TwCap,Type> _caps=new Dictionary<TwCap,Type>();
+    public sealed class TwainCapabilities : MarshalByRefObject {
+        private Dictionary<TwCap, Type> _caps = new Dictionary<TwCap, Type>();
 
         internal TwainCapabilities(Twain32 twain) {
-            MethodInfo _сreateCapability=typeof(TwainCapabilities).GetMethod("CreateCapability",BindingFlags.Instance|BindingFlags.NonPublic);
+            MethodInfo _сreateCapability = typeof(TwainCapabilities).GetMethod("CreateCapability", BindingFlags.Instance | BindingFlags.NonPublic);
             foreach(PropertyInfo _prop in typeof(TwainCapabilities).GetProperties()) {
-                object[] _attrs=_prop.GetCustomAttributes(typeof(CapabilityAttribute),false);
-                if(_attrs.Length>0) {
-                    CapabilityAttribute _attr=_attrs[0] as CapabilityAttribute;
-                    this._caps.Add(_attr.Cap,_prop.PropertyType);
-                    _prop.SetValue(this,_сreateCapability.MakeGenericMethod(_prop.PropertyType.GetGenericArguments()[0]).Invoke(this,new object[] { twain,_attr.Cap }),null);
+                object[] _attrs = _prop.GetCustomAttributes(typeof(CapabilityAttribute), false);
+                if(_attrs.Length > 0) {
+                    CapabilityAttribute _attr = _attrs[0] as CapabilityAttribute;
+                    this._caps.Add(_attr.Cap, _prop.PropertyType);
+                    _prop.SetValue(this, _сreateCapability.MakeGenericMethod(_prop.PropertyType.GetGenericArguments()[0]).Invoke(this, new object[] { twain, _attr.Cap }), null);
                 }
             }
         }
 
-        private Capability<T> CreateCapability<T>(Twain32 twain,TwCap cap) {
-            return Activator.CreateInstance(typeof(Capability<T>),new object[] { twain,cap }) as Capability<T>;
-        }
+        private Capability<T> CreateCapability<T>(Twain32 twain, TwCap cap) => Activator.CreateInstance(typeof(Capability<T>), new object[] { twain, cap }) as Capability<T>;
 
         #region Properties
 
@@ -71,10 +69,7 @@ namespace Saraff.Twain {
         /// (no events set).
         /// </summary>
         [Capability(TwCap.DeviceEvent)]
-        public ICapability2<TwDE> DeviceEvent {
-            get;
-            private set;
-        }
+        public ICapability2<TwDE> DeviceEvent { get; private set; }
 
         #endregion
 
@@ -84,19 +79,13 @@ namespace Saraff.Twain {
         /// CAP_ALARMS. Turns specific audible alarms on and off.
         /// </summary>
         [Capability(TwCap.Alarms)]
-        public ICapability2<TwAL> Alarms {
-            get;
-            private set;
-        }
+        public ICapability2<TwAL> Alarms { get; private set; }
 
         /// <summary>
         /// CAP_ALARMVOLUME. Controls the volume of a device’s audible alarm.
         /// </summary>
         [Capability(TwCap.AlarmVolume)]
-        public ICapability<int> AlarmVolume {
-            get;
-            private set;
-        }
+        public ICapability<int> AlarmVolume { get; private set; }
 
         #endregion
 
@@ -107,28 +96,19 @@ namespace Saraff.Twain {
         /// Document Feeder.
         /// </summary>
         [Capability(TwCap.AutomaticSenseMedium)]
-        public ICapability<bool> AutomaticSenseMedium {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutomaticSenseMedium { get; private set; }
 
         /// <summary>
         /// ICAP_AUTODISCARDBLANKPAGES. Discards blank pages.
         /// </summary>
         [Capability(TwCap.AutoDiscardBlankPages)]
-        public ICapability<TwBP> AutoDiscardBlankPages {
-            get;
-            private set;
-        }
+        public ICapability<TwBP> AutoDiscardBlankPages { get; private set; }
 
         /// <summary>
         /// ICAP_AUTOMATICBORDERDETECTION. Turns automatic border detection on and off.
         /// </summary>
         [Capability(TwCap.AutomaticBorderDetection)]
-        public ICapability<bool> AutomaticBorderDetection {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutomaticBorderDetection { get; private set; }
 
         /// <summary>
         /// ICAP_AUTOMATICCOLORENABLED. Detects the pixel type of the image and returns either a color
@@ -136,59 +116,41 @@ namespace Saraff.Twain {
         /// ICAP_AUTOMATICCOLORNONCOLORPIXELTYPE.
         /// </summary>
         [Capability(TwCap.AutomaticColorEnabled)]
-        public ICapability<bool> AutomaticColorEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutomaticColorEnabled { get; private set; }
 
         /// <summary>
         /// ICAP_AUTOMATICCOLORNONCOLORPIXELTYPE. Specifies the non-color pixel type to use when automatic color
         /// is enabled.
         /// </summary>
         [Capability(TwCap.AutomaticColorNonColorPixelType)]
-        public ICapability<TwPixelType> AutomaticColorNonColorPixelType {
-            get;
-            private set;
-        }
+        public ICapability<TwPixelType> AutomaticColorNonColorPixelType { get; private set; }
 
         /// <summary>
         /// ICAP_AUTOMATICCROPUSESFRAME. Reduces the amount of data captured from the device,
         /// potentially improving the performance of the driver.
         /// </summary>
         [Capability(TwCap.AutomaticCropUsesFrame)]
-        public ICapability<bool> AutomaticCropUsesFrame {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutomaticCropUsesFrame { get; private set; }
 
         /// <summary>
         /// ICAP_AUTOMATICDESKEW. Turns automatic skew correction on and off.
         /// </summary>
         [Capability(TwCap.AutomaticDeskew)]
-        public ICapability<bool> AutomaticDeskew {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutomaticDeskew { get; private set; }
 
         /// <summary>
         /// ICAP_AUTOMATICLENGTHDETECTION. Controls the automatic detection of the length of a document,
         /// this is intended for use with an Automatic Document Feeder.
         /// </summary>
         [Capability(TwCap.AutomaticLengthDetection)]
-        public ICapability<bool> AutomaticLengthDetection {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutomaticLengthDetection { get; private set; }
 
         /// <summary>
         /// ICAP_AUTOMATICROTATE. When TRUE, depends on source to automatically rotate the
         /// image.
         /// </summary>
         [Capability(TwCap.AutomaticRotate)]
-        public ICapability<bool> AutomaticRotate {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutomaticRotate { get; private set; }
 
         /// <summary>
         /// ICAP_AUTOSIZE. Force the output image dimensions to match either the current
@@ -196,38 +158,26 @@ namespace Saraff.Twain {
         /// values.
         /// </summary>
         [Capability(TwCap.AutoSize)]
-        public ICapability<TwAS> AutoSize {
-            get;
-            private set;
-        }
+        public ICapability<TwAS> AutoSize { get; private set; }
 
         /// <summary>
         /// ICAP_FLIPROTATION. Orients images that flip orientation every other image.
         /// </summary>
         [Capability(TwCap.FlipRotation)]
-        public ICapability<TwFR> FlipRotation {
-            get;
-            private set;
-        }
+        public ICapability<TwFR> FlipRotation { get; private set; }
 
         /// <summary>
         /// ICAP_IMAGEMERGE. Merges the front and rear image of a document in one of four
         /// orientations: front on the top.
         /// </summary>
         [Capability(TwCap.ImageMerge)]
-        public ICapability<TwIM> ImageMerge {
-            get;
-            private set;
-        }
+        public ICapability<TwIM> ImageMerge { get; private set; }
 
         /// <summary>
         /// ICAP_IMAGEMERGEHEIGHTTHRESHOLD. Specifies a Y-Offset in ICAP_UNITS units.
         /// </summary>
         [Capability(TwCap.ImageMergeHeightThreshold)]
-        public ICapability<float> ImageMergeHeightThreshold {
-            get;
-            private set;
-        }
+        public ICapability<float> ImageMergeHeightThreshold { get; private set; }
 
         #endregion
 
@@ -237,29 +187,20 @@ namespace Saraff.Twain {
         /// CAP_AUTOMATICCAPTURE. Specifies the number of images to automatically capture.
         /// </summary>
         [Capability(TwCap.AutomaticCapture)]
-        public ICapability<int> AutomaticCapture {
-            get;
-            private set;
-        }
+        public ICapability<int> AutomaticCapture { get; private set; }
 
         /// <summary>
         /// CAP_TIMEBEFOREFIRSTCAPTURE. Selects the number of seconds before the first picture taken.
         /// </summary>
         [Capability(TwCap.TimeBeforeFirstCapture)]
-        public ICapability<int> TimeBeforeFirstCapture {
-            get;
-            private set;
-        }
+        public ICapability<int> TimeBeforeFirstCapture { get; private set; }
 
         /// <summary>
         /// CAP_TIMEBETWEENCAPTURES. Selects the hundredths of a second to wait between pictures
         /// taken.
         /// </summary>
         [Capability(TwCap.TimeBetweenCaptures)]
-        public ICapability<int> TimeBetweenCaptures {
-            get;
-            private set;
-        }
+        public ICapability<int> TimeBetweenCaptures { get; private set; }
 
         #endregion
 
@@ -269,58 +210,40 @@ namespace Saraff.Twain {
         /// CAP_AUTOSCAN. Enables the source’s automatic document scanning process.
         /// </summary>
         [Capability(TwCap.AutoScan)]
-        public ICapability<bool> AutoScan {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutoScan { get; private set; }
 
         /// <summary>
         /// CAP_CAMERAENABLED. Delivers images from the current camera.
         /// </summary>
         [Capability(TwCap.CameraEnabled)]
-        public ICapability<bool> CameraEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> CameraEnabled { get; private set; }
 
         /// <summary>
         /// CAP_CAMERAORDER. Selects the order of output for Single Document Multiple Image
         /// mode.
         /// </summary>
         [Capability(TwCap.CameraOrder)]
-        public ICapability2<TwPixelType> CameraOrder {
-            get;
-            private set;
-        }
+        public ICapability2<TwPixelType> CameraOrder { get; private set; }
 
         /// <summary>
         /// CAP_CAMERASIDE. Sets the top and bottom values of cameras in a scanning device.
         /// </summary>
         [Capability(TwCap.CameraSide)]
-        public ICapability<TwCS> CameraSide {
-            get;
-            private set;
-        }
+        public ICapability<TwCS> CameraSide { get; private set; }
 
         /// <summary>
         /// CAP_CLEARBUFFERS. MSG_GET reports presence of data in scanner’s buffers;
         /// MSG_SET clears the buffers.
         /// </summary>
         [Capability(TwCap.ClearBuffers)]
-        public ICapability<TwCB> ClearBuffers {
-            get;
-            private set;
-        }
+        public ICapability<TwCB> ClearBuffers { get; private set; }
 
         /// <summary>
         /// CAP_MAXBATCHBUFFERS. Describes the number of pages that the scanner can buffer when
         /// CAP_AUTOSCAN is enabled.
         /// </summary>
         [Capability(TwCap.MaxBatchBuffers)]
-        public ICapability<uint> MaxBatchBuffers {
-            get;
-            private set;
-        }
+        public ICapability<uint> MaxBatchBuffers { get; private set; }
 
         #endregion
 
@@ -330,69 +253,48 @@ namespace Saraff.Twain {
         /// ICAP_BARCODEDETECTIONENABLED. Turns bar code detection on and off.
         /// </summary>
         [Capability(TwCap.BarCodeDetectionEnabled)]
-        public ICapability<bool> BarCodeDetectionEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> BarCodeDetectionEnabled { get; private set; }
 
         /// <summary>
         /// ICAP_SUPPORTEDBARCODETYPES. Provides a list of bar code types that can be detected by current
         /// data source.
         /// </summary>
         [Capability(TwCap.SupportedBarCodeTypes)]
-        public ICapability2<TwBT> SupportedBarCodeTypes {
-            get;
-            private set;
-        }
+        public ICapability2<TwBT> SupportedBarCodeTypes { get; private set; }
 
         /// <summary>
         /// ICAP_BARCODEMAXRETRIES. Restricts the number of times a search will be retried if no bar
         /// codes are found.
         /// </summary>
         [Capability(TwCap.BarCodeMaxRetries)]
-        public ICapability<uint> BarCodeMaxRetries {
-            get;
-            private set;
-        }
+        public ICapability<uint> BarCodeMaxRetries { get; private set; }
 
         /// <summary>
         /// ICAP_BARCODEMAXSEARCHPRIORITIES. Specifies the maximum number of supported search priorities.
         /// </summary>
         [Capability(TwCap.BarCodeMaxSearchPriorities)]
-        public ICapability<uint> BarCodeMaxSearchPriorities {
-            get;
-            private set;
-        }
+        public ICapability<uint> BarCodeMaxSearchPriorities { get; private set; }
 
         /// <summary>
         /// ICAP_BARCODESEARCHMODE. Restricts bar code searching to certain orientations, or
         /// prioritizes one orientation over another.
         /// </summary>
         [Capability(TwCap.BarCodeSearchMode)]
-        public ICapability<TwBD> BarCodeSearchMode {
-            get;
-            private set;
-        }
+        public ICapability<TwBD> BarCodeSearchMode { get; private set; }
 
         /// <summary>
         /// ICAP_BARCODESEARCHPRIORITIES A prioritized list of bar code types dictating the order in which
         /// they will be sought.
         /// </summary>
         [Capability(TwCap.BarCodeSearchPriorities)]
-        public ICapability2<TwBT> BarCodeSearchPriorities {
-            get;
-            private set;
-        }
+        public ICapability2<TwBT> BarCodeSearchPriorities { get; private set; }
 
         /// <summary>
         /// ICAP_BARCODETIMEOUT. Restricts the total time spent on searching for bar codes on a
         /// page.
         /// </summary>
         [Capability(TwCap.BarCodeTimeout)]
-        public ICapability<uint> BarCodeTimeout {
-            get;
-            private set;
-        }
+        public ICapability<uint> BarCodeTimeout { get; private set; }
 
         #endregion
 
@@ -402,10 +304,7 @@ namespace Saraff.Twain {
         /// CAP_SUPPORTEDCAPS. Inquire Source’s capabilities valid for MSG_GET.
         /// </summary>
         [Capability(TwCap.SupportedCaps)]
-        public ICapability2<TwCap> SupportedCaps {
-            get;
-            private set;
-        }
+        public ICapability2<TwCap> SupportedCaps { get; private set; }
 
         #endregion
 
@@ -416,47 +315,32 @@ namespace Saraff.Twain {
         /// grayscale images, resulting in output that that could be termed “raw”.
         /// </summary>
         [Capability(TwCap.ColorManagementEnabled)]
-        public ICapability<bool> ColorManagementEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> ColorManagementEnabled { get; private set; }
 
         /// <summary>
         /// ICAP_FILTER. Color characteristics of the subtractive filter applied to the
         /// image data.
         /// </summary>
         [Capability(TwCap.Filter)]
-        public ICapability2<TwFT> Filter {
-            get;
-            private set;
-        }
+        public ICapability2<TwFT> Filter { get; private set; }
 
         /// <summary>
         /// ICAP_GAMMA. Gamma correction value for the image data.
         /// </summary>
         [Capability(TwCap.Gamma)]
-        public ICapability<float> Gamma {
-            get;
-            private set;
-        }
+        public ICapability<float> Gamma { get; private set; }
 
         /// <summary>
         /// ICAP_ICCPROFILE. Embeds or links ICC profiles into files.
         /// </summary>
         [Capability(TwCap.IccProfile)]
-        public ICapability<TwIC> IccProfile {
-            get;
-            private set;
-        }
+        public ICapability<TwIC> IccProfile { get; private set; }
 
         /// <summary>
         /// ICAP_PLANARCHUNKY. Color data format - Planar or Chunky.
         /// </summary>
         [Capability(TwCap.PlanarChunky)]
-        public ICapability<TwPC> PlanarChunky {
-            get;
-            private set;
-        }
+        public ICapability<TwPC> PlanarChunky { get; private set; }
 
         #endregion
 
@@ -466,73 +350,49 @@ namespace Saraff.Twain {
         /// ICAP_BITORDERCODES. CCITT Compression.
         /// </summary>
         [Capability(TwCap.BitOrderCodes)]
-        public ICapability<TwBO> BitOrderCodes {
-            get;
-            private set;
-        }
+        public ICapability<TwBO> BitOrderCodes { get; private set; }
 
         /// <summary>
         /// ICAP_CCITTKFACTOR. CCITT Compression.
         /// </summary>
         [Capability(TwCap.CcittKFactor)]
-        public ICapability<ushort> CcittKFactor {
-            get;
-            private set;
-        }
+        public ICapability<ushort> CcittKFactor { get; private set; }
 
         /// <summary>
         /// ICAP_COMPRESSION. Compression method for Buffered Memory Transfers.
         /// </summary>
         [Capability(TwCap.ICompression)]
-        public ICapability<TwCompression> Compression {
-            get;
-            private set;
-        }
+        public ICapability<TwCompression> Compression { get; private set; }
 
         /// <summary>
         /// ICAP_JPEGPIXELTYPE. JPEG Compression.
         /// </summary>
         [Capability(TwCap.JpegPixelType)]
-        public ICapability<TwPixelType> JpegPixelType {
-            get;
-            private set;
-        }
+        public ICapability<TwPixelType> JpegPixelType { get; private set; }
 
         /// <summary>
         /// ICAP_JPEGQUALITY. JPEG quality.
         /// </summary>
         [Capability(TwCap.JpegQuality)]
-        public ICapability<TwJQ> JpegQuality {
-            get;
-            private set;
-        }
+        public ICapability<TwJQ> JpegQuality { get; private set; }
 
         /// <summary>
         /// ICAP_JPEGSUBSAMPLING. JPEG subsampling.
         /// </summary>
         [Capability(TwCap.JpegSubSampling)]
-        public ICapability<TwJS> JpegSubSampling {
-            get;
-            private set;
-        }
+        public ICapability<TwJS> JpegSubSampling { get; private set; }
 
         /// <summary>
         /// ICAP_PIXELFLAVORCODES. CCITT Compression.
         /// </summary>
         [Capability(TwCap.PixelFlavor)]
-        public ICapability<TwPF> PixelFlavor {
-            get;
-            private set;
-        }
+        public ICapability<TwPF> PixelFlavor { get; private set; }
 
         /// <summary>
         /// ICAP_TIMEFILL. CCITT Compression.
         /// </summary>
         [Capability(TwCap.TimeFill)]
-        public ICapability<ushort> TimeFill {
-            get;
-            private set;
-        }
+        public ICapability<ushort> TimeFill { get; private set; }
 
         #endregion
 
@@ -542,162 +402,111 @@ namespace Saraff.Twain {
         /// CAP_DEVICEONLINE. Determines if hardware is on and ready.
         /// </summary>
         [Capability(TwCap.DeviceOnline)]
-        public ICapability<bool> DeviceOnline {
-            get;
-            private set;
-        }
+        public ICapability<bool> DeviceOnline { get; private set; }
 
         /// <summary>
         /// CAP_DEVICETIMEDATE. Date and time of a device’s clock.
         /// </summary>
         [Capability(TwCap.DeviceTimeDate)] // TW_STR32
-        public ICapability<string> DeviceTimeDate {
-            get;
-            private set;
-        }
+        public ICapability<string> DeviceTimeDate { get; private set; }
 
         /// <summary>
         /// CAP_SERIALNUMBER. The serial number of the currently selected source device.
         /// </summary>
         [Capability(TwCap.SerialNumber)] // TW_STR255
-        public ICapability<string> SerialNumber {
-            get;
-            private set;
-        }
+        public ICapability<string> SerialNumber { get; private set; }
 
         /// <summary>
         /// ICAP_MINIMUMHEIGHT Allows the source to define the minimum height (Y-axis) that
         /// the source can acquire.
         /// </summary>
         [Capability(TwCap.MinimumHeight)]
-        public ICapability<float> MinimumHeight {
-            get;
-            private set;
-        }
+        public ICapability<float> MinimumHeight { get; private set; }
 
         /// <summary>
         /// ICAP_MINIMUMWIDTH Allows the source to define the minimum width (X-axis) that
         /// the source can acquire.
         /// </summary>
         [Capability(TwCap.MinimumWidth)]
-        public ICapability<float> MinimumWidth {
-            get;
-            private set;
-        }
+        public ICapability<float> MinimumWidth { get; private set; }
 
         /// <summary>
         /// ICAP_EXPOSURETIME. Exposure time used to capture the image, in seconds.
         /// </summary>
         [Capability(TwCap.ExposureTime)]
-        public ICapability<float> ExposureTime {
-            get;
-            private set;
-        }
+        public ICapability<float> ExposureTime { get; private set; }
 
         /// <summary>
         /// ICAP_FLASHUSED2. For devices that support a flash, MSG_SET selects the flash to be
         /// used; MSG_GET reports the current setting.
         /// </summary>
         [Capability(TwCap.FlashUsed2)]
-        public ICapability<TwFL> FlashUsed2 {
-            get;
-            private set;
-        }
+        public ICapability<TwFL> FlashUsed2 { get; private set; }
 
         /// <summary>
         /// ICAP_IMAGEFILTER. For devices that support image filtering, selects the algorithm to
         /// be used.
         /// </summary>
         [Capability(TwCap.ImageFilter)]
-        public ICapability<TwIF> ImageFilter {
-            get;
-            private set;
-        }
+        public ICapability<TwIF> ImageFilter { get; private set; }
 
         /// <summary>
         /// ICAP_LAMPSTATE. Is the lamp on?
         /// </summary>
         [Capability(TwCap.LampState)]
-        public ICapability<bool> LampState {
-            get;
-            private set;
-        }
+        public ICapability<bool> LampState { get; private set; }
 
         /// <summary>
         /// ICAP_LIGHTPATH. Image was captured transmissively or reflectively.
         /// </summary>
         [Capability(TwCap.LightPath)]
-        public ICapability<TwLP> LightPath {
-            get;
-            private set;
-        }
+        public ICapability<TwLP> LightPath { get; private set; }
 
         /// <summary>
         /// ICAP_LIGHTSOURCE. Describes the color characteristic of the light source used to
         /// acquire the image.
         /// </summary>
         [Capability(TwCap.LightSource)]
-        public ICapability<TwLS> LightSource {
-            get;
-            private set;
-        }
+        public ICapability<TwLS> LightSource { get; private set; }
 
         /// <summary>
         /// ICAP_NOISEFILTER. For devices that support noise filtering, selects the algorithm to
         /// be used.
         /// </summary>
         [Capability(TwCap.NoiseFilter)]
-        public ICapability<TwNF> NoiseFilter {
-            get;
-            private set;
-        }
+        public ICapability<TwNF> NoiseFilter { get; private set; }
 
         /// <summary>
         /// ICAP_OVERSCAN. For devices that support overscanning, controls whether
         /// additional rows or columns are appended to the image.
         /// </summary>
         [Capability(TwCap.OverScan)]
-        public ICapability<TwOV> OverScan {
-            get;
-            private set;
-        }
+        public ICapability<TwOV> OverScan { get; private set; }
 
         /// <summary>
         /// ICAP_PHYSICALHEIGHT. Maximum height Source can acquire (in ICAP_UNITS).
         /// </summary>
         [Capability(TwCap.PhysicalHeight)]
-        public ICapability<float> PhysicalHeight {
-            get;
-            private set;
-        }
+        public ICapability<float> PhysicalHeight { get; private set; }
 
         /// <summary>
         /// ICAP_PHYSICALWIDTH. Maximum width Source can acquire (in ICAP_UNITS).
         /// </summary>
-        [Capability( TwCap.PhysicalWidth)]
-        public ICapability<float> PhysicalWidth {
-            get;
-            private set;
-        }
+        [Capability(TwCap.PhysicalWidth)]
+        public ICapability<float> PhysicalWidth { get; private set; }
 
         /// <summary>
         /// ICAP_UNITS. Unit of measure (inches, centimeters, etc.).
         /// </summary>
         [Capability(TwCap.IUnits)]
-        public ICapability<TwUnits> Units {
-            get;
-            private set;
-        }
+        public ICapability<TwUnits> Units { get; private set; }
 
         /// <summary>
         /// ICAP_ZOOMFACTOR. With MSG_GET, returns all camera supported lens zooming
         /// range.
         /// </summary>
         [Capability(TwCap.ZoomFactor)]
-        public ICapability<short> ZoomFactor {
-            get;
-            private set;
-        }
+        public ICapability<short> ZoomFactor { get; private set; }
 
         #endregion
 
@@ -707,37 +516,25 @@ namespace Saraff.Twain {
         /// CAP_DOUBLEFEEDDETECTION. Control DFD functionality.
         /// </summary>
         [Capability(TwCap.DoubleFeedDetection)]
-        public ICapability2<TwDF> DoubleFeedDetection {
-            get;
-            private set;
-        }
+        public ICapability2<TwDF> DoubleFeedDetection { get; private set; }
 
         /// <summary>
         /// CAP_DOUBLEFEEDDETECTIONLENGTH. Set the minimum length.
         /// </summary>
         [Capability(TwCap.DoubleFeedDetectionLength)]
-        public ICapability<float> DoubleFeedDetectionLength {
-            get;
-            private set;
-        }
+        public ICapability<float> DoubleFeedDetectionLength { get; private set; }
 
         /// <summary>
         /// CAP_DOUBLEFEEDDETECTIONSENSITIVITY. Set detector sensitivity.
         /// </summary>
         [Capability(TwCap.DoubleFeedDetectionSensitivity)]
-        public ICapability<TwUS> DoubleFeedDetectionSensitivity {
-            get;
-            private set;
-        }
+        public ICapability<TwUS> DoubleFeedDetectionSensitivity { get; private set; }
 
         /// <summary>
         /// CAP_DOUBLEFEEDDETECTIONRESPONSE. Describe Source behavior in case of DFD.
         /// </summary>
         [Capability(TwCap.DoubleFeedDetectionResponse)]
-        public ICapability2<TwDP> DoubleFeedDetectionResponse {
-            get;
-            private set;
-        }
+        public ICapability2<TwDP> DoubleFeedDetectionResponse { get; private set; }
 
         #endregion
 
@@ -747,75 +544,51 @@ namespace Saraff.Twain {
         /// CAP_ENDORSER. Allows the application to specify the starting endorser / imprinter number.
         /// </summary>
         [Capability(TwCap.Endorser)]
-        public ICapability<uint> Endorser {
-            get;
-            private set;
-        }
+        public ICapability<uint> Endorser { get; private set; }
 
         /// <summary>
         /// CAP_PRINTER. MSG_GET returns current list of available printer devices;
         /// MSG_SET selects the device for negotiation.
         /// </summary>
         [Capability(TwCap.Printer)]
-        public ICapability<TwPR> Printer {
-            get;
-            private set;
-        }
+        public ICapability<TwPR> Printer { get; private set; }
 
         /// <summary>
         /// CAP_PRINTERENABLED. Turns the current CAP_PRINTER device on or off.
         /// </summary>
         [Capability(TwCap.PrinterEnabled)]
-        public ICapability<bool> PrinterEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> PrinterEnabled { get; private set; }
 
         /// <summary>
         /// CAP_PRINTERINDEX. Starting number for the CAP_PRINTER device.
         /// </summary>
         [Capability(TwCap.PrinterIndex)]
-        public ICapability<uint> PrinterIndex {
-            get;
-            private set;
-        }
+        public ICapability<uint> PrinterIndex { get; private set; }
 
         /// <summary>
         /// CAP_PRINTERMODE. Specifies appropriate current CAP_PRINTER device mode.
         /// </summary>
         [Capability(TwCap.PrinterMode)]
-        public ICapability<TwPM> PrinterMode {
-            get;
-            private set;
-        }
+        public ICapability<TwPM> PrinterMode { get; private set; }
 
         /// <summary>
         /// CAP_PRINTERSTRING. String(s) to be used in the string component when
         /// CAP_PRINTER device is enabled.
         /// </summary>
         [Capability(TwCap.PrinterString)] // TW_STR255
-        public ICapability<string> PrinterString {
-            get;
-            private set;
-        }
+        public ICapability<string> PrinterString { get; private set; }
 
         /// <summary>
         /// CAP_PRINTERSUFFIX. String to be used as current CAP_PRINTER device’s suffix.
         /// </summary>
         [Capability(TwCap.PrinterSuffix)] // TW_STR255
-        public ICapability<string> PrinterSuffix {
-            get;
-            private set;
-        }
+        public ICapability<string> PrinterSuffix { get; private set; }
 
         /// <summary>
         /// CAP_PRINTERVERTICALOFFSET. Y-Offset for current CAP_PRINTER device.
         /// </summary>
         [Capability(TwCap.PrinterVerticalOffset)]
-        public ICapability<float> PrinterVerticalOffset {
-            get;
-            private set;
-        }
+        public ICapability<float> PrinterVerticalOffset { get; private set; }
 
         #endregion
 
@@ -825,48 +598,33 @@ namespace Saraff.Twain {
         /// CAP_AUTHOR. Author of acquired image (may include a copyright string).
         /// </summary>
         [Capability(TwCap.Author)] // TW_STR128
-        public ICapability<string> Author {
-            get;
-            private set;
-        }
+        public ICapability<string> Author { get; private set; }
 
         /// <summary>
         /// CAP_CAPTION. General note about acquired image.
         /// </summary>
         [Capability(TwCap.Caption)] // TW_STR255
-        public ICapability<string> Caption {
-            get;
-            private set;
-        }
+        public ICapability<string> Caption { get; private set; }
 
         /// <summary>
         /// CAP_TIMEDATE Date and Time the image was acquired (entered State 7).
         /// </summary>
         [Capability(TwCap.TimeDate)] // TW_STR32
-        public ICapability<string> TimeDate {
-            get;
-            private set;
-        }
+        public ICapability<string> TimeDate { get; private set; }
 
         /// <summary>
         /// ICAP_EXTIMAGEINFO. Allows the application to query the data source to see if it
         /// supports the new operation triplet DG_IMAGE / DAT_EXTIMAGEINFO/ MSG_GET.
         /// </summary>
         [Capability(TwCap.ExtImageInfo)]
-        public ICapability<bool> ExtImageInfo {
-            get;
-            private set;
-        }
+        public ICapability<bool> ExtImageInfo { get; private set; }
 
         /// <summary>
         /// ICAP_SUPPORTEDEXTIMAGEINFO. Lists all of the information that the Source is capable of
         /// returning from a call to DAT_EXTIMAGEINFO.
         /// </summary>
         [Capability(TwCap.SupportedExtImageInfo)]
-        public ICapability2<TwEI> SupportedExtImageInfo {
-            get;
-            private set;
-        }
+        public ICapability2<TwEI> SupportedExtImageInfo { get; private set; }
 
         #endregion
 
@@ -877,113 +635,77 @@ namespace Saraff.Twain {
         /// representations for the set of images that are to be delivered.
         /// </summary>
         [Capability(TwCap.ThumbnailsEnabled)]
-        public ICapability<bool> ThumbnailsEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> ThumbnailsEnabled { get; private set; }
 
         /// <summary>
         /// ICAP_AUTOBRIGHT. Enable Source’s Auto-brightness function.
         /// </summary>
         [Capability(TwCap.AutoBright)]
-        public ICapability<bool> AutoBright {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutoBright { get; private set; }
 
         /// <summary>
         /// ICAP_BRIGHTNESS. Source brightness values.
         /// </summary>
         [Capability(TwCap.Brightness)]
-        public ICapability<float> Brightness {
-            get;
-            private set;
-        }
+        public ICapability<float> Brightness { get; private set; }
 
         /// <summary>
         /// ICAP_CONTRAST. Source contrast values.
         /// </summary>
         [Capability(TwCap.Contrast)]
-        public ICapability<float> Contrast {
-            get;
-            private set;
-        }
+        public ICapability<float> Contrast { get; private set; }
 
         /// <summary>
         /// ICAP_HIGHLIGHT. Lightest highlight, values lighter than this value will be set to
         /// this value.
         /// </summary>
         [Capability(TwCap.Highlight)]
-        public ICapability<float> Highlight {
-            get;
-            private set;
-        }
+        public ICapability<float> Highlight { get; private set; }
 
         /// <summary>
         /// ICAP_IMAGEDATASET. Gets or sets the image indices that will be delivered during the
         /// standard image transfer done in States 6 and 7.
         /// </summary>
         [Capability(TwCap.ImageDataSet)]
-        public ICapability2<uint> ImageDataSet {
-            get;
-            private set;
-        }
+        public ICapability2<uint> ImageDataSet { get; private set; }
 
         /// <summary>
         /// ICAP_MIRROR. Source can, or should, mirror image.
         /// </summary>
         [Capability(TwCap.Mirror)]
-        public ICapability<TwNF> Mirror {
-            get;
-            private set;
-        }
+        public ICapability<TwNF> Mirror { get; private set; }
 
         /// <summary>
         /// ICAP_ORIENTATION Defines which edge of the paper is the top: Portrait or
         /// Landscape.
         /// </summary>
         [Capability(TwCap.Orientation)]
-        public ICapability<TwOR> Orientation {
-            get;
-            private set;
-        }
+        public ICapability<TwOR> Orientation { get; private set; }
 
         /// <summary>
         /// ICAP_ROTATION. Source can, or should, rotate image this number of degrees.
         /// </summary>
         [Capability(TwCap.Rotation)]
-        public ICapability<float> Rotation {
-            get;
-            private set;
-        }
+        public ICapability<float> Rotation { get; private set; }
 
         /// <summary>
         /// ICAP_SHADOW. Darkest shadow, values darker than this value will be set to this
         /// value.
         /// </summary>
         [Capability(TwCap.Shadow)]
-        public ICapability<float> Shadow {
-            get;
-            private set;
-        }
+        public ICapability<float> Shadow { get; private set; }
 
         /// <summary>
         /// ICAP_XSCALING. Source Scaling value (1.0 = 100%) for x-axis.
         /// </summary>
         [Capability(TwCap.XScaling)]
-        public ICapability<float> XScaling {
-            get;
-            private set;
-        }
+        public ICapability<float> XScaling { get; private set; }
 
         /// <summary>
         /// ICAP_YSCALING. Source Scaling value (1.0 = 100%) for y-axis.
         /// </summary>
         [Capability(TwCap.YScaling)]
-        public ICapability<float> YScaling {
-            get;
-            private set;
-        }
+        public ICapability<float> YScaling { get; private set; }
 
         #endregion
 
@@ -993,64 +715,43 @@ namespace Saraff.Twain {
         /// ICAP_BITDEPTH. Pixel bit depth for Current value of ICAP_PIXELTYPE.
         /// </summary>
         [Capability(TwCap.BitDepth)]
-        public ICapability<ushort> BitDepth {
-            get;
-            private set;
-        }
+        public ICapability<ushort> BitDepth { get; private set; }
 
         /// <summary>
         /// ICAP_BITDEPTHREDUCTION. Allows a choice of the reduction method for bit depth loss.
         /// </summary>
         [Capability(TwCap.BitDepthReduction)]
-        public ICapability<TwBR> BitDepthReduction {
-            get;
-            private set;
-        }
+        public ICapability<TwBR> BitDepthReduction { get; private set; }
 
         /// <summary>
         /// ICAP_BITORDER. Specifies how the bytes in an image are filled by the Source.
         /// </summary>
         [Capability(TwCap.BitOrder)]
-        public ICapability<TwBO> BitOrder {
-            get;
-            private set;
-        }
+        public ICapability<TwBO> BitOrder { get; private set; }
 
         /// <summary>
         /// ICAP_CUSTHALFTONE. Square-cell halftone (dithering) matrix to be used.
         /// </summary>
         [Capability(TwCap.CustHalftone)]
-        public ICapability2<byte> CustHalftone {
-            get;
-            private set;
-        }
+        public ICapability2<byte> CustHalftone { get; private set; }
 
         /// <summary>
         /// ICAP_HALFTONES. Source halftone patterns.
         /// </summary>
         [Capability(TwCap.Halftones)] // TW_STR32
-        public ICapability<string> Halftones {
-            get;
-            private set;
-        }
+        public ICapability<string> Halftones { get; private set; }
 
         /// <summary>
         /// ICAP_PIXELTYPE. The type of pixel data (B/W, gray, color, etc.)
         /// </summary>
         [Capability(TwCap.IPixelType)]
-        public ICapability<TwPixelType> PixelType {
-            get;
-            private set;
-        }
+        public ICapability<TwPixelType> PixelType { get; private set; }
 
         /// <summary>
         /// ICAP_THRESHOLD. Specifies the dividing line between black and white values.
         /// </summary>
         [Capability(TwCap.Threshold)]
-        public ICapability<float> Threshold {
-            get;
-            private set;
-        }
+        public ICapability<float> Threshold { get; private set; }
 
         #endregion
 
@@ -1061,10 +762,7 @@ namespace Saraff.Twain {
         /// have in common.
         /// </summary>
         [Capability(TwCap.Language)]
-        public ICapability<TwLanguage> Language {
-            get;
-            private set;
-        }
+        public ICapability<TwLanguage> Language { get; private set; }
 
         #endregion
 
@@ -1074,10 +772,7 @@ namespace Saraff.Twain {
         /// CAP_MICRENABLED. Enables actions needed to support check scanning.
         /// </summary>
         [Capability(TwCap.MicrEnabled)]
-        public ICapability<bool> MicrEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> MicrEnabled { get; private set; }
 
         #endregion
 
@@ -1087,37 +782,25 @@ namespace Saraff.Twain {
         /// CAP_SEGMENTED. Describes the segmentation setting for captured images.
         /// </summary>
         [Capability(TwCap.Segmented)]
-        public ICapability<TwSG> Segmented {
-            get;
-            private set;
-        }
+        public ICapability<TwSG> Segmented { get; private set; }
 
         /// <summary>
         /// ICAP_FRAMES. Size and location of frames on page.
         /// </summary>
         [Capability(TwCap.Frames)]
-        public ICapability<RectangleF> Frames {
-            get;
-            private set;
-        }
+        public ICapability<RectangleF> Frames { get; private set; }
 
         /// <summary>
         /// ICAP_MAXFRAMES. Maximum number of frames possible per page.
         /// </summary>
         [Capability(TwCap.MaxFrames)]
-        public ICapability<ushort> MaxFrames {
-            get;
-            private set;
-        }
+        public ICapability<ushort> MaxFrames { get; private set; }
 
         /// <summary>
         /// ICAP_SUPPORTEDSIZES. Fixed frame sizes for typical page sizes.
         /// </summary>
         [Capability(TwCap.SupportedSizes)]
-        public ICapability<TwSS> SupportedSizes {
-            get;
-            private set;
-        }
+        public ICapability<TwSS> SupportedSizes { get; private set; }
 
         #endregion
 
@@ -1127,147 +810,99 @@ namespace Saraff.Twain {
         /// CAP_AUTOFEED. MSG_SET to TRUE to enable Source’s automatic feeding.
         /// </summary>
         [Capability(TwCap.AutoFeed)]
-        public ICapability<bool> AutoFeed {
-            get;
-            private set;
-        }
+        public ICapability<bool> AutoFeed { get; private set; }
 
         /// <summary>
         /// CAP_CLEARPAGE. MSG_SET to TRUE to eject current page and leave acquire area empty.
         /// </summary>
         [Capability(TwCap.ClearPage)]
-        public ICapability<bool> ClearPage {
-            get;
-            private set;
-        }
+        public ICapability<bool> ClearPage { get; private set; }
 
         /// <summary>
         /// CAP_DUPLEX. Indicates whether the scanner supports duplex.
         /// </summary>
         [Capability(TwCap.Duplex)]
-        public ICapability<TwDX> Duplex {
-            get;
-            private set;
-        }
+        public ICapability<TwDX> Duplex { get; private set; }
 
         /// <summary>
         /// CAP_DUPLEXENABLED. Enables the user to set the duplex option to be TRUE or FALSE.
         /// </summary>
         [Capability(TwCap.DuplexEnabled)]
-        public ICapability<bool> DuplexEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> DuplexEnabled { get; private set; }
 
         /// <summary>
         /// CAP_FEEDERALIGNMENT. Indicates the alignment of the document feeder.
         /// </summary>
         [Capability(TwCap.FeederAlignment)]
-        public ICapability<TwFA> FeederAlignment {
-            get;
-            private set;
-        }
+        public ICapability<TwFA> FeederAlignment { get; private set; }
 
         /// <summary>
         /// CAP_FEEDERENABLED. If TRUE, Source’s feeder is available.
         /// </summary>
         [Capability(TwCap.FeederEnabled)]
-        public ICapability<bool> FeederEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> FeederEnabled { get; private set; }
 
         /// <summary>
         /// CAP_FEEDERLOADED. If TRUE, Source has documents loaded in feeder (MSG_GET only).
         /// </summary>
         [Capability(TwCap.FeederLoaded)]
-        public ICapability<bool> FeederLoaded {
-            get;
-            private set;
-        }
+        public ICapability<bool> FeederLoaded { get; private set; }
 
         /// <summary>
         /// CAP_FEEDERORDER. Specifies whether feeder starts with top of first or last page.
         /// </summary>
         [Capability(TwCap.FeederOrder)]
-        public ICapability<TwFO> FeederOrder {
-            get;
-            private set;
-        }
+        public ICapability<TwFO> FeederOrder { get; private set; }
 
         /// <summary>
         /// CAP_FEEDERPOCKET. Report what pockets are available as paper leaves a device.
         /// </summary>
         [Capability(TwCap.FeederPocket)]
-        public ICapability2<TwFP> FeederPocket {
-            get;
-            private set;
-        }
+        public ICapability2<TwFP> FeederPocket { get; private set; }
 
         /// <summary>
         /// CAP_FEEDERPREP. Improve the movement of paper through a scanner ADF.
         /// </summary>
         [Capability(TwCap.FeederPrep)]
-        public ICapability<bool> FeederPrep {
-            get;
-            private set;
-        }
+        public ICapability<bool> FeederPrep { get; private set; }
 
         /// <summary>
         /// CAP_FEEDPAGE. MSG_SET to TRUE to eject current page and feed next page.
         /// </summary>
         [Capability(TwCap.FeedPage)]
-        public ICapability<bool> FeedPage {
-            get;
-            private set;
-        }
+        public ICapability<bool> FeedPage { get; private set; }
 
         /// <summary>
         /// CAP_PAPERDETECTABLE. Determines whether source can detect documents on the ADF.
         /// </summary>
         [Capability(TwCap.PaperDetectable)]
-        public ICapability<bool> PaperDetectable {
-            get;
-            private set;
-        }
+        public ICapability<bool> PaperDetectable { get; private set; }
 
         /// <summary>
         /// CAP_PAPERHANDLING. Control paper handling.
         /// </summary>
         [Capability(TwCap.PaperHandling)]
-        public ICapability2<TwPH> PaperHandling {
-            get;
-            private set;
-        }
+        public ICapability2<TwPH> PaperHandling { get; private set; }
 
         /// <summary>
         /// CAP_REACQUIREALLOWED. Capable of acquring muliple images of the same page wihtout
         /// changing the physical registraion of that page.
         /// </summary>
         [Capability(TwCap.ReacquireAllowed)]
-        public ICapability<bool> ReacquireAllowed {
-            get;
-            private set;
-        }
+        public ICapability<bool> ReacquireAllowed { get; private set; }
 
         /// <summary>
         /// CAP_REWINDPAGE. MSG_SET to TRUE to do a reverse feed.
         /// </summary>
         [Capability(TwCap.RewindPage)]
-        public ICapability<bool> RewindPage {
-            get;
-            private set;
-        }
+        public ICapability<bool> RewindPage { get; private set; }
 
         /// <summary>
         /// ICAP_FEEDERTYPE. Allows application to set scan parameters depending on the
         /// type of feeder being used.
         /// </summary>
         [Capability(TwCap.FeederType)]
-        public ICapability<TwFE> FeederType {
-            get;
-            private set;
-        }
+        public ICapability<TwFE> FeederType { get; private set; }
 
         #endregion
 
@@ -1277,68 +912,47 @@ namespace Saraff.Twain {
         /// ICAP_PATCHCODEDETECTIONENABLED. Turns patch code detection on and off.
         /// </summary>
         [Capability(TwCap.PatchCodeDetectionEnabled)]
-        public ICapability<bool> PatchCodeDetectionEnabled {
-            get;
-            private set;
-        }
+        public ICapability<bool> PatchCodeDetectionEnabled { get; private set; }
 
         /// <summary>
         /// ICAP_SUPPORTEDPATCHCODETYPES. List of patch code types that can be detected by current data
         /// source.
         /// </summary>
         [Capability(TwCap.SupportedPatchCodeTypes)]
-        public ICapability2<TwPch> SupportedPatchCodeTypes {
-            get;
-            private set;
-        }
+        public ICapability2<TwPch> SupportedPatchCodeTypes { get; private set; }
 
         /// <summary>
         /// ICAP_PATCHCODEMAXSEARCHPRIORITIES. Maximum number of search priorities.
         /// </summary>
         [Capability(TwCap.PatchCodeMaxSearchPriorities)]
-        public ICapability<uint> PatchCodeMaxSearchPriorities {
-            get;
-            private set;
-        }
+        public ICapability<uint> PatchCodeMaxSearchPriorities { get; private set; }
 
         /// <summary>
         /// ICAP_PATCHCODESEARCHPRIORITIES. List of patch code types dictating the order in which patch
         /// codes will be sought.
         /// </summary>
         [Capability(TwCap.PatchCodeSearchPriorities)]
-        public ICapability2<TwPch> PatchCodeSearchPriorities {
-            get;
-            private set;
-        }
+        public ICapability2<TwPch> PatchCodeSearchPriorities { get; private set; }
 
         /// <summary>
         /// ICAP_PATCHCODESEARCHMODE. Restricts patch code searching to certain orientations, or
         /// prioritizes one orientation over another.
         /// </summary>
         [Capability(TwCap.PatchCodeSearchMode)]
-        public ICapability<TwBD> PatchCodeSearchMode {
-            get;
-            private set;
-        }
+        public ICapability<TwBD> PatchCodeSearchMode { get; private set; }
 
         /// <summary>
         /// ICAP_PATCHCODEMAXRETRIES. Restricts the number of times a search will be retried if none are
         /// found on a page.
         /// </summary>
         [Capability(TwCap.PatchCodeMaxRetries)]
-        public ICapability<uint> PatchCodeMaxRetries {
-            get;
-            private set;
-        }
+        public ICapability<uint> PatchCodeMaxRetries { get; private set; }
 
         /// <summary>
         /// ICAP_PATCHCODETIMEOUT. Restricts total time for searching for a patch code on a page.
         /// </summary>
         [Capability(TwCap.PatchCodeTimeout)]
-        public ICapability<uint> PatchCodeTimeout {
-            get;
-            private set;
-        }
+        public ICapability<uint> PatchCodeTimeout { get; private set; }
 
         #endregion
 
@@ -1348,39 +962,27 @@ namespace Saraff.Twain {
         /// CAP_BATTERYMINUTES. The minutes of battery power remaining on a device.
         /// </summary>
         [Capability(TwCap.BatteryMinutes)]
-        public ICapability<TwBM1> BatteryMinutes {
-            get;
-            private set;
-        }
+        public ICapability<TwBM1> BatteryMinutes { get; private set; }
 
         /// <summary>
         /// CAP_BATTERYPERCENTAGE. With MSG_GET, indicates battery power status.
         /// </summary>
         [Capability(TwCap.BatteryPercentage)]
-        public ICapability<TwBM2> BatteryPercentage {
-            get;
-            private set;
-        }
+        public ICapability<TwBM2> BatteryPercentage { get; private set; }
 
         /// <summary>
         /// CAP_POWERSAVETIME. With MSG_SET, sets the camera power down timer in seconds;
         /// with MSG_GET, returns the current setting of the power down time.
         /// </summary>
         [Capability(TwCap.PowerSaveTime)]
-        public ICapability<int> PowerSaveTime {
-            get;
-            private set;
-        }
+        public ICapability<int> PowerSaveTime { get; private set; }
 
         /// <summary>
         /// CAP_POWERSUPPLY. MSG_GET reports the kinds of power available;
         /// MSG_GETCURRENT reports the current power supply to use.
         /// </summary>
         [Capability(TwCap.PowerSupply)]
-        public ICapability<TwPS> PowerSupply {
-            get;
-            private set;
-        }
+        public ICapability<TwPS> PowerSupply { get; private set; }
 
         #endregion
 
@@ -1390,37 +992,25 @@ namespace Saraff.Twain {
         /// ICAP_XNATIVERESOLUTION. Native optical resolution of device for x-axis.
         /// </summary>
         [Capability(TwCap.XNativeResolution)]
-        public ICapability<float> XNativeResolution {
-            get;
-            private set;
-        }
+        public ICapability<float> XNativeResolution { get; private set; }
 
         /// <summary>
         /// ICAP_XRESOLUTION. Current/Available optical resolutions for x-axis.
         /// </summary>
         [Capability(TwCap.XResolution)]
-        public ICapability<float> XResolution {
-            get;
-            private set;
-        }
+        public ICapability<float> XResolution { get; private set; }
 
         /// <summary>
         /// ICAP_YNATIVERESOLUTION. Native optical resolution of device for y-axis.
         /// </summary>
         [Capability(TwCap.YNativeResolution)]
-        public ICapability<float> YNativeResolution {
-            get;
-            private set;
-        }
+        public ICapability<float> YNativeResolution { get; private set; }
 
         /// <summary>
         /// ICAP_YRESOLUTION. Current/Available optical resolutions for y-axis.
         /// </summary>
         [Capability(TwCap.YResolution)]
-        public ICapability<float> YResolution {
-            get;
-            private set;
-        }
+        public ICapability<float> YResolution { get; private set; }
 
         #endregion
 
@@ -1430,65 +1020,44 @@ namespace Saraff.Twain {
         /// CAP_JOBCONTROL. Allows multiple jobs in batch mode.
         /// </summary>
         [Capability(TwCap.JobControl)]
-        public ICapability<TwJC> JobControl {
-            get;
-            private set;
-        }
+        public ICapability<TwJC> JobControl { get; private set; }
 
         /// <summary>
         /// CAP_SHEETCOUNT. Capture the specified number of sheets of paper.
         /// </summary>
         [Capability(TwCap.SheetCount)]
-        public ICapability<uint> SheetCount {
-            get;
-            private set;
-        }
+        public ICapability<uint> SheetCount { get; private set; }
 
         /// <summary>
         /// CAP_XFERCOUNT. Number of images the application is willing to accept this session.
         /// </summary>
         [Capability(TwCap.XferCount)]
-        public ICapability<short> XferCount {
-            get;
-            private set;
-        }
+        public ICapability<short> XferCount { get; private set; }
 
         /// <summary>
         /// ICAP_IMAGEFILEFORMAT. File formats for file transfers.
         /// </summary>
         [Capability(TwCap.ImageFileFormat)]
-        public ICapability<TwFF> ImageFileFormat {
-            get;
-            private set;
-        }
+        public ICapability<TwFF> ImageFileFormat { get; private set; }
 
         /// <summary>
         /// ICAP_TILES. Tiled image data.
         /// </summary>
         [Capability(TwCap.Tiles)]
-        public ICapability<bool> Tiles {
-            get;
-            private set;
-        }
+        public ICapability<bool> Tiles { get; private set; }
 
         /// <summary>
         /// ICAP_UNDEFINEDIMAGESIZE. The application will accept undefined image size.
         /// </summary>
         [Capability(TwCap.UndefinedImageSize)]
-        public ICapability<bool> UndefinedImageSize {
-            get;
-            private set;
-        }
+        public ICapability<bool> UndefinedImageSize { get; private set; }
 
         /// <summary>
         /// ICAP_XFERMECH. Transfer mechanism - used to learn options and set-up for
         /// upcoming transfer.
         /// </summary>
         [Capability(TwCap.IXferMech)]
-        public ICapability<TwSX> XferMech {
-            get;
-            private set;
-        }
+        public ICapability<TwSX> XferMech { get; private set; }
 
         #endregion
 
@@ -1498,10 +1067,7 @@ namespace Saraff.Twain {
         /// CAP_CAMERAPREVIEWUI. Queries the source for UI support for preview mode.
         /// </summary>
         [Capability(TwCap.CameraPreviewUI)]
-        public ICapability<bool> CameraPreviewUI {
-            get;
-            private set;
-        }
+        public ICapability<bool> CameraPreviewUI { get; private set; }
 
         /// <summary>
         /// CAP_CUSTOMDSDATA. Allows the application to query the data source to see if it
@@ -1509,103 +1075,75 @@ namespace Saraff.Twain {
         /// DG_CONTROL / DAT_CUSTOMDSDATA / MSG_SET.
         /// </summary>
         [Capability(TwCap.CustomDSData)]
-        public ICapability<bool> CustomDSData {
-            get;
-            private set;
-        }
+        public ICapability<bool> CustomDSData { get; private set; }
 
         /// <summary>
         /// CAP_CUSTOMINTERFACEGUID. Uniquely identifies an interface for a Data Source.
         /// </summary>
         [Capability(TwCap.CustomInterfaceGuid)]
-        public ICapability<string> CustomInterfaceGuid {
-            get;
-            private set;
-        }
+        public ICapability<string> CustomInterfaceGuid { get; private set; }
 
         /// <summary>
         /// CAP_ENABLEDSUIONLY. Queries an application to see if it implements the new user
         /// interface settings dialog.
         /// </summary>
         [Capability(TwCap.EnableDSUIOnly)]
-        public ICapability<bool> EnableDSUIOnly {
-            get;
-            private set;
-        }
+        public ICapability<bool> EnableDSUIOnly { get; private set; }
 
         /// <summary>
         /// CAP_INDICATORS. Use the Source’s progress indicator? (valid only when
         /// ShowUI==FALSE).
         /// </summary>
         [Capability(TwCap.Indicators)]
-        public ICapability<bool> Indicators {
-            get;
-            private set;
-        }
+        public ICapability<bool> Indicators { get; private set; }
 
         /// <summary>
         /// CAP_INDICATORSMODE. List of messages types that can be display if
         /// ICAP_INDICATORS is TRUE.
         /// </summary>
         [Capability(TwCap.IndicatorsMode)]
-        public ICapability2<TwCI> IndicatorsMode {
-            get;
-            private set;
-        }
+        public ICapability2<TwCI> IndicatorsMode { get; private set; }
 
         /// <summary>
         /// CAP_UICONTROLLABLE. Indicates that Source supports acquisitions with UI disabled.
         /// </summary>
         [Capability(TwCap.UIControllable)]
-        public ICapability<bool> UIControllable {
-            get;
-            private set;
-        }
+        public ICapability<bool> UIControllable { get; private set; }
 
         #endregion
 
         #endregion
 
         [DebuggerDisplay("{ToString()}")]
-        private class Capability<T>:ICapability<T>,ICapability2<T> {
+        private class Capability<T> : ICapability<T>, ICapability2<T> {
 
-            public Capability(Twain32 twain,TwCap cap) {
-                this._Twain32=twain;
-                this._Cap=cap;
+            public Capability(Twain32 twain, TwCap cap) {
+                this._Twain32 = twain;
+                this._Cap = cap;
             }
 
-            public Twain32.Enumeration Get() {
-                return this.ToEnumeration(this._Twain32.GetCap(this._Cap));
-            }
+            public Twain32.Enumeration Get() => this.ToEnumeration(this._Twain32.GetCap(this._Cap));
 
-            public T GetCurrent() {
-                return (T)this._Twain32.GetCurrentCap(this._Cap);
-            }
+            public T GetCurrent() => (T)this._Twain32.GetCurrentCap(this._Cap);
 
-            public object[] GetCurrentArray() {
-                return this.ToEnumeration(this._Twain32.GetCurrentCap(this._Cap)).Items;
-            }
+            public object[] GetCurrentArray() => this.ToEnumeration(this._Twain32.GetCurrentCap(this._Cap)).Items;
 
-            public T GetDefault() {
-                return (T)this._Twain32.GetDefaultCap(this._Cap);
-            }
+            public T GetDefault() => (T)this._Twain32.GetDefaultCap(this._Cap);
 
-            public object[] GetDefaultArray() {
-                return this.ToEnumeration(this._Twain32.GetDefaultCap(this._Cap)).Items;
-            }
+            public object[] GetDefaultArray() => this.ToEnumeration(this._Twain32.GetDefaultCap(this._Cap)).Items;
 
             public void Set(T value) {
-                if(this._Twain32.Capabilities._caps[this._Cap]==typeof(ICapability2<T>)||!this.GetCurrent().Equals(value)) {
-                    this._Twain32.SetCap(this._Cap,value);
+                if(this._Twain32.Capabilities._caps[this._Cap] == typeof(ICapability2<T>) || !this.GetCurrent().Equals(value)) {
+                    this._Twain32.SetCap(this._Cap, value);
                 }
             }
 
             public void Set(params T[] value) {
-                var _val=new object[value.Length];
-                for(var i=0; i<_val.Length; i++) {
-                    _val[i]=value[i];
+                var _val = new object[value.Length];
+                for(var i = 0; i < _val.Length; i++) {
+                    _val[i] = value[i];
                 }
-                this._Twain32.SetCap(this._Cap,_val);
+                this._Twain32.SetCap(this._Cap, _val);
             }
 
             /// <summary>
@@ -1613,9 +1151,7 @@ namespace Saraff.Twain {
             /// <para xml:lang="ru">Устанавливает ограничение на значения указанной возможности.</para>
             /// </summary>
             /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
-            public void SetConstraint(T value) {
-                this._Twain32.SetConstraintCap(this._Cap,value);
-            }
+            public void SetConstraint(T value) => this._Twain32.SetConstraintCap(this._Cap, value);
 
             /// <summary>
             /// Sets a limit on the values of the specified feature.
@@ -1624,10 +1160,10 @@ namespace Saraff.Twain {
             /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
             public void SetConstraint(params T[] value) {
                 var _val = new object[value.Length];
-                for(var i = 0; i<_val.Length; i++) {
-                    _val[i]=value[i];
+                for(var i = 0; i < _val.Length; i++) {
+                    _val[i] = value[i];
                 }
-                this._Twain32.SetConstraintCap(this._Cap,_val);
+                this._Twain32.SetConstraintCap(this._Cap, _val);
             }
 
             /// <summary>
@@ -1636,10 +1172,10 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
             public void SetConstraint(Twain32.Range value) {
-                if(value.CurrentValue.GetType()!=typeof(T)) {
+                if(value.CurrentValue.GetType() != typeof(T)) {
                     throw new ArgumentException();
                 }
-                this._Twain32.SetConstraintCap(this._Cap,value);
+                this._Twain32.SetConstraintCap(this._Cap, value);
             }
 
             /// <summary>
@@ -1648,59 +1184,44 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="value">The value to set.<para xml:lang="ru">Устанавливаемое значение.</para></param>
             public void SetConstraint(Twain32.Enumeration value) {
-                if(value.Items==null||value.Items.Length==0||value.Items[0].GetType()!=typeof(T)) {
+                if(value.Items == null || value.Items.Length == 0 || value.Items[0].GetType() != typeof(T)) {
                     throw new ArgumentException();
                 }
-                this._Twain32.SetConstraintCap(this._Cap,value);
+                this._Twain32.SetConstraintCap(this._Cap, value);
             }
 
-            public void Reset() {
-                this._Twain32.ResetCap(this._Cap);
-            }
+            public void Reset() => this._Twain32.ResetCap(this._Cap);
 
-            public TwQC IsSupported() {
-                return this._Twain32.IsCapSupported(this._Cap);
-            }
+            public TwQC IsSupported() => this._Twain32.IsCapSupported(this._Cap);
 
-            public bool IsSupported(TwQC operation) {
-                return (this.IsSupported()&operation)==operation;
-            }
+            public bool IsSupported(TwQC operation) => (this.IsSupported() & operation) == operation;
 
-            protected Twain32 _Twain32 {
-                get;
-                private set;
-            }
+            protected Twain32 _Twain32 { get; private set; }
 
-            protected TwCap _Cap {
-                get;
-                private set;
-            }
+            protected TwCap _Cap { get; private set; }
 
             private Twain32.Enumeration ToEnumeration(object value) {
-                Twain32.Enumeration _val=Twain32.Enumeration.FromObject(value);
-                for(int i=0; i<_val.Count; i++) {
-                    _val[i]=typeof(T).IsEnum?(T)_val[i]:Convert.ChangeType(_val[i],typeof(T));
+                Twain32.Enumeration _val = Twain32.Enumeration.FromObject(value);
+                for(int i = 0; i < _val.Count; i++) {
+                    _val[i] = typeof(T).IsEnum ? (T)_val[i] : Convert.ChangeType(_val[i], typeof(T));
                 }
                 return _val;
             }
 
             public override string ToString() {
-                var _supported=this.IsSupported();
-                return string.Format("{0}, {1}{2}{3}{4}",this._Cap,_supported==0?"Not Supported":"",(_supported&TwQC.GetCurrent)!=0?string.Format("Current = {0}, ",this.GetCurrent()):"",(_supported&TwQC.GetDefault)!=0?string.Format("Default = {0}, ",this.GetDefault()):"",_supported!=0?string.Format("Supported = {{{0}}}",this.IsSupported()):"");
+                var _supported = this.IsSupported();
+                return string.Format("{0}, {1}{2}{3}{4}", this._Cap, _supported == 0 ? "Not Supported" : "", (_supported & TwQC.GetCurrent) != 0 ? string.Format("Current = {0}, ", this.GetCurrent()) : "", (_supported & TwQC.GetDefault) != 0 ? string.Format("Default = {0}, ", this.GetDefault()) : "", _supported != 0 ? string.Format("Supported = {{{0}}}", this.IsSupported()) : "");
             }
         }
 
-        [AttributeUsage(AttributeTargets.Property,AllowMultiple=false,Inherited=false)]
-        private sealed class CapabilityAttribute:Attribute {
+        [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+        private sealed class CapabilityAttribute : Attribute {
 
             public CapabilityAttribute(TwCap cap) {
-                this.Cap=cap;
+                this.Cap = cap;
             }
 
-            public TwCap Cap {
-                get;
-                private set;
-            }
+            public TwCap Cap { get; private set; }
         }
     }
 

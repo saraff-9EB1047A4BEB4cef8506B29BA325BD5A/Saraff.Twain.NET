@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Saraff.Twain {
 
-    internal sealed class Pict:_ImageHandler {
+    internal sealed class Pict : _ImageHandler {
 
         /// <summary>
         /// Gets the size of a image data.
@@ -14,9 +14,7 @@ namespace Saraff.Twain {
         /// <returns>
         /// Size of a image data.
         /// </returns>
-        protected override int GetSize() {
-            throw new NotImplementedException();
-        }
+        protected override int GetSize() => throw new NotImplementedException();
 
         /// <summary>
         /// Gets the size of the buffer.
@@ -24,10 +22,6 @@ namespace Saraff.Twain {
         /// <value>
         /// The size of the buffer.
         /// </value>
-        protected override int BufferSize {
-            get {
-                return 256 * 1024; //256K
-            }
-        }
+        protected override int BufferSize => 256 * 1024; //256K
     }
 }

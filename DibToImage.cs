@@ -39,14 +39,14 @@ using System.Collections.Generic;
 
 namespace Saraff.Twain {
 
-    internal sealed class DibToImage:_ImageHandler {
+    internal sealed class DibToImage : _ImageHandler {
 
         /// <summary>
         /// Convert a block of unmanaged memory to stream.
         /// </summary>
         /// <param name="ptr">The pointer to block of unmanaged memory.</param>
         /// <param name="stream"></param>
-        protected override void PtrToStreamCore(IntPtr ptr,Stream stream) {
+        protected override void PtrToStreamCore(IntPtr ptr, Stream stream) {
             BinaryWriter _writer = new BinaryWriter(stream);
 
             #region BITMAPFILEHEADER
@@ -62,7 +62,7 @@ namespace Saraff.Twain {
 
             #region BITMAPINFO and pixel data
 
-            base.PtrToStreamCore(ptr,stream);
+            base.PtrToStreamCore(ptr, stream);
 
             #endregion
 
@@ -81,10 +81,10 @@ namespace Saraff.Twain {
                 int _extra = 0;
                 if(_header.biCompression == 0) {
                     int _bytesPerRow = ((_header.biWidth * _header.biBitCount) >> 3);
-                    _extra = Math.Max(_header.biHeight * (_bytesPerRow + ((_bytesPerRow & 0x3) != 0 ? 4 - _bytesPerRow & 0x3 : 0)) - _header.biSizeImage,0);
+                    _extra = Math.Max(_header.biHeight * (_bytesPerRow + ((_bytesPerRow & 0x3) != 0 ? 4 - _bytesPerRow & 0x3 : 0)) - _header.biSizeImage, 0);
                 }
 
-                this.HandlerState.Add("DIBSIZE",_header.biSize + _header.biSizeImage + _extra + (_header.ClrUsed << 2));
+                this.HandlerState.Add("DIBSIZE", _header.biSize + _header.biSizeImage + _extra + (_header.ClrUsed << 2));
             }
             return (int)this.HandlerState["DIBSIZE"];
         }
@@ -95,22 +95,18 @@ namespace Saraff.Twain {
         /// <value>
         /// The size of the buffer.
         /// </value>
-        protected override int BufferSize {
-            get {
-                return 256 * 1024; //256K
-            }
-        }
+        protected override int BufferSize => 256 * 1024; //256K
 
         private BITMAPINFOHEADER Header {
             get {
                 if(!this.HandlerState.ContainsKey("BITMAPINFOHEADER")) {
-                    this.HandlerState.Add("BITMAPINFOHEADER",Marshal.PtrToStructure(this.ImagePointer,typeof(BITMAPINFOHEADER)));
+                    this.HandlerState.Add("BITMAPINFOHEADER", Marshal.PtrToStructure(this.ImagePointer, typeof(BITMAPINFOHEADER)));
                 }
                 return this.HandlerState["BITMAPINFOHEADER"] as BITMAPINFOHEADER;
             }
         }
 
-        [StructLayout(LayoutKind.Sequential,Pack=2)]
+        [StructLayout(LayoutKind.Sequential, Pack = 2)]
         private class BITMAPINFOHEADER {
             public int biSize;
             public int biWidth;
@@ -124,17 +120,9 @@ namespace Saraff.Twain {
             public int biClrUsed;
             public int biClrImportant;
 
-            public int ClrUsed {
-                get {
-                    return this.IsRequiredCreateColorTable ? 1<<this.biBitCount : this.biClrUsed;
-                }
-            }
+            public int ClrUsed => this.IsRequiredCreateColorTable ? 1 << this.biBitCount : this.biClrUsed;
 
-            public bool IsRequiredCreateColorTable {
-                get {
-                    return this.biClrUsed==0&&this.biBitCount<=8;
-                }
-            }
+            public bool IsRequiredCreateColorTable => this.biClrUsed == 0 && this.biBitCount <= 8;
         }
     }
 }
