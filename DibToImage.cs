@@ -1,11 +1,11 @@
 /* Этот файл является частью библиотеки Saraff.Twain.NET
  * © SARAFF SOFTWARE (Кирножицкий Андрей), 2011.
- * Saraff.TwainX.NET - свободная программа: вы можете перераспространять ее и/или
+ * Saraff.Twain.NET - свободная программа: вы можете перераспространять ее и/или
  * изменять ее на условиях Меньшей Стандартной общественной лицензии GNU в том виде,
  * в каком она была опубликована Фондом свободного программного обеспечения;
  * либо версии 3 лицензии, либо (по вашему выбору) любой более поздней
  * версии.
- * Saraff.TwainX.NET распространяется в надежде, что она будет полезной,
+ * Saraff.Twain.NET распространяется в надежде, что она будет полезной,
  * но БЕЗО ВСЯКИХ ГАРАНТИЙ; даже без неявной гарантии ТОВАРНОГО ВИДА
  * или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. Подробнее см. в Меньшей Стандартной
  * общественной лицензии GNU.
@@ -13,18 +13,18 @@
  * вместе с этой программой. Если это не так, см.
  * <http://www.gnu.org/licenses/>.)
  * 
- * This file is part of Saraff.TwainX.NET.
+ * This file is part of Saraff.Twain.NET.
  * © SARAFF SOFTWARE (Kirnazhytski Andrei), 2011.
  * Saraff.Twain.NET is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * Saraff.TwainX.NET is distributed in the hope that it will be useful,
+ * Saraff.Twain.NET is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  * You should have received a copy of the GNU Lesser General Public License
- * along with Saraff.TwainX.NET. If not, see <http://www.gnu.org/licenses/>.
+ * along with Saraff.Twain.NET. If not, see <http://www.gnu.org/licenses/>.
  * 
  * PLEASE SEND EMAIL TO:  twain@saraff.ru.
  */
@@ -36,16 +36,16 @@ using System.Reflection;
 using System.Collections.Generic;
 
 
-namespace Saraff.TwainX {
+namespace Saraff.Twain {
 
-    internal sealed class DibToImage:_ImageHandler {
+    internal sealed class DibToImage : _ImageHandler {
 
         /// <summary>
         /// Convert a block of unmanaged memory to stream.
         /// </summary>
         /// <param name="ptr">The pointer to block of unmanaged memory.</param>
         /// <param name="stream"></param>
-        protected override void PtrToStreamCore(IntPtr ptr,Stream stream) {
+        protected override void PtrToStreamCore(IntPtr ptr, Stream stream) {
             BinaryWriter _writer = new BinaryWriter(stream);
 
             #region BITMAPFILEHEADER
@@ -61,7 +61,7 @@ namespace Saraff.TwainX {
 
             #region BITMAPINFO and pixel data
 
-            base.PtrToStreamCore(ptr,stream);
+            base.PtrToStreamCore(ptr, stream);
 
             #endregion
 
@@ -80,10 +80,10 @@ namespace Saraff.TwainX {
                 int _extra = 0;
                 if(_header.biCompression == 0) {
                     int _bytesPerRow = ((_header.biWidth * _header.biBitCount) >> 3);
-                    _extra = Math.Max(_header.biHeight * (_bytesPerRow + ((_bytesPerRow & 0x3) != 0 ? 4 - _bytesPerRow & 0x3 : 0)) - _header.biSizeImage,0);
+                    _extra = Math.Max(_header.biHeight * (_bytesPerRow + ((_bytesPerRow & 0x3) != 0 ? 4 - _bytesPerRow & 0x3 : 0)) - _header.biSizeImage, 0);
                 }
 
-                this.HandlerState.Add("DIBSIZE",_header.biSize + _header.biSizeImage + _extra + (_header.ClrUsed << 2));
+                this.HandlerState.Add("DIBSIZE", _header.biSize + _header.biSizeImage + _extra + (_header.ClrUsed << 2));
             }
             return (int)this.HandlerState["DIBSIZE"];
         }
@@ -94,22 +94,18 @@ namespace Saraff.TwainX {
         /// <value>
         /// The size of the buffer.
         /// </value>
-        protected override int BufferSize {
-            get {
-                return 256 * 1024; //256K
-            }
-        }
+        protected override int BufferSize => 256 * 1024; //256K
 
         private BITMAPINFOHEADER Header {
             get {
                 if(!this.HandlerState.ContainsKey("BITMAPINFOHEADER")) {
-                    this.HandlerState.Add("BITMAPINFOHEADER",Marshal.PtrToStructure<BITMAPINFOHEADER>(this.ImagePointer));
+                    this.HandlerState.Add("BITMAPINFOHEADER", Marshal.PtrToStructure<BITMAPINFOHEADER>(this.ImagePointer));
                 }
                 return this.HandlerState["BITMAPINFOHEADER"] as BITMAPINFOHEADER;
             }
         }
 
-        [StructLayout(LayoutKind.Sequential,Pack=2)]
+        [StructLayout(LayoutKind.Sequential, Pack = 2)]
         private class BITMAPINFOHEADER {
             public int biSize;
             public int biWidth;
@@ -123,17 +119,9 @@ namespace Saraff.TwainX {
             public int biClrUsed;
             public int biClrImportant;
 
-            public int ClrUsed {
-                get {
-                    return this.IsRequiredCreateColorTable ? 1<<this.biBitCount : this.biClrUsed;
-                }
-            }
+            public int ClrUsed => this.IsRequiredCreateColorTable ? 1 << this.biBitCount : this.biClrUsed;
 
-            public bool IsRequiredCreateColorTable {
-                get {
-                    return this.biClrUsed==0&&this.biBitCount<=8;
-                }
-            }
+            public bool IsRequiredCreateColorTable => this.biClrUsed == 0 && this.biBitCount <= 8;
         }
     }
 }

@@ -2,15 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>Saraff.TwainX.NET</PackageId>
+    <PackageId>Saraff.Twain</PackageId>
     <Company>SARAFF SOFTWARE</Company>
-    <Product>Saraff.TwainX.NET</Product>
-    <AssemblyVersion>1.0.29.693</AssemblyVersion>
-    <FileVersion>1.0.29.693</FileVersion>
+    <Product>Saraff.Twain</Product>
+    <AssemblyVersion>1.0.32.732</AssemblyVersion>
+    <FileVersion>1.0.32.732</FileVersion>
     <Authors>Copyright © SARAFF 2011</Authors>
-    <Version>1.0.29.693</Version>
+    <Version>1.0.32.732</Version>
     <Description>Allows you to control work of flatbed scanner, web and digital camera and any other TWAIN device from .NET environment. You can use this library in your programs written in any programming languages compatible with .NET technology.</Description>
-    <PackageProjectUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET/tree/twainx</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET.git</RepositoryUrl>
     <PackageLicenseUrl></PackageLicenseUrl>
     <Copyright>Copyright © SARAFF 2011</Copyright>
@@ -20,6 +20,8 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
+    <AssemblyName>Saraff.Twain</AssemblyName>
+    <RootNamespace>Saraff.Twain</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,6 +40,13 @@
 
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>
