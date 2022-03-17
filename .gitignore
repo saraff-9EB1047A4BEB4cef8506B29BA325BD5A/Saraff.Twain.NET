@@ -1,0 +1,5 @@
+﻿################################################################################
+# Данный GITIGNORE-файл был автоматически создан Microsoft(R) Visual Studio.
+################################################################################
+
+/obj/Release/netstandard2.0/Saraff.TwainX.GeneratedMSBuildEditorConfig.editorconfig
