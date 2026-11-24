@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 #if TWAINX
@@ -162,40 +162,40 @@ namespace Saraff.Twain {
                         return;
                     }
 
-                    IntPtr _hMem = _Memory.Alloc((int)_memBufSize.Preferred);
-                    if(_hMem == IntPtr.Zero) {
-                        throw new TwainException("Error allocating memory. Ошибка выделения памяти.");
-                    }
-                    try {
-                        TwMemory _mem = new TwMemory {
-                            Flags = TwMF.AppOwns | TwMF.Pointer,
-                            Length = _memBufSize.Preferred,
-                            TheMem = _Memory.Lock(_hMem)
-                        };
+                    using(TwainDsmBuffer _hMem = TwainDsmBuffer.Alloc((int)_memBufSize.Preferred)) {
+                        if(_hMem.IsInvalid) {
+                            throw new TwainException("Error allocating memory. Ошибка выделения памяти.");
+                        }
+                        try {
+                            TwMemory _mem = new TwMemory {
+                                Flags = TwMF.AppOwns | TwMF.Pointer,
+                                Length = _memBufSize.Preferred,
+                                TheMem = _Memory.Lock(_hMem.Handle)
+                            };
 
-                        do {
-                            TwImageMemXfer _memXferBuf = new TwImageMemXfer { Memory = _mem };
-                            _Memory.ZeroMemory(_memXferBuf.Memory.TheMem, (IntPtr)_memXferBuf.Memory.Length);
+                            do {
+                                TwImageMemXfer _memXferBuf = new TwImageMemXfer { Memory = _mem };
+                                _Memory.ZeroMemory(_memXferBuf.Memory.TheMem, (IntPtr)_memXferBuf.Memory.Length);
 
-                            TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Image, isMemFile ? TwDAT.ImageMemFileXfer : TwDAT.ImageMemXfer, TwMSG.Get, ref _memXferBuf);
-                            if(_rc != TwRC.Success && _rc != TwRC.XferDone) {
-                                TwCC _cc = this._GetTwainStatus();
-                                this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.EndXfer, ref _pxfr);
-                                throw new TwainException(_cc, _rc);
-                            }
-                            if(this._OnMemXfer(new MemXferEventArgs(_info, ImageMemXfer.Create(_memXferBuf)))) {
-                                return;
-                            }
-                            if(_rc == TwRC.XferDone) {
-                                if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo, this._GetExtImageInfo))) {
+                                TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Image, isMemFile ? TwDAT.ImageMemFileXfer : TwDAT.ImageMemXfer, TwMSG.Get, ref _memXferBuf);
+                                if(_rc != TwRC.Success && _rc != TwRC.XferDone) {
+                                    TwCC _cc = this._GetTwainStatus();
+                                    this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.EndXfer, ref _pxfr);
+                                    throw new TwainException(_cc, _rc);
+                                }
+                                if(this._OnMemXfer(new MemXferEventArgs(_info, ImageMemXfer.Create(_memXferBuf)))) {
                                     return;
                                 }
-                                break;
-                            }
-                        } while(true);
-                    } finally {
-                        _Memory.Unlock(_hMem);
-                        _Memory.Free(_hMem);
+                                if(_rc == TwRC.XferDone) {
+                                    if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo, this._GetExtImageInfo))) {
+                                        return;
+                                    }
+                                    break;
+                                }
+                            } while(true);
+                        } finally {
+                            _Memory.Unlock(_hMem.Handle);
+                        }
                     }
                     for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.EndXfer, ref _pxfr); _rc != TwRC.Success;) {
                         throw new TwainException(this._GetTwainStatus(), _rc);

@@ -1,4 +1,4 @@
-#if TWAINX
+﻿#if TWAINX
 namespace Saraff.TwainX {
 
     public sealed partial class TwainX {

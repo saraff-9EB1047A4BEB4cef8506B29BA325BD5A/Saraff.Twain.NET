@@ -66,6 +66,7 @@
     <Compile Include="Shared\Tiff.cs" />
     <Compile Include="Shared\TwainCapabilities.cs" />
     <Compile Include="Shared\TwainDefs.cs" />
+    <Compile Include="Shared\TwainDsmBuffer.cs" />
     <Compile Include="Shared\TwainEventDispatcher.cs" />
     <Compile Include="Shared\TwainHGlobalBuffer.cs" />
     <Compile Include="Shared\TwainException.cs" />

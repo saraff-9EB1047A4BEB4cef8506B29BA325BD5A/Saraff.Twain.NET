@@ -904,17 +904,15 @@ namespace Saraff.Twain {
                     if(_rc != TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(), _rc);
                     }
-                    try {
+                    using(TwainDsmBuffer _buffer = TwainDsmBuffer.FromPointer(_data.hData)) {
                         byte[] _value = new byte[_data.InfoLength];
-                        IntPtr _ptr = _Memory.Lock(_data.hData);
+                        IntPtr _ptr = _Memory.Lock(_buffer.Handle);
                         try {
                             Marshal.Copy(_ptr, _value, 0, _value.Length);
                         } finally {
-                            _Memory.Unlock(_data.hData);
+                            _Memory.Unlock(_buffer.Handle);
                         }
                         return _value;
-                    } finally {
-                        _Memory.Free(_data.hData);
                     }
                 } else {
                     throw new TwainException("Источник данных не открыт.");
@@ -922,26 +920,24 @@ namespace Saraff.Twain {
             }
             set {
                 if(this._session.IsDsOpen) {
-                    TwCustomDSData _data = new TwCustomDSData {
-                        InfoLength = (uint)value.Length,
-                        hData = _Memory.Alloc(value.Length)
-                    };
-                    if(_data.hData == IntPtr.Zero) {
-                        throw new TwainException("Error allocating memory.");
-                    }
-                    try {
-                        IntPtr _ptr = _Memory.Lock(_data.hData);
+                    using(TwainDsmBuffer _buffer = TwainDsmBuffer.Alloc(value.Length)) {
+                        if(_buffer.IsInvalid) {
+                            throw new TwainException("Error allocating memory.");
+                        }
+                        TwCustomDSData _data = new TwCustomDSData {
+                            InfoLength = (uint)value.Length,
+                            hData = _buffer.Handle
+                        };
+                        IntPtr _ptr = _Memory.Lock(_buffer.Handle);
                         try {
                             Marshal.Copy(value, 0, _ptr, value.Length);
                         } finally {
-                            _Memory.Unlock(_data.hData);
+                            _Memory.Unlock(_buffer.Handle);
                         }
                         TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.CustomDSData, TwMSG.Set, ref _data);
                         if(_rc != TwRC.Success) {
                             throw new TwainException(this._GetTwainStatus(), _rc);
                         }
-                    } finally {
-                        _Memory.Free(_data.hData);
                     }
                 } else {
                     throw new TwainException("Источник данных не открыт.");

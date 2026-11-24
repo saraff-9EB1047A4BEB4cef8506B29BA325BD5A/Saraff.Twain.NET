@@ -119,6 +119,17 @@ public sealed class InternalTypesTests
     }
 
     [Fact]
+    public void DsmBuffer_AllocAndDispose() {
+        using var buffer = TwainDsmBuffer.Alloc(4);
+
+        Assert.False(buffer.IsInvalid);
+
+        buffer.Dispose();
+
+        Assert.True(buffer.IsInvalid);
+    }
+
+    [Fact]
     public void HGlobalBuffer_AllocAndFree() {
         using var buffer = TwainHGlobalBuffer.Alloc(4);
 
