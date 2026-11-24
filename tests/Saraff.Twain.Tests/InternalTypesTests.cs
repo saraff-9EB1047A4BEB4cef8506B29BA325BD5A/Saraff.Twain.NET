@@ -61,6 +61,27 @@ public sealed class InternalTypesTests
     }
 
     [Fact]
+    public void TwTypeHelper_MapsShortStringsToSmallestCapacity() {
+        Assert.Equal(TwType.Str32, TwTypeHelper.TypeOf("abc"));
+        Assert.Equal(TwType.Str64, TwTypeHelper.TypeOf(new string('x', 33)));
+        Assert.Equal(TwType.Str128, TwTypeHelper.TypeOf(new string('x', 65)));
+        Assert.Equal(TwType.Str255, TwTypeHelper.TypeOf(new string('x', 129)));
+        Assert.Equal(TwType.Uni512, TwTypeHelper.TypeOf(new string('x', 256)));
+        Assert.Equal(TwType.Str1024, TwTypeHelper.TypeOf(new string('x', 513)));
+    }
+
+    [Fact]
+    public void TwTypeHelper_RejectsTooLongStrings() {
+        Assert.Throws<KeyNotFoundException>(() => TwTypeHelper.TypeOf(new string('x', 1025)));
+    }
+
+    [Fact]
+    public void TwTypeHelper_RejectsNull() {
+        Assert.Throws<ArgumentNullException>(() => TwTypeHelper.TypeOf((object)null));
+        Assert.Throws<ArgumentNullException>(() => TwTypeHelper.TypeOf((Type)null));
+    }
+
+    [Fact]
     public void TwTypeHelper_ReturnsTypeSizes() {
         Assert.Equal(4, TwTypeHelper.SizeOf(TwType.Int32));
         Assert.Equal(4, TwTypeHelper.SizeOf(TwType.Fix32));
@@ -92,6 +113,14 @@ public sealed class InternalTypesTests
         using var capability = new TwCapability(TwCap.Brightness, "abc", TwType.Str32);
 
         Assert.Equal("abc", capability.GetValue());
+    }
+
+    [Fact]
+    public void Dispose_IsIdempotent() {
+        var twain = new Twain32();
+
+        twain.Dispose();
+        twain.Dispose();
     }
 
     [Fact]

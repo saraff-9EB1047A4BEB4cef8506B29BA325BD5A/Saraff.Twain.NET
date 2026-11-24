@@ -36,9 +36,9 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.ComponentModel;
-using System.Reflection;
 using System.Drawing;
 using System.Diagnostics;
+using System.Reflection;
 using System.IO;
 
 namespace Saraff.Twain {
@@ -71,6 +71,7 @@ namespace Saraff.Twain {
         private CallBackProc _callbackProc;
         private TwainCapabilities _capabilities;
         private int _threadId;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Twain32"/> class.
@@ -108,26 +109,33 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
         protected override void Dispose(bool disposing) {
-            try {
-                if(disposing) {
-                    try {
-                        this.CloseDSM();
-                    } finally {
-                        switch(_Platform.Platform) {
-                            case PlatformID.Unix:
-                            case PlatformID.MacOSX:
-                                break;
-                            default:
-                                this._filter.Dispose();
-                                break;
+            if(disposing && !this._disposed) {
+                this._disposed = true;
+                try {
+                    if(this._threadId == 0 || this._threadId == Environment.CurrentManagedThreadId) {
+                        try {
+                            this.CloseDSM();
+                        } finally {
+                            switch(_Platform.Platform) {
+                                case PlatformID.Unix:
+                                case PlatformID.MacOSX:
+                                    break;
+                                default:
+                                    this._filter.Dispose();
+                                    break;
+                            }
+                            this._UnloadDSM();
                         }
-                        this._UnloadDSM();
-                        if(this._components != null) {
-                            this._components.Dispose();
-                        }
+                    } else {
+                        Trace.TraceWarning("Saraff.Twain: Dispose was called from a thread other than the TWAIN thread. Native DSM resources are not released.");
                     }
+                } finally {
+                    if(this._components != null) {
+                        this._components.Dispose();
+                    }
+                    base.Dispose(disposing);
                 }
-            } finally {
+            } else {
                 base.Dispose(disposing);
             }
         }
@@ -2008,10 +2016,10 @@ namespace Saraff.Twain {
             /// <param name="ptr">Pointer to DSM_Entry.<para xml:lang="ru">Указатель на DSM_Entry.</para></param>
             private _DsmEntry(IntPtr ptr) {
                 if(ptr != IntPtr.Zero) {
-                    MethodInfo _createDelegate = typeof(_DsmEntry).GetMethod("CreateDelegate", BindingFlags.Static | BindingFlags.NonPublic);
-                    foreach(PropertyInfo _prop in typeof(_DsmEntry).GetProperties()) {
-                        _prop.SetValue(this, _createDelegate.MakeGenericMethod(_prop.PropertyType).Invoke(this, new object[] { ptr }), null);
-                    }
+                    this.DsmParent = _DsmEntry.CreateDelegate<_DSMparent>(ptr);
+                    this.DsmRaw = _DsmEntry.CreateDelegate<_DSMraw>(ptr);
+                    this.DSImageXfer = _DsmEntry.CreateDelegate<_DSixfer>(ptr);
+                    this.DsRaw = _DsmEntry.CreateDelegate<_DSraw>(ptr);
                     return;
                 }
                 switch(_Platform.Platform) {
