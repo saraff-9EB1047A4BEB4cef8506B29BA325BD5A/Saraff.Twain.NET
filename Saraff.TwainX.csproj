@@ -2,9 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>Saraff.Twain</PackageId>
+    <PackageId>Saraff.TwainX</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Company>SARAFF SOFTWARE</Company>
-    <Product>Saraff.Twain</Product>
+    <Product>Saraff.TwainX</Product>
+    <Title>Saraff.TwainX</Title>
     <AssemblyVersion>1.0.33.756</AssemblyVersion>
     <FileVersion>1.0.33.756</FileVersion>
     <Authors>Copyright © SARAFF 2011</Authors>
@@ -12,18 +14,25 @@
     <Description>Allows you to control work of flatbed scanner, web and digital camera and any other TWAIN device from .NET environment. You can use this library in your programs written in any programming languages compatible with .NET technology.</Description>
     <PackageProjectUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET.git</RepositoryUrl>
-    <PackageLicenseUrl></PackageLicenseUrl>
     <Copyright>Copyright © SARAFF 2011</Copyright>
-    <PackageTags>TWAIN TWAIN.NET C# .NET FREE Open Source OSS Toolkit VB VB.NET Visual Basic WPF x64 scan .NETCore .NETStandard</PackageTags>
+    <PackageTags>TWAIN TWAIN.NET TWAINX C# .NET FREE Open Source OSS Toolkit VB VB.NET Visual Basic x64 scan .NETCore .NETStandard</PackageTags>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>sign.snk</AssemblyOriginatorKeyFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
-    <AssemblyName>Saraff.Twain</AssemblyName>
-    <RootNamespace>Saraff.Twain</RootNamespace>
+    <AssemblyName>Saraff.TwainX</AssemblyName>
+    <RootNamespace>Saraff.TwainX</RootNamespace>
+    <DefineConstants>$(DefineConstants);TWAINX</DefineConstants>
     <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <None Remove="tests/**/*" />
+    <EmbeddedResource Remove="tests/**/*" />
+    <None Update="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Remove="COPYING.LESSER.txt" />
