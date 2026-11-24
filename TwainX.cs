@@ -52,14 +52,14 @@ namespace Saraff.TwainX {
     [DebuggerDisplay("ProductName = {_appid.ProductName.Value}, Version = {_appid.Version.Info}, DS = {_srcds.ProductName}")]
     [DefaultEvent("AcquireCompleted")]
     [DefaultProperty("AppProductName")]
-    public sealed class TwainX : Component {
+    public sealed partial class TwainX : Component {
         private _DsmEntry _dsmEntry;
         private IntPtr _hTwainDll; //дескриптор модуля twain_32.dll
         private IContainer _components = new Container();
         private TwIdentity _appid; //идентификатор приложения.
         private TwIdentity _srcds; //идентификатор текущего источника данных.
         private TwIdentity[] _sources = new TwIdentity[0]; //массив доступных источников данных.
-        private TwainStateFlag _twainState;
+
         private CallBackProc _callbackProc;
         private TwainCapabilities _capabilities;
         private int _threadId;
@@ -120,7 +120,7 @@ namespace Saraff.TwainX {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool OpenDSM() {
             this._CheckThread();
-            if((this._TwainState & TwainStateFlag.DSMOpen) == 0) {
+            if(!this._session.IsDsmOpen) {
 
                 #region Загружаем DSM, получаем адрес точки входа DSM_Entry и приводим ее к соответствующим делегатам
 
@@ -173,7 +173,7 @@ namespace Saraff.TwainX {
                 for(TwRC _rc = this._dsmEntry.DsmParent(this._AppId, IntPtr.Zero, TwDG.Control, TwDAT.Parent, TwMSG.OpenDSM, ref _hwnd); _rc != TwRC.Success;) {
                     throw new TwainException(this._GetTwainStatus(), _rc);
                 }
-                this._TwainState |= TwainStateFlag.DSMOpen;
+                this._session.OpenDsm(); this._SyncTwainState();
 
                 if(this.IsTwain2Supported) {
                     TwEntryPoint _entry = new TwEntryPoint();
@@ -187,7 +187,7 @@ namespace Saraff.TwainX {
 
                 this._GetAllSorces();
             }
-            return (this._TwainState & TwainStateFlag.DSMOpen) != 0;
+            return this._session.IsDsmOpen;
         }
 
         /// <summary>
@@ -199,10 +199,10 @@ namespace Saraff.TwainX {
             if(_Platform.Platform == PlatformID.Unix) {
                 throw new NotSupportedException("DG_CONTROL / DAT_IDENTITY / MSG_USERSELECT is not available on Linux.");
             }
-            if((this._TwainState & TwainStateFlag.DSOpen) == 0) {
-                if((this._TwainState & TwainStateFlag.DSMOpen) == 0) {
+            if(!this._session.IsDsOpen) {
+                if(!this._session.IsDsmOpen) {
                     this.OpenDSM();
-                    if((this._TwainState & TwainStateFlag.DSMOpen) == 0) {
+                    if(!this._session.IsDsmOpen) {
                         return false;
                     }
                 }
@@ -225,11 +225,11 @@ namespace Saraff.TwainX {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool OpenDataSource() {
             this._CheckThread();
-            if((this._TwainState & TwainStateFlag.DSMOpen) != 0 && (this._TwainState & TwainStateFlag.DSOpen) == 0) {
+            if(this._session.IsDsmOpen && !this._session.IsDsOpen) {
                 for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.Identity, TwMSG.OpenDS, ref this._srcds); _rc != TwRC.Success;) {
                     throw new TwainException(this._GetTwainStatus(), _rc);
                 }
-                this._TwainState |= TwainStateFlag.DSOpen;
+                this._session.OpenDs(); this._SyncTwainState();
 
                 switch(_Platform.Platform) {
                     case PlatformID.Unix:
@@ -246,7 +246,7 @@ namespace Saraff.TwainX {
                 }
 
             }
-            return (this._TwainState & TwainStateFlag.DSOpen) != 0;
+            return this._session.IsDsOpen;
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace Saraff.TwainX {
         /// </summary>
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         private bool _EnableDataSource() {
-            if((this._TwainState & TwainStateFlag.DSOpen) != 0 && (this._TwainState & TwainStateFlag.DSEnabled) == 0) {
+            if(this._session.IsDsOpen && !this._session.IsDsEnabled) {
                 TwUserInterface _guif = new TwUserInterface() {
                     ShowUI = this.ShowUI,
                     ModalUI = this.ModalUI,
@@ -277,13 +277,10 @@ namespace Saraff.TwainX {
                     throw new TwainException(this._GetTwainStatus(), _rc);
                 }
                 this.ModalUI = _guif.ModalUI;
-                if((this._TwainState & TwainStateFlag.DSReady) != 0) {
-                    this._TwainState &= ~TwainStateFlag.DSReady;
-                } else {
-                    this._TwainState |= TwainStateFlag.DSEnabled;
-                }
+                this._session.EnableDs();
+                this._SyncTwainState();
             }
-            return (this._TwainState & TwainStateFlag.DSEnabled) != 0;
+            return this._session.IsDsEnabled;
         }
 
         /// <summary>
@@ -321,7 +318,7 @@ namespace Saraff.TwainX {
         /// </summary>
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         private bool _DisableDataSource() {
-            if((this._TwainState & TwainStateFlag.DSEnabled) != 0) {
+            if(this._session.IsDsEnabled) {
                 try {
                     TwUserInterface _guif = new TwUserInterface() {
                         ParentHand = IntPtr.Zero,
@@ -331,9 +328,9 @@ namespace Saraff.TwainX {
                         throw new TwainException(this._GetTwainStatus(), _rc);
                     }
                 } finally {
-                    this._TwainState &= ~TwainStateFlag.DSEnabled;
+                    this._session.DisableDs(); this._SyncTwainState();
                 }
-                return (this._TwainState & TwainStateFlag.DSEnabled) == 0;
+                return !this._session.IsDsEnabled;
             }
             return false;
         }
@@ -344,12 +341,12 @@ namespace Saraff.TwainX {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool CloseDataSource() {
             this._CheckThread();
-            if((this._TwainState & TwainStateFlag.DSOpen) != 0 && (this._TwainState & TwainStateFlag.DSEnabled) == 0) {
+            if(this._session.IsDsOpen && !this._session.IsDsEnabled) {
                 for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.Identity, TwMSG.CloseDS, ref this._srcds); _rc != TwRC.Success;) {
                     throw new TwainException(this._GetTwainStatus(), _rc);
                 }
-                this._TwainState &= ~TwainStateFlag.DSOpen;
-                return (this._TwainState & TwainStateFlag.DSOpen) == 0;
+                this._session.CloseDs(); this._SyncTwainState();
+                return !this._session.IsDsOpen;
             }
             return false;
         }
@@ -360,20 +357,20 @@ namespace Saraff.TwainX {
         /// <returns>Истина, если операция прошла удачно; иначе, лож.</returns>
         public bool CloseDSM() {
             this._CheckThread();
-            if((this._TwainState & TwainStateFlag.DSEnabled) != 0) {
+            if(this._session.IsDsEnabled) {
                 this._DisableDataSource();
             }
-            if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+            if(this._session.IsDsOpen) {
                 this.CloseDataSource();
             }
-            if((this._TwainState & TwainStateFlag.DSMOpen) != 0 && (this._TwainState & TwainStateFlag.DSOpen) == 0) {
+            if(this._session.IsDsmOpen && !this._session.IsDsOpen) {
                 var _hwnd = IntPtr.Zero;
                 for(TwRC _rc = this._dsmEntry.DsmParent(this._AppId, IntPtr.Zero, TwDG.Control, TwDAT.Parent, TwMSG.CloseDSM, ref _hwnd); _rc != TwRC.Success;) {
                     throw new TwainException(this._GetTwainStatus(), _rc);
                 }
-                this._TwainState &= ~TwainStateFlag.DSMOpen;
+                this._session.CloseDsm(); this._SyncTwainState();
                 this._UnloadDSM();
-                return (this._TwainState & TwainStateFlag.DSMOpen) == 0;
+                return !this._session.IsDsmOpen;
             }
             return false;
         }
@@ -412,7 +409,7 @@ namespace Saraff.TwainX {
         [Browsable(false)]
         private bool IsTwain2Supported {
             get {
-                if((this._TwainState & TwainStateFlag.DSMOpen) == 0) {
+                if(!this._session.IsDsmOpen) {
                     throw new InvalidOperationException("DSM is not open.");
                 }
                 return (this._AppId.SupportedGroups & TwDG.DSM2) != 0;
@@ -428,7 +425,7 @@ namespace Saraff.TwainX {
         [ReadOnly(true)]
         public int SourceIndex {
             get {
-                if((this._TwainState & TwainStateFlag.DSMOpen) != 0) {
+                if(this._session.IsDsmOpen) {
                     int i;
                     for(i = 0; i < this._sources.Length; i++) {
                         if(this._sources[i].Equals(this._srcds)) {
@@ -441,8 +438,8 @@ namespace Saraff.TwainX {
                 }
             }
             set {
-                if((this._TwainState & TwainStateFlag.DSMOpen) != 0) {
-                    if((this._TwainState & TwainStateFlag.DSOpen) == 0) {
+                if(this._session.IsDsmOpen) {
+                    if(!this._session.IsDsOpen) {
                         this._srcds = this._sources[value];
                     } else {
                         throw new TwainException("Источник данных уже открыт.");
@@ -485,8 +482,8 @@ namespace Saraff.TwainX {
         /// </summary>
         /// <param name="index">Индекс.</param>
         public void SetDefaultSource(int index) {
-            if((this._TwainState & TwainStateFlag.DSMOpen) != 0) {
-                if((this._TwainState & TwainStateFlag.DSOpen) == 0) {
+            if(this._session.IsDsmOpen) {
+                if(!this._session.IsDsOpen) {
                     TwIdentity _src = this._sources[index];
                     TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.Identity, TwMSG.Set, ref _src);
                     if(_rc != TwRC.Success) {
@@ -510,7 +507,7 @@ namespace Saraff.TwainX {
         /// DSM не открыт.
         /// </exception>
         public int GetDefaultSource() {
-            if((this._TwainState & TwainStateFlag.DSMOpen) != 0) {
+            if(this._session.IsDsmOpen) {
                 TwIdentity _identity = new TwIdentity();
                 for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.Identity, TwMSG.GetDefault, ref _identity); _rc != TwRC.Success;) {
                     throw new TwainException(this._GetTwainStatus(), _rc);
@@ -704,7 +701,7 @@ namespace Saraff.TwainX {
         /// <returns>Набор флагов.</returns>
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public TwQC IsCapSupported(TwCap capability) {
-            if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+            if(this._session.IsDsOpen) {
                 TwCapability _cap = new TwCapability(capability);
                 try {
                     TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.Capability, TwMSG.QuerySupport, ref _cap);
@@ -729,7 +726,7 @@ namespace Saraff.TwainX {
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         private object _GetCapCore(TwCap capability, TwMSG msg) {
             this._CheckThread();
-            if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+            if(this._session.IsDsOpen) {
                 TwCapability _cap = new TwCapability(capability);
                 try {
                     TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.Capability, msg, ref _cap);
@@ -793,7 +790,7 @@ namespace Saraff.TwainX {
         /// <param name="capability">Значение перечисления <see cref="TwCap"/>.</param>
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public void ResetCap(TwCap capability) {
-            if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+            if(this._session.IsDsOpen) {
                 TwCapability _cap = new TwCapability(capability);
                 try {
                     TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.Capability, TwMSG.Reset, ref _cap);
@@ -813,7 +810,7 @@ namespace Saraff.TwainX {
         /// </summary>
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         public void ResetAllCap() {
-            if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+            if(this._session.IsDsOpen) {
                 TwCapability _cap = new TwCapability(TwCap.SupportedCaps);
                 try {
                     TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.Capability, TwMSG.ResetAll, ref _cap);
@@ -830,7 +827,7 @@ namespace Saraff.TwainX {
 
         private void _SetCapCore(TwCapability cap, TwMSG msg) {
             this._CheckThread();
-            if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+            if(this._session.IsDsOpen) {
                 try {
                     TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.Capability, msg, ref cap);
                     if(_rc != TwRC.Success) {
@@ -1162,7 +1159,7 @@ namespace Saraff.TwainX {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public byte[] CustomDSData {
             get {
-                if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+                if(this._session.IsDsOpen) {
                     TwCustomDSData _data = new TwCustomDSData { };
                     TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.CustomDSData, TwMSG.Get, ref _data);
                     if(_rc != TwRC.Success) {
@@ -1185,7 +1182,7 @@ namespace Saraff.TwainX {
                 }
             }
             set {
-                if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
+                if(this._session.IsDsOpen) {
                     TwCustomDSData _data = new TwCustomDSData {
                         InfoLength = (uint)value.Length,
                         hData = _Memory.Alloc(value.Length)
@@ -1233,8 +1230,8 @@ namespace Saraff.TwainX {
                     return TwRC.Failure;
                 }
 
-                if((this._TwainState & TwainStateFlag.DSEnabled) == 0) {
-                    this._TwainState |= TwainStateFlag.DSEnabled | TwainStateFlag.DSReady;
+                if(!this._session.IsDsEnabled) {
+                    this._session.SetEnabledAndReady(); this._SyncTwainState();
                 }
 
                 this._TwCallbackProcCore(msg, isCloseReq => {
@@ -1385,18 +1382,6 @@ namespace Saraff.TwainX {
         /// <summary>
         /// Возвращает или устанавливает значение флагов состояния.
         /// </summary>
-        private TwainStateFlag _TwainState {
-            get {
-                return this._twainState;
-            }
-            set {
-                if(this._twainState != value) {
-                    this._twainState = value;
-                    this.TwainStateChanged?.Invoke(this, new TwainStateEventArgs(this._twainState));
-                }
-            }
-        }
-
         /// <summary>
         /// Возвращает код состояния TWAIN.
         /// </summary>
