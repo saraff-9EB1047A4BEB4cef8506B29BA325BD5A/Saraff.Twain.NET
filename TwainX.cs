@@ -59,6 +59,7 @@ namespace Saraff.TwainX {
         private TwIdentity _appid; //идентификатор приложения.
         private TwIdentity _srcds; //идентификатор текущего источника данных.
         private TwIdentity[] _sources = new TwIdentity[0]; //массив доступных источников данных.
+        private readonly IImageSink<_Image> _imageSink = NullImageSink<_Image>.Instance;
 
         private CallBackProc _callbackProc;
         private TwainCapabilities _capabilities;
@@ -177,12 +178,6 @@ namespace Saraff.TwainX {
                     }
                     break;
             }
-        }
-
-        private void _OnTransferStarting() {
-        }
-
-        private void _OnImageReceived(_Image image) {
         }
 
         /// <summary>

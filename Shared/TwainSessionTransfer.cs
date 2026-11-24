@@ -22,7 +22,7 @@ namespace Saraff.Twain {
             IntPtr _hBitmap = IntPtr.Zero;
             TwPendingXfers _pxfr = new TwPendingXfers();
             try {
-                this._OnTransferStarting();
+                this._imageSink.Begin();
 
                 do {
                     _pxfr.Count = 0;
@@ -53,7 +53,7 @@ namespace Saraff.Twain {
                             }
                             _Image _img = _handler.PtrToStream(_pBitmap, this.GetService(typeof(IStreamProvider)) as IStreamProvider);
 
-                            this._OnImageReceived(_img);
+                            this._imageSink.Add(_img);
                             if(this._OnEndXfer(new EndXferEventArgs(_img))) {
                                 return;
                             }
@@ -86,7 +86,7 @@ namespace Saraff.Twain {
 
             TwPendingXfers _pxfr = new TwPendingXfers();
             try {
-                this._OnTransferStarting();
+                this._imageSink.Begin();
                 do {
                     _pxfr.Count = 0;
 
@@ -137,7 +137,7 @@ namespace Saraff.Twain {
 
             TwPendingXfers _pxfr = new TwPendingXfers();
             try {
-                this._OnTransferStarting();
+                this._imageSink.Begin();
                 do {
                     _pxfr.Count = 0;
                     ImageInfo _info = this._GetImageInfo();
