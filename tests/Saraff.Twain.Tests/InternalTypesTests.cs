@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using Saraff.Twain;
@@ -114,6 +115,28 @@ public sealed class InternalTypesTests
         using var capability = new TwCapability(TwCap.Brightness, "abc", TwType.Str32);
 
         Assert.Equal("abc", capability.GetValue());
+    }
+
+    [Fact]
+    public void CollectionImageSink_ClearsAndAddsImages() {
+        var images = new List<int> { 9 };
+        IImageSink<int> sink = new CollectionImageSink<int>(images);
+
+        sink.Begin();
+        Assert.Empty(images);
+
+        sink.Add(1);
+        sink.Add(2);
+
+        Assert.Equal(new[] { 1, 2 }, images);
+    }
+
+    [Fact]
+    public void NullImageSink_IgnoresImages() {
+        IImageSink<int> sink = NullImageSink<int>.Instance;
+
+        sink.Begin();
+        sink.Add(1);
     }
 
     [Fact]

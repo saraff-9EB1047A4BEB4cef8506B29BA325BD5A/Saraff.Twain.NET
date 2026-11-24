@@ -66,6 +66,7 @@ namespace Saraff.Twain {
         private TwIdentity[] _sources = new TwIdentity[0]; //an array of available data sources / массив доступных источников данных.
         private ApplicationContext _context = null; //application context. used if there is no main message processing cycle / контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
         private Collection<_Image> _images = new Collection<_Image>();
+        private readonly IImageSink<_Image> _imageSink;
 
         private bool _isTwain2Enable = IntPtr.Size != 4 || _Platform.Platform == PlatformID.Unix || _Platform.Platform == PlatformID.MacOSX;
         private CallBackProc _callbackProc;
@@ -79,6 +80,7 @@ namespace Saraff.Twain {
         public Twain32() {
             this._srcds = new TwIdentity();
             this._srcds.Id = 0;
+            this._imageSink = new CollectionImageSink<_Image>(this._images);
             this._filter = new _MessageFilter(this);
             this.ShowUI = true;
             this.DisableAfterAcquire = true;
@@ -209,14 +211,6 @@ namespace Saraff.Twain {
                     }
                     break;
             }
-        }
-
-        private void _OnTransferStarting() {
-            this._images.Clear();
-        }
-
-        private void _OnImageReceived(_Image image) {
-            this._images.Add(image);
         }
 
         /// <summary>
