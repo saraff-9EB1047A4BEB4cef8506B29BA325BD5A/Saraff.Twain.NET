@@ -4,7 +4,11 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#if TWAINX
+namespace Saraff.TwainX {
+#else
 namespace Saraff.Twain {
+#endif
 
     internal sealed class Pict : _ImageHandler {
 

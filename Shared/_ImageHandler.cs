@@ -4,12 +4,16 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#if TWAINX
+namespace Saraff.TwainX {
+#else
 namespace Saraff.Twain {
+#endif
 
     /// <summary>
     /// Base class to processing of a acquired image.
     /// </summary>
-    /// <seealso cref="Saraff.Twain.IImageHandler" />
+    /// <seealso cref="IImageHandler" />
     internal abstract class _ImageHandler : IImageHandler {
         private Dictionary<string, object> _state = null;
         private const string _ImagePointer = "ImagePointer";

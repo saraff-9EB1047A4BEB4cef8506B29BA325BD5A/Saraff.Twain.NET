@@ -47,6 +47,10 @@ namespace Saraff.Twain {
     /// Provides the ability to work with TWAIN sources.
     /// <para xml:lang="ru">Обеспечивает возможность работы с TWAIN-источниками.</para>
     /// </summary>
+    /// <remarks>
+    /// All TWAIN session operations must be performed on the same thread, normally an STA UI thread.
+    /// <para xml:lang="ru">Все операции сеанса TWAIN должны выполняться в одном потоке, как правило в STA-потоке пользовательского интерфейса.</para>
+    /// </remarks>
     [ToolboxBitmap(typeof(Twain32), "Resources.scanner.bmp")]
     [DebuggerDisplay("ProductName = {_appid.ProductName.Value}, Version = {_appid.Version.Info}, DS = {_srcds.ProductName}")]
     [DefaultEvent("AcquireCompleted")]
@@ -63,9 +67,10 @@ namespace Saraff.Twain {
         private ApplicationContext _context = null; //application context. used if there is no main message processing cycle / контекст приложения. используется в случае отсутствия основного цикла обработки сообщений.
         private Collection<_Image> _images = new Collection<_Image>();
         private TwainStateFlag _twainState;
-        private bool _isTwain2Enable = IntPtr.Size != 4 || Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX;
+        private bool _isTwain2Enable = IntPtr.Size != 4 || _Platform.Platform == PlatformID.Unix || _Platform.Platform == PlatformID.MacOSX;
         private CallBackProc _callbackProc;
         private TwainCapabilities _capabilities;
+        private int _threadId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Twain32"/> class.
@@ -78,7 +83,7 @@ namespace Saraff.Twain {
             this.DisableAfterAcquire = true;
             this.Palette = new TwainPalette(this);
             this._callbackProc = this._TwCallbackProc;
-            switch(Environment.OSVersion.Platform) {
+            switch(_Platform.Platform) {
                 case PlatformID.Unix:
                 case PlatformID.MacOSX:
                     break;
@@ -103,22 +108,28 @@ namespace Saraff.Twain {
         /// </summary>
         /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
         protected override void Dispose(bool disposing) {
-            if(disposing) {
-                this.CloseDSM();
-                switch(Environment.OSVersion.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        break;
-                    default:
-                        this._filter.Dispose();
-                        break;
+            try {
+                if(disposing) {
+                    try {
+                        this.CloseDSM();
+                    } finally {
+                        switch(_Platform.Platform) {
+                            case PlatformID.Unix:
+                            case PlatformID.MacOSX:
+                                break;
+                            default:
+                                this._filter.Dispose();
+                                break;
+                        }
+                        this._UnloadDSM();
+                        if(this._components != null) {
+                            this._components.Dispose();
+                        }
+                    }
                 }
-                this._UnloadDSM();
-                if(this._components != null) {
-                    this._components.Dispose();
-                }
+            } finally {
+                base.Dispose(disposing);
             }
-            base.Dispose(disposing);
         }
 
         /// <summary>
@@ -127,14 +138,29 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
         public bool OpenDSM() {
+            this._CheckThread();
             if((this._TwainState & TwainStateFlag.DSMOpen) == 0) {
 
                 #region We load DSM, we receive the address of the entry point DSM_Entry and we bring it to the appropriate delegates / Загружаем DSM, получаем адрес точки входа DSM_Entry и приводим ее к соответствующим делегатам
 
-                switch(Environment.OSVersion.Platform) {
+                switch(_Platform.Platform) {
                     case PlatformID.Unix:
                     case PlatformID.MacOSX:
-                        this._dsmEntry = _DsmEntry.Create(IntPtr.Zero);
+                        if(!string.IsNullOrEmpty(this.DsmPath)) {
+                            this._hTwainDll = _Platform.Load(this.DsmPath);
+                            if(this._hTwainDll == IntPtr.Zero) {
+                                throw new TwainException("Can't load DSM: " + this.DsmPath);
+                            }
+                            IntPtr _pDsmEntry = _Platform.GetProcAddr(this._hTwainDll, "DSM_Entry");
+                            if(_pDsmEntry == IntPtr.Zero) {
+                                _Platform.Unload(this._hTwainDll);
+                                this._hTwainDll = IntPtr.Zero;
+                                throw new TwainException("Can't find DSM_Entry entry point.");
+                            }
+                            this._dsmEntry = _DsmEntry.Create(_pDsmEntry);
+                        } else {
+                            this._dsmEntry = _DsmEntry.Create(IntPtr.Zero);
+                        }
                         try {
                             if(this._dsmEntry.DsmRaw == null) {
                                 throw new InvalidOperationException("Can't load DSM.");
@@ -144,8 +170,12 @@ namespace Saraff.Twain {
                         }
                         break;
                     default:
-                        string _twainDsm = Path.ChangeExtension(Path.Combine(Environment.SystemDirectory, "TWAINDSM"), ".dll");
-                        this._hTwainDll = _Platform.Load(File.Exists(_twainDsm) && this.IsTwain2Enable ? _twainDsm : Path.ChangeExtension(Path.Combine(Environment.SystemDirectory, "..\\twain_32"), ".dll"));
+                        string _twainDsm = this.DsmPath;
+                        if(string.IsNullOrEmpty(_twainDsm)) {
+                            _twainDsm = Path.ChangeExtension(Path.Combine(Environment.SystemDirectory, "TWAINDSM"), ".dll");
+                            _twainDsm = File.Exists(_twainDsm) && this.IsTwain2Enable ? _twainDsm : Path.ChangeExtension(Path.Combine(Environment.SystemDirectory, "..\\twain_32"), ".dll");
+                        }
+                        this._hTwainDll = _Platform.Load(_twainDsm);
                         if(this.Parent != null) {
                             this._hwnd = this.Parent.Handle;
                         }
@@ -190,7 +220,8 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
         public bool SelectSource() {
-            if(Environment.OSVersion.Platform == PlatformID.Unix) {
+            this._CheckThread();
+            if(_Platform.Platform == PlatformID.Unix) {
                 throw new NotSupportedException("DG_CONTROL / DAT_IDENTITY / MSG_USERSELECT is not available on Linux.");
             }
             if((this._TwainState & TwainStateFlag.DSOpen) == 0) {
@@ -219,13 +250,14 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
         public bool OpenDataSource() {
+            this._CheckThread();
             if((this._TwainState & TwainStateFlag.DSMOpen) != 0 && (this._TwainState & TwainStateFlag.DSOpen) == 0) {
                 for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.Identity, TwMSG.OpenDS, ref this._srcds); _rc != TwRC.Success;) {
                     throw new TwainException(this._GetTwainStatus(), _rc);
                 }
                 this._TwainState |= TwainStateFlag.DSOpen;
 
-                switch(Environment.OSVersion.Platform) {
+                switch(_Platform.Platform) {
                     case PlatformID.Unix:
                     case PlatformID.MacOSX:
                         this._RegisterCallback();
@@ -288,7 +320,7 @@ namespace Saraff.Twain {
             if(this.OpenDSM()) {
                 if(this.OpenDataSource()) {
                     if(this._EnableDataSource()) {
-                        switch(Environment.OSVersion.Platform) {
+                        switch(_Platform.Platform) {
                             case PlatformID.Unix:
                             case PlatformID.MacOSX:
                                 break;
@@ -340,6 +372,7 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
         public bool CloseDataSource() {
+            this._CheckThread();
             if((this._TwainState & TwainStateFlag.DSOpen) != 0 && (this._TwainState & TwainStateFlag.DSEnabled) == 0) {
                 this._images.Clear();
                 for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.Identity, TwMSG.CloseDS, ref this._srcds); _rc != TwRC.Success;) {
@@ -357,6 +390,7 @@ namespace Saraff.Twain {
         /// </summary>
         /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
         public bool CloseDSM() {
+            this._CheckThread();
             if((this._TwainState & TwainStateFlag.DSEnabled) != 0) {
                 this._DisableDataSource();
             }
@@ -379,6 +413,18 @@ namespace Saraff.Twain {
             if(this._hTwainDll != IntPtr.Zero) {
                 _Platform.Unload(this._hTwainDll);
                 this._hTwainDll = IntPtr.Zero;
+            }
+            this._threadId = 0;
+        }
+
+        private void _CheckThread() {
+            int _id = Environment.CurrentManagedThreadId;
+            if(this._threadId == 0) {
+                this._threadId = _id;
+                return;
+            }
+            if(this._threadId != _id) {
+                throw new InvalidOperationException("TWAIN operations must be performed on the same thread. Операции TWAIN должны выполняться в одном потоке.");
             }
         }
 
@@ -424,10 +470,10 @@ namespace Saraff.Twain {
                 if(IntPtr.Size != 4 && !value) {
                     throw new InvalidOperationException("In x64 mode only TWAIN 2.x enabled.");
                 }
-                if(Environment.OSVersion.Platform == PlatformID.Unix && !value) {
+                if(_Platform.Platform == PlatformID.Unix && !value) {
                     throw new InvalidOperationException("On UNIX platform only TWAIN 2.x enabled.");
                 }
-                if(Environment.OSVersion.Platform == PlatformID.MacOSX && !value) {
+                if(_Platform.Platform == PlatformID.MacOSX && !value) {
                     throw new InvalidOperationException("On MacOSX platform only TWAIN 2.x enabled.");
                 }
                 if(this._isTwain2Enable = value) {
@@ -635,6 +681,19 @@ namespace Saraff.Twain {
         [Description("Gets or sets a value indicating whether to display the UI of the TWAIN source. Возвращает или устанавливает значение указывающие на необходимость отображения UI TWAIN-источника.")]
         public bool ShowUI { get; set; }
 
+        /// <summary>
+        /// Gets or sets an explicit path to the TWAIN data source manager library.
+        /// <para xml:lang="ru">Возвращает или устанавливает явный путь к библиотеке менеджера источников данных TWAIN.</para>
+        /// </summary>
+        /// <remarks>
+        /// If not set, the default platform-specific location is used.
+        /// <para xml:lang="ru">Если значение не задано, используется расположение по умолчанию для текущей платформы.</para>
+        /// </remarks>
+        [Category("Behavior")]
+        [DefaultValue(null)]
+        [Description("Gets or sets an explicit path to the TWAIN data source manager library. Возвращает или устанавливает явный путь к библиотеке менеджера источников данных TWAIN.")]
+        public string DsmPath { get; set; }
+
         [Category("Behavior")]
         [DefaultValue(false)]
         public bool ModalUI { get; set; }
@@ -767,6 +826,7 @@ namespace Saraff.Twain {
         /// <returns>Depending on the value of capability, the following can be returned: type-value, array, <see cref="Twain32.Range">range</see>, <see cref="Twain32.Enumeration">transfer</see>.<para xml:lang="ru">В зависимости от значение capability, могут быть возвращены: тип-значение, массив, <see cref="Twain32.Range">диапазон</see>, <see cref="Twain32.Enumeration">перечисление</see>.</para></returns>
         /// <exception cref="TwainException">Возбуждается в случае возникновения ошибки во время операции.</exception>
         private object _GetCapCore(TwCap capability, TwMSG msg) {
+            this._CheckThread();
             if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
                 TwCapability _cap = new TwCapability(capability);
                 try {
@@ -872,6 +932,7 @@ namespace Saraff.Twain {
         }
 
         private void _SetCapCore(TwCapability cap, TwMSG msg) {
+            this._CheckThread();
             if((this._TwainState & TwainStateFlag.DSOpen) != 0) {
                 try {
                     TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.Capability, msg, ref cap);
@@ -1024,46 +1085,51 @@ namespace Saraff.Twain {
                 do {
                     _pxfr.Count = 0;
                     _hBitmap = IntPtr.Zero;
-
-                    for(TwRC _rc = this._dsmEntry.DSImageXfer(this._AppId, this._srcds, TwDG.Image, TwDAT.ImageNativeXfer, TwMSG.Get, ref _hBitmap); _rc != TwRC.XferDone;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
-                    }
-                    // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                    // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                    if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo, this._GetExtImageInfo))) {
-                        return;
-                    }
-
-                    IntPtr _pBitmap = _Memory.Lock(_hBitmap);
                     try {
-                        _Image _img = null;
-
-                        IImageHandler _handler = this.GetService(typeof(IImageHandler)) as IImageHandler;
-                        if(_handler == null) {
-                            switch(Environment.OSVersion.Platform) {
-                                case PlatformID.Unix:
-                                    _handler = new Tiff();
-                                    break;
-                                case PlatformID.MacOSX:
-                                    _handler = new Pict();
-                                    break;
-                                default:
-                                    _handler = new DibToImage();
-                                    break;
-                            }
+                        for(TwRC _rc = this._dsmEntry.DSImageXfer(this._AppId, this._srcds, TwDG.Image, TwDAT.ImageNativeXfer, TwMSG.Get, ref _hBitmap); _rc != TwRC.XferDone;) {
+                            throw new TwainException(this._GetTwainStatus(), _rc);
                         }
-                        _img = _handler.PtrToStream(_pBitmap, this.GetService(typeof(IStreamProvider)) as IStreamProvider);
-
-                        this._images.Add(_img);
-                        if(this._OnEndXfer(new EndXferEventArgs(_img))) {
+                        // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
+                        // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
+                        if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo, this._GetExtImageInfo))) {
                             return;
                         }
+
+                        IntPtr _pBitmap = _Memory.Lock(_hBitmap);
+                        try {
+                            _Image _img = null;
+
+                            IImageHandler _handler = this.GetService(typeof(IImageHandler)) as IImageHandler;
+                            if(_handler == null) {
+                                switch(_Platform.Platform) {
+                                    case PlatformID.Unix:
+                                        _handler = new Tiff();
+                                        break;
+                                    case PlatformID.MacOSX:
+                                        _handler = new Pict();
+                                        break;
+                                    default:
+                                        _handler = new DibToImage();
+                                        break;
+                                }
+                            }
+                            _img = _handler.PtrToStream(_pBitmap, this.GetService(typeof(IStreamProvider)) as IStreamProvider);
+
+                            this._images.Add(_img);
+                            if(this._OnEndXfer(new EndXferEventArgs(_img))) {
+                                return;
+                            }
+                        } finally {
+                            _Memory.Unlock(_hBitmap);
+                        }
+                        for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.EndXfer, ref _pxfr); _rc != TwRC.Success;) {
+                            throw new TwainException(this._GetTwainStatus(), _rc);
+                        }
                     } finally {
-                        _Memory.Unlock(_hBitmap);
-                        _Memory.Free(_hBitmap);
-                    }
-                    for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.EndXfer, ref _pxfr); _rc != TwRC.Success;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
+                        if(_hBitmap != IntPtr.Zero) {
+                            _Memory.Free(_hBitmap);
+                            _hBitmap = IntPtr.Zero;
+                        }
                     }
                 } while(_pxfr.Count != 0);
             } finally {
@@ -1222,11 +1288,18 @@ namespace Saraff.Twain {
                     if(_rc != TwRC.Success) {
                         throw new TwainException(this._GetTwainStatus(), _rc);
                     }
-                    byte[] _value = new byte[_data.InfoLength];
-                    Marshal.Copy(_Memory.Lock(_data.hData), _value, 0, _value.Length);
-                    _Memory.Unlock(_data.hData);
-                    _Memory.Free(_data.hData);
-                    return _value;
+                    try {
+                        byte[] _value = new byte[_data.InfoLength];
+                        IntPtr _ptr = _Memory.Lock(_data.hData);
+                        try {
+                            Marshal.Copy(_ptr, _value, 0, _value.Length);
+                        } finally {
+                            _Memory.Unlock(_data.hData);
+                        }
+                        return _value;
+                    } finally {
+                        _Memory.Free(_data.hData);
+                    }
                 } else {
                     throw new TwainException("Источник данных не открыт.");
                 }
@@ -1237,13 +1310,23 @@ namespace Saraff.Twain {
                         InfoLength = (uint)value.Length,
                         hData = _Memory.Alloc(value.Length)
                     };
-                    Marshal.Copy(value, 0, _Memory.Lock(_data.hData), value.Length);
-                    _Memory.Unlock(_data.hData);
-                    TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.CustomDSData, TwMSG.Set, ref _data);
-                    if(_rc != TwRC.Success) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
+                    if(_data.hData == IntPtr.Zero) {
+                        throw new TwainException("Error allocating memory.");
                     }
-                    _Memory.Free(_data.hData);
+                    try {
+                        IntPtr _ptr = _Memory.Lock(_data.hData);
+                        try {
+                            Marshal.Copy(value, 0, _ptr, value.Length);
+                        } finally {
+                            _Memory.Unlock(_data.hData);
+                        }
+                        TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.CustomDSData, TwMSG.Set, ref _data);
+                        if(_rc != TwRC.Success) {
+                            throw new TwainException(this._GetTwainStatus(), _rc);
+                        }
+                    } finally {
+                        _Memory.Free(_data.hData);
+                    }
                 } else {
                     throw new TwainException("Источник данных не открыт.");
                 }
@@ -1924,7 +2007,14 @@ namespace Saraff.Twain {
             /// </summary>
             /// <param name="ptr">Pointer to DSM_Entry.<para xml:lang="ru">Указатель на DSM_Entry.</para></param>
             private _DsmEntry(IntPtr ptr) {
-                switch(Environment.OSVersion.Platform) {
+                if(ptr != IntPtr.Zero) {
+                    MethodInfo _createDelegate = typeof(_DsmEntry).GetMethod("CreateDelegate", BindingFlags.Static | BindingFlags.NonPublic);
+                    foreach(PropertyInfo _prop in typeof(_DsmEntry).GetProperties()) {
+                        _prop.SetValue(this, _createDelegate.MakeGenericMethod(_prop.PropertyType).Invoke(this, new object[] { ptr }), null);
+                    }
+                    return;
+                }
+                switch(_Platform.Platform) {
                     case PlatformID.Unix:
                         this.DsmParent = _DsmEntry._LinuxDsmParent;
                         this.DsmRaw = _DsmEntry._LinuxDsmRaw;
@@ -1938,11 +2028,7 @@ namespace Saraff.Twain {
                         this.DsRaw = _DsmEntry._MacosxDsRaw;
                         break;
                     default:
-                        MethodInfo _createDelegate = typeof(_DsmEntry).GetMethod("CreateDelegate", BindingFlags.Static | BindingFlags.NonPublic);
-                        foreach(PropertyInfo _prop in typeof(_DsmEntry).GetProperties()) {
-                            _prop.SetValue(this, _createDelegate.MakeGenericMethod(_prop.PropertyType).Invoke(this, new object[] { ptr }), null);
-                        }
-                        break;
+                        throw new ArgumentException("DSM_Entry pointer is not specified.", nameof(ptr));
                 }
             }
 
@@ -2045,196 +2131,6 @@ namespace Saraff.Twain {
 
         }
 
-        /// <summary>
-        /// Entry points for memory management functions.
-        /// <para xml:lang="ru">Точки входа для функций управления памятью.</para>
-        /// </summary>
-        internal sealed class _Memory {
-            private static TwEntryPoint _entryPoint;
-
-            /// <summary>
-            /// Allocates a memory block of the specified size.
-            /// <para xml:lang="ru">Выделяет блок памяти указанного размера.</para>
-            /// </summary>
-            /// <param name="size">The size of the memory block.<para xml:lang="ru">Размер блока памяти.</para></param>
-            /// <returns>Memory descriptor.<para xml:lang="ru">Дескриптор памяти.</para></returns>
-            public static IntPtr Alloc(int size) {
-                if(_Memory._entryPoint != null && _Memory._entryPoint.MemoryAllocate != null) {
-                    return _Memory._entryPoint.MemoryAllocate(size);
-                }
-                switch(Environment.OSVersion.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        throw new NotSupportedException();
-                    default:
-                        return _Memory.GlobalAlloc(0x42, size);
-                }
-            }
-
-            /// <summary>
-            /// Frees up memory.
-            /// <para xml:lang="ru">Освобождает память.</para>
-            /// </summary>
-            /// <param name="handle">Memory descriptor.<para xml:lang="ru">Дескриптор памяти.</para></param>
-            public static void Free(IntPtr handle) {
-                if(_Memory._entryPoint != null && _Memory._entryPoint.MemoryFree != null) {
-                    _Memory._entryPoint.MemoryFree(handle);
-                    return;
-                }
-                switch(Environment.OSVersion.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        throw new NotSupportedException();
-                    default:
-                        _Memory.GlobalFree(handle);
-                        break;
-                }
-            }
-
-            /// <summary>
-            /// Performs a memory lock.
-            /// <para xml:lang="ru">Выполняет блокировку памяти.</para>
-            /// </summary>
-            /// <param name="handle">Memory descriptor.<para xml:lang="ru">Дескриптор памяти.</para></param>
-            /// <returns>Pointer to a block of memory.<para xml:lang="ru">Указатель на блок памяти.</para></returns>
-            public static IntPtr Lock(IntPtr handle) {
-                if(_Memory._entryPoint != null && _Memory._entryPoint.MemoryLock != null) {
-                    return _Memory._entryPoint.MemoryLock(handle);
-                }
-                switch(Environment.OSVersion.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        throw new NotSupportedException();
-                    default:
-                        return _Memory.GlobalLock(handle);
-                }
-            }
-
-            /// <summary>
-            /// Unlocks memory.
-            /// <para xml:lang="ru">Выполняет разблокировку памяти.</para>
-            /// </summary>
-            /// <param name="handle">Memory descriptor.<para xml:lang="ru">Дескриптор памяти.</para></param>
-            public static void Unlock(IntPtr handle) {
-                if(_Memory._entryPoint != null && _Memory._entryPoint.MemoryUnlock != null) {
-                    _Memory._entryPoint.MemoryUnlock(handle);
-                    return;
-                }
-                switch(Environment.OSVersion.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        throw new NotSupportedException();
-                    default:
-                        _Memory.GlobalUnlock(handle);
-                        break;
-                }
-            }
-
-            public static void ZeroMemory(IntPtr dest, IntPtr size) {
-                switch(Environment.OSVersion.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        byte[] _data = new byte[size.ToInt32()];
-                        Marshal.Copy(_data, 0, dest, _data.Length);
-                        break;
-                    default:
-                        _Memory._ZeroMemory(dest, size);
-                        break;
-                }
-            }
-
-            /// <summary>
-            /// Sets entry points.
-            /// <para xml:lang="ru">Устаначливает точки входа.</para>
-            /// </summary>
-            /// <param name="entry">Entry points.<para xml:lang="ru">Точки входа.</para></param>
-            internal static void _SetEntryPoints(TwEntryPoint entry) => _Memory._entryPoint = entry;
-
-            #region import kernel32.dll
-
-            [DllImport("kernel32.dll", ExactSpelling = true)]
-            private static extern IntPtr GlobalAlloc(int flags, int size);
-
-            [DllImport("kernel32.dll", ExactSpelling = true)]
-            private static extern IntPtr GlobalLock(IntPtr handle);
-
-            [DllImport("kernel32.dll", ExactSpelling = true)]
-            private static extern bool GlobalUnlock(IntPtr handle);
-
-            [DllImport("kernel32.dll", ExactSpelling = true)]
-            private static extern IntPtr GlobalFree(IntPtr handle);
-
-            [DllImport("kernel32.dll", EntryPoint = "RtlZeroMemory", SetLastError = false)]
-            private static extern void _ZeroMemory(IntPtr dest, IntPtr size);
-
-
-            #endregion
-        }
-
-        /// <summary>
-        /// Entry points for platform features.
-        /// <para xml:lang="ru">Точки входа для функций платформы.</para>
-        /// </summary>
-        internal sealed class _Platform {
-
-            /// <summary>
-            /// Loads the specified library into the process memory.
-            /// <para xml:lang="ru">Загружает указаную библиотеку в память процесса.</para>
-            /// </summary>
-            /// <param name="fileName">The name of the library.<para xml:lang="ru">Имя библиотеки.</para></param>
-            /// <returns>Module descriptor.<para xml:lang="ru">Дескриптор модуля.</para></returns>
-            internal static IntPtr Load(string fileName) {
-                switch(Environment.OSVersion.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        throw new NotSupportedException();
-                    default:
-                        return _Platform.LoadLibrary(fileName);
-                }
-            }
-
-            /// <summary>
-            /// Unloads the specified library from the process memory.
-            /// <para xml:lang="ru">Выгружает указаную библиотеку из памяти процесса.</para>
-            /// </summary>
-            /// <param name="hModule">Module descriptor<para xml:lang="ru">Дескриптор модуля</para></param>
-            internal static void Unload(IntPtr hModule) {
-                switch(Environment.OSVersion.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        break;
-                    default:
-                        _Platform.FreeLibrary(hModule);
-                        break;
-                }
-            }
-
-            /// <summary>
-            /// Returns the address of the specified procedure.
-            /// <para xml:lang="ru">Возвращает адрес указанной процедуры.</para>
-            /// </summary>
-            /// <param name="hModule">Module descriptor.<para xml:lang="ru">Дескриптор модуля.</para></param>
-            /// <param name="procName">The name of the procedure.<para xml:lang="ru">Имя процедуры.</para></param>
-            /// <returns>Pointer to a procedure.<para xml:lang="ru">Указатель на процедуру.</para></returns>
-            internal static IntPtr GetProcAddr(IntPtr hModule, string procName) {
-                switch(Environment.OSVersion.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        throw new NotSupportedException();
-                    default:
-                        return _Platform.GetProcAddress(hModule, procName);
-                }
-            }
-
-            [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-            private static extern IntPtr LoadLibrary(string fileName);
-
-            [DllImport("kernel32.dll", ExactSpelling = true)]
-            private static extern bool FreeLibrary(IntPtr hModule);
-
-            [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true)]
-            private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-        }
 
         /// <summary>
         /// Win32 message filter.
@@ -2784,12 +2680,12 @@ namespace Saraff.Twain {
                     YOffset = data.YOffset
                 };
                 if((data.Memory.Flags & TwMF.Handle) != 0) {
-                    IntPtr _data = Twain32._Memory.Lock(data.Memory.TheMem);
+                    IntPtr _data = _Memory.Lock(data.Memory.TheMem);
                     try {
                         _res.ImageData = new byte[data.BytesWritten];
                         Marshal.Copy(_data, _res.ImageData, 0, _res.ImageData.Length);
                     } finally {
-                        Twain32._Memory.Unlock(data.Memory.TheMem);
+                        _Memory.Unlock(data.Memory.TheMem);
                     }
                 } else {
                     _res.ImageData = new byte[data.BytesWritten];

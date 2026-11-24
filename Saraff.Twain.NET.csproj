@@ -1,13 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFrameworks>net462;net8.0-windows</TargetFrameworks>
     <Nullable>disable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
-    <UseWPF>true</UseWPF>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn Condition="'$(TargetFramework)' == 'net8.0-windows'">$(NoWarn);0672;SYSLIB0051</NoWarn>
+    <UseWindowsForms Condition="'$(TargetFramework)' == 'net8.0-windows'">true</UseWindowsForms>
+    <UseWPF Condition="'$(TargetFramework)' == 'net8.0-windows'">true</UseWPF>
+    <GenerateAssemblyInfo Condition="'$(TargetFramework)' == 'net462'">false</GenerateAssemblyInfo>
+    <GenerateResourceUsePreserializedResources Condition="'$(TargetFramework)' == 'net462'">true</GenerateResourceUsePreserializedResources>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>sign.snk</AssemblyOriginatorKeyFile>
+    <PackageId>Saraff.Twain</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <AssemblyName>Saraff.Twain</AssemblyName>
     <RootNamespace>Saraff.Twain</RootNamespace>
     <Title>Saraff.Twain.NET</Title>
@@ -33,6 +37,29 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\scanner.bmp" />
+    <EmbeddedResource Include="Resources\scanner.bmp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <None Remove="tests/**/*" />
+    <EmbeddedResource Remove="tests/**/*" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
