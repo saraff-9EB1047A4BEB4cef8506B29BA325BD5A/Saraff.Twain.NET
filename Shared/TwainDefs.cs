@@ -624,14 +624,26 @@ namespace Saraff.Twain {
             {TwType.Uni512,typeof(TwUni512)},
             {TwType.Handle,typeof(IntPtr)}
         };
-        private static Dictionary<int, TwType> _typeofAux = new Dictionary<int, TwType> {
-            {32,TwType.Str32},
-            {64,TwType.Str64},
-            {128,TwType.Str128},
-            {255,TwType.Str255},
-            {1024,TwType.Str1024},
-            {512,TwType.Uni512}
+        private static Dictionary<Type, TwType> _twTypeOf = new Dictionary<Type, TwType> {
+            {typeof(sbyte),TwType.Int8},
+            {typeof(short),TwType.Int16},
+            {typeof(int),TwType.Int32},
+            {typeof(byte),TwType.UInt8},
+            {typeof(ushort),TwType.UInt16},
+            {typeof(uint),TwType.UInt32},
+            {typeof(TwBool),TwType.Bool},
+            {typeof(TwFix32),TwType.Fix32},
+            {typeof(TwFrame),TwType.Frame},
+            {typeof(TwStr32),TwType.Str32},
+            {typeof(TwStr64),TwType.Str64},
+            {typeof(TwStr128),TwType.Str128},
+            {typeof(TwStr255),TwType.Str255},
+            {typeof(TwStr1024),TwType.Str1024},
+            {typeof(TwUni512),TwType.Uni512},
+            {typeof(IntPtr),TwType.Handle}
         };
+        private static readonly int[] _stringLengths = { 32, 64, 128, 255, 512, 1024 };
+        private static readonly TwType[] _stringTwainTypes = { TwType.Str32, TwType.Str64, TwType.Str128, TwType.Str255, TwType.Uni512, TwType.Str1024 };
 
         /// <summary>
         /// Returns the corresponding twain type of the managed type.
@@ -650,22 +662,23 @@ namespace Saraff.Twain {
         /// <param name="type">Managed type.<para xml:lang="ru">Управляемый тип.</para></param>
         /// <returns>Type code given by twain.<para xml:lang="ru">Код типа данный twain.</para></returns>
         internal static TwType TypeOf(Type type) {
-            Type _type = type.IsEnum ? Enum.GetUnderlyingType(type) : type;
-            foreach(var _item in TwTypeHelper._typeof) {
-                if(_item.Value == _type) {
-                    return _item.Key;
-                }
+            if(type == null) {
+                throw new ArgumentNullException(nameof(type));
             }
-            if(type == typeof(bool)) {
+            Type _type = type.IsEnum ? Enum.GetUnderlyingType(type) : type;
+            if(_type == typeof(bool)) {
                 return TwType.Bool;
             }
-            if(type == typeof(float)) {
+            if(_type == typeof(float)) {
                 return TwType.Fix32;
             }
-            if(type == typeof(RectangleF)) {
+            if(_type == typeof(RectangleF)) {
                 return TwType.Frame;
             }
-            throw new KeyNotFoundException();
+            if(TwTypeHelper._twTypeOf.TryGetValue(_type, out TwType _twType)) {
+                return _twType;
+            }
+            throw new KeyNotFoundException("The managed type '" + type.FullName + "' has no corresponding TWAIN type.");
         }
 
         /// <summary>
@@ -675,8 +688,16 @@ namespace Saraff.Twain {
         /// <param name="obj">An object.<para xml:lang="ru">Объект.</para></param>
         /// <returns>Type code given by twain.<para xml:lang="ru">Код типа данный twain.</para></returns>
         internal static TwType TypeOf(object obj) {
-            if(obj is string) {
-                return TwTypeHelper._typeofAux[((string)obj).Length];
+            if(obj == null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+            if(obj is string _value) {
+                for(int i = 0; i < TwTypeHelper._stringLengths.Length; i++) {
+                    if(_value.Length <= TwTypeHelper._stringLengths[i]) {
+                        return TwTypeHelper._stringTwainTypes[i];
+                    }
+                }
+                throw new KeyNotFoundException("The string length " + _value.Length + " exceeds the largest TWAIN string type.");
             }
             return TwTypeHelper.TypeOf(obj.GetType());
         }

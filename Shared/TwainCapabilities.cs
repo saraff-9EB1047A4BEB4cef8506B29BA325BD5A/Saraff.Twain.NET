@@ -63,7 +63,7 @@ namespace Saraff.Twain {
             }
         }
 
-        private Capability<T> CreateCapability<T>(TwainComponent twain, TwCap cap) => Activator.CreateInstance(typeof(Capability<T>), new object[] { twain, cap }) as Capability<T>;
+        private Capability<T> CreateCapability<T>(TwainComponent twain, TwCap cap) => new Capability<T>(twain, cap);
 
         #region Properties
 
