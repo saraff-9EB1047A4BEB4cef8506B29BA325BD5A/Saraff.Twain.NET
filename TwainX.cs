@@ -179,6 +179,12 @@ namespace Saraff.TwainX {
             }
         }
 
+        private void _OnTransferStarting() {
+        }
+
+        private void _OnImageReceived(_Image image) {
+        }
+
         /// <summary>
         /// Получает изображение с источника данных.
         /// </summary>
@@ -774,199 +780,8 @@ namespace Saraff.TwainX {
 
         #region DG_IMAGE / IMAGExxxxXFER / MSG_GET operation
 
-        /// <summary>
-        /// Выполняет передачу изображения (Native Mode Transfer).
-        /// </summary>
-        private void _NativeTransferPictures() {
-            if(this._srcds.Id == 0) {
-                return;
-            }
-            IntPtr _hBitmap = IntPtr.Zero;
-            TwPendingXfers _pxfr = new TwPendingXfers();
-            try {
-                do {
-                    _pxfr.Count = 0;
-                    _hBitmap = IntPtr.Zero;
-                    try {
-                        for(TwRC _rc = this._dsmEntry.DSImageXfer(this._AppId, this._srcds, TwDG.Image, TwDAT.ImageNativeXfer, TwMSG.Get, ref _hBitmap); _rc != TwRC.XferDone;) {
-                            throw new TwainException(this._GetTwainStatus(), _rc);
-                        }
-                        // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                        // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                        if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo, this._GetExtImageInfo))) {
-                            return;
-                        }
 
-                        IntPtr _pBitmap = _Memory.Lock(_hBitmap);
-                        try {
 
-                            IImageHandler _handler = this.GetService(typeof(IImageHandler)) as IImageHandler;
-                            if(_handler == null) {
-                                switch(_Platform.Platform) {
-                                    case PlatformID.Unix:
-                                        _handler = new Tiff();
-                                        break;
-                                    case PlatformID.MacOSX:
-                                        _handler = new Pict();
-                                        break;
-                                    default:
-                                        _handler = new DibToImage();
-                                        break;
-                                }
-                            }
-                            _Image _img = _handler.PtrToStream(_pBitmap, this.GetService(typeof(IStreamProvider)) as IStreamProvider);
-
-                            if(this._OnEndXfer(new EndXferEventArgs(_img))) {
-                                return;
-                            }
-                        } finally {
-                            _Memory.Unlock(_hBitmap);
-                        }
-                        for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.EndXfer, ref _pxfr); _rc != TwRC.Success;) {
-                            throw new TwainException(this._GetTwainStatus(), _rc);
-                        }
-                    } finally {
-                        if(_hBitmap != IntPtr.Zero) {
-                            _Memory.Free(_hBitmap);
-                            _hBitmap = IntPtr.Zero;
-                        }
-                    }
-                } while(_pxfr.Count != 0);
-            } finally {
-                TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.Reset, ref _pxfr);
-            }
-        }
-
-        /// <summary>
-        /// Выполняет передачу изображения (Disk File Mode Transfer).
-        /// </summary>
-        private void _FileTransferPictures() {
-            if(this._srcds.Id == 0) {
-                return;
-            }
-
-            TwPendingXfers _pxfr = new TwPendingXfers();
-            try {
-                do {
-                    _pxfr.Count = 0;
-
-                    SetupFileXferEventArgs _args = new SetupFileXferEventArgs();
-                    if(this._OnSetupFileXfer(_args)) {
-                        return;
-                    }
-
-                    TwSetupFileXfer _fileXfer = new TwSetupFileXfer {
-                        Format = this.Capabilities.ImageFileFormat.IsSupported(TwQC.GetCurrent) ? this.Capabilities.ImageFileFormat.GetCurrent() : TwFF.Bmp,
-                        FileName = string.IsNullOrEmpty(_args.FileName) ? Path.GetTempFileName() : _args.FileName
-                    };
-
-                    for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.SetupFileXfer, TwMSG.Set, ref _fileXfer); _rc != TwRC.Success;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
-                    }
-
-                    for(TwRC _rc = this._dsmEntry.DsRaw(this._AppId, this._srcds, TwDG.Image, TwDAT.ImageFileXfer, TwMSG.Get, IntPtr.Zero); _rc != TwRC.XferDone;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
-                    }
-                    // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                    // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                    if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo, this._GetExtImageInfo))) {
-                        return;
-                    }
-
-                    for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.EndXfer, ref _pxfr); _rc != TwRC.Success;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
-                    }
-                    for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.SetupFileXfer, TwMSG.Get, ref _fileXfer); _rc != TwRC.Success;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
-                    }
-                    if(this._OnFileXfer(new FileXferEventArgs(ImageFileXfer.Create(_fileXfer)))) {
-                        return;
-                    }
-                } while(_pxfr.Count != 0);
-            } finally {
-                TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.Reset, ref _pxfr);
-            }
-        }
-
-        /// <summary>
-        /// Выполняет передачу изображения (Buffered Memory Mode Transfer and Memory File Mode Transfer).
-        /// </summary>
-        private void _MemoryTransferPictures(bool isMemFile) {
-            if(this._srcds.Id == 0) {
-                return;
-            }
-
-            TwPendingXfers _pxfr = new TwPendingXfers();
-            try {
-                do {
-                    _pxfr.Count = 0;
-                    ImageInfo _info = this._GetImageInfo();
-
-                    if(isMemFile) {
-                        if((this.Capabilities.ImageFileFormat.IsSupported() & TwQC.GetCurrent) != 0) {
-                            TwSetupFileXfer _fileXfer = new TwSetupFileXfer {
-                                Format = this.Capabilities.ImageFileFormat.GetCurrent()
-                            };
-                            for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.SetupFileXfer, TwMSG.Set, ref _fileXfer); _rc != TwRC.Success;) {
-                                throw new TwainException(this._GetTwainStatus(), _rc);
-                            }
-                        }
-                    }
-
-                    TwSetupMemXfer _memBufSize = new TwSetupMemXfer();
-
-                    for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.SetupMemXfer, TwMSG.Get, ref _memBufSize); _rc != TwRC.Success;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
-                    }
-                    if(this._OnSetupMemXfer(new SetupMemXferEventArgs(_info, _memBufSize.Preferred))) {
-                        return;
-                    }
-
-                    IntPtr _hMem = _Memory.Alloc((int)_memBufSize.Preferred);
-                    if(_hMem == IntPtr.Zero) {
-                        throw new TwainException("Ошибка выделениия памяти.");
-                    }
-                    try {
-                        TwMemory _mem = new TwMemory {
-                            Flags = TwMF.AppOwns | TwMF.Pointer,
-                            Length = _memBufSize.Preferred,
-                            TheMem = _Memory.Lock(_hMem)
-                        };
-
-                        do {
-                            TwImageMemXfer _memXferBuf = new TwImageMemXfer { Memory = _mem };
-                            _Memory.ZeroMemory(_memXferBuf.Memory.TheMem, (IntPtr)_memXferBuf.Memory.Length);
-
-                            TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Image, isMemFile ? TwDAT.ImageMemFileXfer : TwDAT.ImageMemXfer, TwMSG.Get, ref _memXferBuf);
-                            if(_rc != TwRC.Success && _rc != TwRC.XferDone) {
-                                TwCC _cc = this._GetTwainStatus();
-                                TwRC _rc2 = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.EndXfer, ref _pxfr);
-                                throw new TwainException(_cc, _rc);
-                            }
-                            if(this._OnMemXfer(new MemXferEventArgs(_info, ImageMemXfer.Create(_memXferBuf)))) {
-                                return;
-                            }
-                            if(_rc == TwRC.XferDone) {
-                                // DG_IMAGE / DAT_IMAGEINFO / MSG_GET
-                                // DG_IMAGE / DAT_EXTIMAGEINFO / MSG_GET
-                                if(this._OnXferDone(new XferDoneEventArgs(this._GetImageInfo, this._GetExtImageInfo))) {
-                                    return;
-                                }
-                                break;
-                            }
-                        } while(true);
-                    } finally {
-                        _Memory.Unlock(_hMem);
-                        _Memory.Free(_hMem);
-                    }
-                    for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.EndXfer, ref _pxfr); _rc != TwRC.Success;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
-                    }
-                } while(_pxfr.Count != 0);
-            } finally {
-                TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.PendingXfers, TwMSG.Reset, ref _pxfr);
-            }
-        }
 
         #endregion
 
