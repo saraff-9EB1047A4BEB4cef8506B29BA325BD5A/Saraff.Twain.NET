@@ -8,6 +8,8 @@
     <Nullable>disable</Nullable>
     <IsPackable>false</IsPackable>
     <RollForward>Major</RollForward>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>

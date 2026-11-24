@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shared\DibToImage.cs" />
+    <Compile Include="Shared\InternalsVisibleTo.cs" />
     <Compile Include="Shared\Interop.cs" />
     <Compile Include="Shared\Pict.cs" />
     <Compile Include="Shared\Tiff.cs" />
