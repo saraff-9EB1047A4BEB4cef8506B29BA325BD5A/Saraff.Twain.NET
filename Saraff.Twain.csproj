@@ -61,6 +61,7 @@
     <Compile Include="Shared\TwainSessionCore.cs" />
     <Compile Include="Shared\TwainSessionLifecycle.cs" />
     <Compile Include="Shared\TwainSessionState.cs" />
+    <Compile Include="Shared\TwainSessionTransfer.cs" />
     <Compile Include="Shared\Tiff.cs" />
     <Compile Include="Shared\TwainCapabilities.cs" />
     <Compile Include="Shared\TwainDefs.cs" />
