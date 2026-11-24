@@ -134,6 +134,12 @@ namespace Saraff.TwainX {
                 this._image = image as _Image;
             }
 
+            private EndXferEventArgs(Stream stream) {
+                this._image = stream;
+            }
+
+            internal static EndXferEventArgs FromStream(Stream stream) => new EndXferEventArgs(stream);
+
             public T CreateImage<T>(IImageFactory<T> factory) where T : class => factory.Create(this._image);
 
             /// <summary>

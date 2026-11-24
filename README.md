@@ -21,6 +21,24 @@ Cross-platform implementation for TWAIN 2.x (DS2) data sources. It does not depe
 - `Acquire()` requires a TWAIN 2.x/DS2 data source and a TWAIN 2.x DSM.
 - `DsmPath` can be used to point to a non-default `libtwaindsm` / `TWAINDSM` library.
 
+### Asynchronous acquisition
+
+`AcquireAsync` uses a dedicated session thread. On Windows the thread is STA and pumps Win32 messages; on other platforms it is a serialized background thread without a Win32 message pump.
+
+```csharp
+using var session = new TwainXAcquisitionSession(new TwainXAcquireOptions {
+    ShowUI = true,
+    DisableAfterAcquire = true,
+    MaxImages = 1
+});
+using var result = await session.AcquireAsync();
+foreach (var stream in result.Streams) {
+    // stream is a result-owned MemoryStream copied from the transfer
+}
+```
+
+The synchronous `Acquire()` API remains available and unchanged.
+
 ```
 Install-Package Saraff.TwainX
 ```
