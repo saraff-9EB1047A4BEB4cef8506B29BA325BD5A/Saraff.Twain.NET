@@ -116,6 +116,50 @@ public sealed class InternalTypesTests
     }
 
     [Fact]
+    public void SessionState_TracksLifecycle() {
+        var state = new TwainSessionState();
+
+        Assert.False(state.IsDsmOpen);
+        state.OpenDsm();
+        Assert.True(state.IsDsmOpen);
+        Assert.False(state.IsDsOpen);
+
+        state.OpenDs();
+        Assert.True(state.IsDsOpen);
+        Assert.False(state.IsDsEnabled);
+
+        state.EnableDs();
+        Assert.True(state.IsDsEnabled);
+
+        state.DisableDs();
+        Assert.False(state.IsDsEnabled);
+        Assert.True(state.IsDsOpen);
+
+        state.CloseDs();
+        Assert.False(state.IsDsOpen);
+        Assert.True(state.IsDsmOpen);
+
+        state.CloseDsm();
+        Assert.False(state.IsDsmOpen);
+    }
+
+    [Fact]
+    public void SessionState_EnableDsConsumesReadyFlag() {
+        var state = new TwainSessionState();
+        state.OpenDsm();
+        state.OpenDs();
+        state.SetEnabledAndReady();
+
+        Assert.True(state.IsDsEnabled);
+        Assert.True(state.IsDsReady);
+
+        state.EnableDs();
+
+        Assert.True(state.IsDsEnabled);
+        Assert.False(state.IsDsReady);
+    }
+
+    [Fact]
     public void Dispose_IsIdempotent() {
         var twain = new Twain32();
 
