@@ -15,7 +15,7 @@ namespace Saraff.Twain {
             int _flags = this._session.Flags;
             if(_flags != this._lastSessionFlags) {
                 this._lastSessionFlags = _flags;
-                this.TwainStateChanged?.Invoke(this, new TwainStateEventArgs((TwainStateFlag)_flags));
+                TwainEventDispatcher.Raise(this, this.TwainStateChanged, new TwainStateEventArgs((TwainStateFlag)_flags), nameof(this.TwainStateChanged));
             }
         }
     }

@@ -1048,41 +1048,41 @@ namespace Saraff.Twain {
 
         #region Raise events
 
-        private void _OnAcquireCompleted(EventArgs e) => this.AcquireCompleted?.Invoke(this, e);
+        private void _OnAcquireCompleted(EventArgs e) => TwainEventDispatcher.Raise(this, this.AcquireCompleted, e, nameof(this.AcquireCompleted));
 
-        private void _OnAcquireError(AcquireErrorEventArgs e) => this.AcquireError?.Invoke(this, e);
+        private void _OnAcquireError(AcquireErrorEventArgs e) => TwainEventDispatcher.Raise(this, this.AcquireError, e, nameof(this.AcquireError));
 
         private bool _OnXferDone(XferDoneEventArgs e) {
-            this.XferDone?.Invoke(this, e);
+            TwainEventDispatcher.Raise(this, this.XferDone, e, nameof(this.XferDone));
             return e.Cancel;
         }
 
         private bool _OnEndXfer(EndXferEventArgs e) {
-            this.EndXfer?.Invoke(this, e);
+            TwainEventDispatcher.Raise(this, this.EndXfer, e, nameof(this.EndXfer));
             return e.Cancel;
         }
 
         private bool _OnSetupMemXfer(SetupMemXferEventArgs e) {
-            this.SetupMemXferEvent?.Invoke(this, e);
+            TwainEventDispatcher.Raise(this, this.SetupMemXferEvent, e, nameof(this.SetupMemXferEvent));
             return e.Cancel;
         }
 
         private bool _OnMemXfer(MemXferEventArgs e) {
-            this.MemXferEvent?.Invoke(this, e);
+            TwainEventDispatcher.Raise(this, this.MemXferEvent, e, nameof(this.MemXferEvent));
             return e.Cancel;
         }
 
         private bool _OnSetupFileXfer(SetupFileXferEventArgs e) {
-            this.SetupFileXferEvent?.Invoke(this, e);
+            TwainEventDispatcher.Raise(this, this.SetupFileXferEvent, e, nameof(this.SetupFileXferEvent));
             return e.Cancel;
         }
 
         private bool _OnFileXfer(FileXferEventArgs e) {
-            this.FileXferEvent?.Invoke(this, e);
+            TwainEventDispatcher.Raise(this, this.FileXferEvent, e, nameof(this.FileXferEvent));
             return e.Cancel;
         }
 
-        private void _OnDeviceEvent(DeviceEventEventArgs e) => this.DeviceEvent?.Invoke(this, e);
+        private void _OnDeviceEvent(DeviceEventEventArgs e) => TwainEventDispatcher.Raise(this, this.DeviceEvent, e, nameof(this.DeviceEvent));
 
         #endregion
 
@@ -1161,16 +1161,14 @@ namespace Saraff.Twain {
             for(int i = 0; i < extInfo.Length; i++) {
                 _info[i] = new TwInfo { InfoId = extInfo[i] };
             }
-            IntPtr _extImageInfo = TwExtImageInfo.ToPtr(_info);
-            try {
+            using(TwainHGlobalBuffer _extImageInfo = TwainHGlobalBuffer.FromPointer(TwExtImageInfo.ToPtr(_info))) {
+                IntPtr _extImageInfoPtr = _extImageInfo.DangerousGetHandle();
 
-                TwRC _rc = this._dsmEntry.DsRaw(this._AppId, this._srcds, TwDG.Image, TwDAT.ExtImageInfo, TwMSG.Get, _extImageInfo);
+                TwRC _rc = this._dsmEntry.DsRaw(this._AppId, this._srcds, TwDG.Image, TwDAT.ExtImageInfo, TwMSG.Get, _extImageInfoPtr);
                 if(_rc != TwRC.Success) {
                     throw new TwainException(this._GetTwainStatus(), _rc);
                 }
-                return ExtImageInfo.FromPtr(_extImageInfo);
-            } finally {
-                Marshal.FreeHGlobal(_extImageInfo);
+                return ExtImageInfo.FromPtr(_extImageInfoPtr);
             }
         }
 

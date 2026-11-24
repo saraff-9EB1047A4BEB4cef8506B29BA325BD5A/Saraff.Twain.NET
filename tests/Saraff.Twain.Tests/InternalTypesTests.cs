@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using Saraff.Twain;
 using Xunit;
 
@@ -115,6 +116,34 @@ public sealed class InternalTypesTests
         using var capability = new TwCapability(TwCap.Brightness, "abc", TwType.Str32);
 
         Assert.Equal("abc", capability.GetValue());
+    }
+
+    [Fact]
+    public void HGlobalBuffer_AllocAndFree() {
+        using var buffer = TwainHGlobalBuffer.Alloc(4);
+
+        Assert.False(buffer.IsInvalid);
+        Marshal.WriteInt32(buffer.DangerousGetHandle(), 42);
+        Assert.Equal(42, Marshal.ReadInt32(buffer.DangerousGetHandle()));
+
+        buffer.Dispose();
+        Assert.True(buffer.IsClosed);
+    }
+
+    [Fact]
+    public void EventDispatcher_ContinuesAfterThrowingHandler() {
+        int calls = 0;
+        EventHandler<EventArgs> handler = (sender, args) => throw new InvalidOperationException();
+        handler += (sender, args) => calls++;
+
+        TwainEventDispatcher.Raise(this, handler, EventArgs.Empty, "Test");
+
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public void EventDispatcher_IgnoresNullHandler() {
+        TwainEventDispatcher.Raise(this, (EventHandler<EventArgs>)null, EventArgs.Empty, "Test");
     }
 
     [Fact]
