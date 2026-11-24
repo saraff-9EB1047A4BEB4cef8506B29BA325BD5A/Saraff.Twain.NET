@@ -74,6 +74,11 @@
     <Compile Include="Twain32.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Twain32.Capabilities.cs" />
+    <Compile Include="Twain32.Events.cs" />
+    <Compile Include="Twain32.Session.cs" />
+    <Compile Include="Twain32.Source.cs" />
+    <Compile Include="Twain32.Types.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Twain32.resx">
