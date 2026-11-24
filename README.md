@@ -41,6 +41,7 @@ Do not assume that `Twain32` and `TwainX` have identical defaults or signatures:
 - `Parent` is `IWin32Window` in `Twain32` and `IntPtr` in `TwainX`.
 - `Twain32` exposes `GetImage`, `ImageCount`, `Image`, `ImageSource`, `IsTwain2Enable` and `IsTwain2Supported`; `TwainX` does not.
 - `TwainX` requires a TWAIN 2.x/DS2 source and a TWAIN 2.x DSM.
+- `TwainX.EndXferEventArgs.Stream` exposes the underlying stream; it is rewound to the beginning and remains owned by the event args.
 
 ## Build
 
