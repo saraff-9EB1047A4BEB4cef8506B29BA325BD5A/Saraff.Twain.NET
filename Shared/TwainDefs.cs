@@ -785,13 +785,11 @@ namespace Saraff.Twain {
         /// <returns>Instance of the object.<para xml:lang="ru">Экземпляр объекта.</para></returns>
         internal static object ValueToTw<T>(TwType type, T value) {
             int _size = Marshal.SizeOf(typeof(T));
-            IntPtr _mem = Marshal.AllocHGlobal(_size);
-            _Memory.ZeroMemory(_mem, (IntPtr)_size);
-            try {
-                Marshal.StructureToPtr(value, _mem, true);
-                return Marshal.PtrToStructure(_mem, TwTypeHelper.TypeOf(type));
-            } finally {
-                Marshal.FreeHGlobal(_mem);
+            using(TwainHGlobalBuffer _mem = TwainHGlobalBuffer.Alloc(_size)) {
+                IntPtr _ptr = _mem.DangerousGetHandle();
+                _Memory.ZeroMemory(_ptr, (IntPtr)_size);
+                Marshal.StructureToPtr(value, _ptr, true);
+                return Marshal.PtrToStructure(_ptr, TwTypeHelper.TypeOf(type));
             }
         }
 
@@ -804,13 +802,11 @@ namespace Saraff.Twain {
         /// <returns>Value.<para xml:lang="ru">Значение.</para></returns>
         internal static T ValueFromTw<T>(object value) {
             int _size = Math.Max(Marshal.SizeOf(typeof(T)), Marshal.SizeOf(value));
-            IntPtr _mem = Marshal.AllocHGlobal(_size);
-            _Memory.ZeroMemory(_mem, (IntPtr)_size);
-            try {
-                Marshal.StructureToPtr(value, _mem, true);
-                return (T)Marshal.PtrToStructure(_mem, typeof(T));
-            } finally {
-                Marshal.FreeHGlobal(_mem);
+            using(TwainHGlobalBuffer _mem = TwainHGlobalBuffer.Alloc(_size)) {
+                IntPtr _ptr = _mem.DangerousGetHandle();
+                _Memory.ZeroMemory(_ptr, (IntPtr)_size);
+                Marshal.StructureToPtr(value, _ptr, true);
+                return (T)Marshal.PtrToStructure(_ptr, typeof(T));
             }
         }
     }
