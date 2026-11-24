@@ -160,6 +160,15 @@ public sealed class InternalTypesTests
     }
 
     [Fact]
+    public void OpenDSM_WithInvalidDsmPath_ThrowsTwainException() {
+        using var twain = new TwainX {
+            DsmPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".dll")
+        };
+
+        Assert.Throws<TwainException>(() => twain.OpenDSM());
+    }
+
+    [Fact]
     public void Dispose_IsIdempotent() {
         var twain = new TwainX();
 
