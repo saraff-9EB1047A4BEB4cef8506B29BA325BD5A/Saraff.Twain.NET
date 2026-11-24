@@ -140,181 +140,75 @@ namespace Saraff.Twain {
             }
         }
 
-        /// <summary>
-        /// Opens the data source manager
-        /// <para xml:lang="ru">Открывает менеджер источников данных.</para>
-        /// </summary>
-        /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
-        public bool OpenDSM() {
-            this._CheckThread();
-            if(!this._session.IsDsmOpen) {
 
-                #region We load DSM, we receive the address of the entry point DSM_Entry and we bring it to the appropriate delegates / Загружаем DSM, получаем адрес точки входа DSM_Entry и приводим ее к соответствующим делегатам
 
-                switch(_Platform.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
-                        if(!string.IsNullOrEmpty(this.DsmPath)) {
-                            this._hTwainDll = _Platform.Load(this.DsmPath);
-                            if(this._hTwainDll == IntPtr.Zero) {
-                                throw new TwainException("Can't load DSM: " + this.DsmPath);
-                            }
-                            IntPtr _pDsmEntry = _Platform.GetProcAddr(this._hTwainDll, "DSM_Entry");
-                            if(_pDsmEntry == IntPtr.Zero) {
-                                _Platform.Unload(this._hTwainDll);
-                                this._hTwainDll = IntPtr.Zero;
-                                throw new TwainException("Can't find DSM_Entry entry point.");
-                            }
+
+
+
+        private void _LoadDsm() {
+            switch(_Platform.Platform) {
+                case PlatformID.Unix:
+                case PlatformID.MacOSX:
+                    if(!string.IsNullOrEmpty(this.DsmPath)) {
+                        this._hTwainDll = _Platform.Load(this.DsmPath);
+                        if(this._hTwainDll == IntPtr.Zero) {
+                            throw new TwainException("Can't load DSM: " + this.DsmPath);
+                        }
+                        IntPtr _pDsmEntry = _Platform.GetProcAddr(this._hTwainDll, "DSM_Entry");
+                        if(_pDsmEntry == IntPtr.Zero) {
+                            _Platform.Unload(this._hTwainDll);
+                            this._hTwainDll = IntPtr.Zero;
+                            throw new TwainException("Can't find DSM_Entry entry point.");
+                        }
+                        this._dsmEntry = _DsmEntry.Create(_pDsmEntry);
+                    } else {
+                        this._dsmEntry = _DsmEntry.Create(IntPtr.Zero);
+                    }
+                    try {
+                        if(this._dsmEntry.DsmRaw == null) {
+                            throw new InvalidOperationException("Can't load DSM.");
+                        }
+                    } catch(Exception ex) {
+                        throw new TwainException("Can't load DSM.", ex);
+                    }
+                    break;
+                default:
+                    string _twainDsm = this.DsmPath;
+                    if(string.IsNullOrEmpty(_twainDsm)) {
+                        _twainDsm = Path.ChangeExtension(Path.Combine(Environment.SystemDirectory, "TWAINDSM"), ".dll");
+                        _twainDsm = File.Exists(_twainDsm) && this.IsTwain2Enable ? _twainDsm : Path.ChangeExtension(Path.Combine(Environment.SystemDirectory, "..\\twain_32"), ".dll");
+                    }
+                    this._hTwainDll = _Platform.Load(_twainDsm);
+                    if(this.Parent != null) {
+                        this._hwnd = this.Parent.Handle;
+                    }
+                    if(this._hTwainDll != IntPtr.Zero) {
+                        IntPtr _pDsmEntry = _Platform.GetProcAddr(this._hTwainDll, "DSM_Entry");
+                        if(_pDsmEntry != IntPtr.Zero) {
                             this._dsmEntry = _DsmEntry.Create(_pDsmEntry);
+                            _Memory._SetEntryPoints(null);
                         } else {
-                            this._dsmEntry = _DsmEntry.Create(IntPtr.Zero);
+                            throw new TwainException("Can't find DSM_Entry entry point.");
                         }
-                        try {
-                            if(this._dsmEntry.DsmRaw == null) {
-                                throw new InvalidOperationException("Can't load DSM.");
-                            }
-                        } catch(Exception ex) {
-                            throw new TwainException("Can't load DSM.", ex);
-                        }
-                        break;
-                    default:
-                        string _twainDsm = this.DsmPath;
-                        if(string.IsNullOrEmpty(_twainDsm)) {
-                            _twainDsm = Path.ChangeExtension(Path.Combine(Environment.SystemDirectory, "TWAINDSM"), ".dll");
-                            _twainDsm = File.Exists(_twainDsm) && this.IsTwain2Enable ? _twainDsm : Path.ChangeExtension(Path.Combine(Environment.SystemDirectory, "..\\twain_32"), ".dll");
-                        }
-                        this._hTwainDll = _Platform.Load(_twainDsm);
-                        if(this.Parent != null) {
-                            this._hwnd = this.Parent.Handle;
-                        }
-                        if(this._hTwainDll != IntPtr.Zero) {
-                            IntPtr _pDsmEntry = _Platform.GetProcAddr(this._hTwainDll, "DSM_Entry");
-                            if(_pDsmEntry != IntPtr.Zero) {
-                                this._dsmEntry = _DsmEntry.Create(_pDsmEntry);
-                                _Memory._SetEntryPoints(null);
-                            } else {
-                                throw new TwainException("Can't find DSM_Entry entry point.");
-                            }
-                        } else {
-                            throw new TwainException("Can't load DSM.");
-                        }
-                        break;
-                }
-
-
-                #endregion
-
-                for(TwRC _rc = this._dsmEntry.DsmParent(this._AppId, IntPtr.Zero, TwDG.Control, TwDAT.Parent, TwMSG.OpenDSM, ref this._hwnd); _rc != TwRC.Success;) {
-                    throw new TwainException(this._GetTwainStatus(), _rc);
-                }
-                this._session.OpenDsm(); this._SyncTwainState();
-
-                if(this.IsTwain2Supported) {
-                    TwEntryPoint _entry = new TwEntryPoint();
-                    for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.EntryPoint, TwMSG.Get, ref _entry); _rc != TwRC.Success;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
+                    } else {
+                        throw new TwainException("Can't load DSM.");
                     }
-                    _Memory._SetEntryPoints(_entry);
-                }
-
-                this._GetAllSorces();
+                    break;
             }
-            return this._session.IsDsmOpen;
         }
 
-        /// <summary>
-        /// Displays a dialog box for selecting a data source.
-        /// <para xml:lang="ru">Отображает диалоговое окно для выбора источника данных.</para>
-        /// </summary>
-        /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
-        public bool SelectSource() {
-            this._CheckThread();
-            if(_Platform.Platform == PlatformID.Unix) {
-                throw new NotSupportedException("DG_CONTROL / DAT_IDENTITY / MSG_USERSELECT is not available on Linux.");
-            }
-            if(!this._session.IsDsOpen) {
-                if(!this._session.IsDsmOpen) {
-                    this.OpenDSM();
-                    if(!this._session.IsDsmOpen) {
-                        return false;
-                    }
-                }
-                TwIdentity _src = new TwIdentity();
-                for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.Identity, TwMSG.UserSelect, ref _src); _rc != TwRC.Success;) {
-                    if(_rc == TwRC.Cancel) {
-                        return false;
-                    }
-                    throw new TwainException(this._GetTwainStatus(), _rc);
-                }
-                this._srcds = _src;
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Opens a data source.
-        /// <para xml:lang="ru">Открывает источник данных.</para>
-        /// </summary>
-        /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
-        public bool OpenDataSource() {
-            this._CheckThread();
-            if(this._session.IsDsmOpen && !this._session.IsDsOpen) {
-                for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.Identity, TwMSG.OpenDS, ref this._srcds); _rc != TwRC.Success;) {
-                    throw new TwainException(this._GetTwainStatus(), _rc);
-                }
-                this._session.OpenDs(); this._SyncTwainState();
-
-                switch(_Platform.Platform) {
-                    case PlatformID.Unix:
-                    case PlatformID.MacOSX:
+        private void _OnDataSourceOpened() {
+            switch(_Platform.Platform) {
+                case PlatformID.Unix:
+                case PlatformID.MacOSX:
+                    this._RegisterCallback();
+                    break;
+                default:
+                    if(this.IsTwain2Supported && (this._srcds.SupportedGroups & TwDG.DS2) != 0) {
                         this._RegisterCallback();
-                        break;
-                    default:
-                        if(this.IsTwain2Supported && (this._srcds.SupportedGroups & TwDG.DS2) != 0) {
-                            this._RegisterCallback();
-                        }
-                        break;
-                }
-
+                    }
+                    break;
             }
-            return this._session.IsDsOpen;
-        }
-
-        /// <summary>
-        /// Registers a data source event handler.
-        /// <para xml:lang="ru">Регестрирует обработчик событий источника данных.</para>
-        /// </summary>
-        private void _RegisterCallback() {
-            TwCallback2 _callback = new TwCallback2 {
-                CallBackProc = this._callbackProc
-            };
-            TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.Callback2, TwMSG.RegisterCallback, ref _callback);
-            if(_rc != TwRC.Success) {
-                throw new TwainException(this._GetTwainStatus(), _rc);
-            }
-        }
-
-        /// <summary>
-        /// Activates a data source.
-        /// <para xml:lang="ru">Активирует источник данных.</para>
-        /// </summary>
-        /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
-        private bool _EnableDataSource() {
-            if(this._session.IsDsOpen && !this._session.IsDsEnabled) {
-                TwUserInterface _guif = new TwUserInterface() {
-                    ShowUI = this.ShowUI,
-                    ModalUI = this.ModalUI,
-                    ParentHand = this._hwnd
-                };
-                for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.UserInterface, TwMSG.EnableDS, ref _guif); _rc != TwRC.Success;) {
-                    throw new TwainException(this._GetTwainStatus(), _rc);
-                }
-                this.ModalUI = _guif.ModalUI;
-                this._session.EnableDs();
-                this._SyncTwainState();
-            }
-            return this._session.IsDsEnabled;
         }
 
         /// <summary>
@@ -343,95 +237,10 @@ namespace Saraff.Twain {
             }
         }
 
-        /// <summary>
-        /// Deactivates the data source.
-        /// <para xml:lang="ru">Деактивирует источник данных.</para>
-        /// </summary>
-        /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
-        private bool _DisableDataSource() {
-            if(this._session.IsDsEnabled) {
-                try {
-                    TwUserInterface _guif = new TwUserInterface() {
-                        ParentHand = this._hwnd,
-                        ShowUI = false
-                    };
-                    for(TwRC _rc = this._dsmEntry.DsInvoke(this._AppId, this._srcds, TwDG.Control, TwDAT.UserInterface, TwMSG.DisableDS, ref _guif); _rc != TwRC.Success;) {
-                        throw new TwainException(this._GetTwainStatus(), _rc);
-                    }
-                } finally {
-                    this._session.DisableDs(); this._SyncTwainState();
-                    if(this._context != null) {
-                        this._context.ExitThread();
-                        this._context.Dispose();
-                        this._context = null;
-                    }
-                }
-                return !this._session.IsDsEnabled;
-            }
-            return false;
-        }
 
-        /// <summary>
-        /// Closes the data source.
-        /// <para xml:lang="ru">Закрывает источник данных.</para>
-        /// </summary>
-        /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
-        public bool CloseDataSource() {
-            this._CheckThread();
-            if(this._session.IsDsOpen && !this._session.IsDsEnabled) {
-                this._images.Clear();
-                for(TwRC _rc = this._dsmEntry.DsmInvoke(this._AppId, TwDG.Control, TwDAT.Identity, TwMSG.CloseDS, ref this._srcds); _rc != TwRC.Success;) {
-                    throw new TwainException(this._GetTwainStatus(), _rc);
-                }
-                this._session.CloseDs(); this._SyncTwainState();
-                return !this._session.IsDsOpen;
-            }
-            return false;
-        }
 
-        /// <summary>
-        /// Closes the data source manager.
-        /// <para xml:lang="ru">Закрывает менежер источников данных.</para>
-        /// </summary>
-        /// <returns>True if the operation was successful; otherwise, false.<para xml:lang="ru">Истина, если операция прошла удачно; иначе, лож.</para></returns>
-        public bool CloseDSM() {
-            this._CheckThread();
-            if(this._session.IsDsEnabled) {
-                this._DisableDataSource();
-            }
-            if(this._session.IsDsOpen) {
-                this.CloseDataSource();
-            }
-            if(this._session.IsDsmOpen && !this._session.IsDsOpen) {
-                for(TwRC _rc = this._dsmEntry.DsmParent(this._AppId, IntPtr.Zero, TwDG.Control, TwDAT.Parent, TwMSG.CloseDSM, ref this._hwnd); _rc != TwRC.Success;) {
-                    throw new TwainException(this._GetTwainStatus(), _rc);
-                }
-                this._session.CloseDsm(); this._SyncTwainState();
-                this._UnloadDSM();
-                return !this._session.IsDsmOpen;
-            }
-            return false;
-        }
 
-        private void _UnloadDSM() {
-            this._AppId = null;
-            if(this._hTwainDll != IntPtr.Zero) {
-                _Platform.Unload(this._hTwainDll);
-                this._hTwainDll = IntPtr.Zero;
-            }
-            this._threadId = 0;
-        }
 
-        private void _CheckThread() {
-            int _id = Environment.CurrentManagedThreadId;
-            if(this._threadId == 0) {
-                this._threadId = _id;
-                return;
-            }
-            if(this._threadId != _id) {
-                throw new InvalidOperationException("TWAIN operations must be performed on the same thread. Операции TWAIN должны выполняться в одном потоке.");
-            }
-        }
 
         /// <summary>
         /// Returns the scanned image.

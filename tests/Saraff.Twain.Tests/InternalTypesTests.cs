@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.IO;
 using Saraff.Twain;
 using Xunit;
 
@@ -157,6 +158,15 @@ public sealed class InternalTypesTests
 
         Assert.True(state.IsDsEnabled);
         Assert.False(state.IsDsReady);
+    }
+
+    [Fact]
+    public void OpenDSM_WithInvalidDsmPath_ThrowsTwainException() {
+        using var twain = new Twain32 {
+            DsmPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".dll")
+        };
+
+        Assert.Throws<TwainException>(() => twain.OpenDSM());
     }
 
     [Fact]
