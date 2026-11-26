@@ -7,34 +7,51 @@ on:
     branches: [ master, twainx ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET_BRANCH: ${{ github.base_ref || github.ref_name }}
+
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - name: Select product
+        id: product
+        shell: pwsh
+        run: |
+          if ($env:TARGET_BRANCH -eq 'twainx') {
+            "project=Saraff.TwainX.csproj" >> $env:GITHUB_OUTPUT
+            "solution=Saraff.TwainX.sln" >> $env:GITHUB_OUTPUT
+            "tests=tests/Saraff.TwainX.Tests/Saraff.TwainX.Tests.csproj" >> $env:GITHUB_OUTPUT
+            "package_id=Saraff.TwainX" >> $env:GITHUB_OUTPUT
+          } else {
+            "project=Saraff.Twain.NET.csproj" >> $env:GITHUB_OUTPUT
+            "solution=Saraff.Twain.sln" >> $env:GITHUB_OUTPUT
+            "tests=tests/Saraff.Twain.Tests/Saraff.Twain.Tests.csproj" >> $env:GITHUB_OUTPUT
+            "package_id=Saraff.Twain" >> $env:GITHUB_OUTPUT
+          }
       - name: Build and test
         shell: pwsh
         run: |
-          if ("${{ github.ref_name }}" -eq "twainx") {
-            dotnet build Saraff.TwainX.sln -c Release
-            dotnet test tests/Saraff.TwainX.Tests/Saraff.TwainX.Tests.csproj -c Release --no-build
-          } else {
-            dotnet build Saraff.Twain.sln -c Release
-            dotnet test tests/Saraff.Twain.Tests/Saraff.Twain.Tests.csproj -c Release --no-build
-          }
+          dotnet build '${{ steps.product.outputs.solution }}' -c Release
+          dotnet test '${{ steps.product.outputs.tests }}' -c Release --no-build
       - name: Validate package identity
         shell: pwsh
         run: |
-          if ("${{ github.ref_name }}" -eq "twainx") {
-            $project = "Saraff.TwainX.csproj"
-            $expected = "Saraff.TwainX"
-          } else {
-            $project = "Saraff.Twain.NET.csproj"
-            $expected = "Saraff.Twain"
-          }
+          $project = '${{ steps.product.outputs.project }}'
+          $expected = '${{ steps.product.outputs.package_id }}'
           $packageId = (dotnet msbuild $project -getProperty:PackageId | Select-Object -Last 1).Trim()
           $version = (dotnet msbuild $project -getProperty:Version | Select-Object -Last 1).Trim()
           if ($packageId -ne $expected) {

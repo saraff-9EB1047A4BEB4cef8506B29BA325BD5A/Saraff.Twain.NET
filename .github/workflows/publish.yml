@@ -1,0 +1,205 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - 'twain-v*'
+      - 'twainx-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version to publish (for example 1.0.34 or 1.0.34-beta1)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Build and validate the package without publishing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nuget-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Resolve package and version
+        id: package
+        shell: pwsh
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          if (Test-Path 'Saraff.TwainX.csproj') {
+            $product = 'twainx'
+            $project = 'Saraff.TwainX.csproj'
+            $solution = 'Saraff.TwainX.sln'
+            $tests = 'tests/Saraff.TwainX.Tests/Saraff.TwainX.Tests.csproj'
+            $packageId = 'Saraff.TwainX'
+          }
+          elseif (Test-Path 'Saraff.Twain.NET.csproj') {
+            $product = 'twain'
+            $project = 'Saraff.Twain.NET.csproj'
+            $solution = 'Saraff.Twain.sln'
+            $tests = 'tests/Saraff.Twain.Tests/Saraff.Twain.Tests.csproj'
+            $packageId = 'Saraff.Twain'
+          }
+          else {
+            throw 'No publishable project was found in this checkout.'
+          }
+
+          $versionPattern = '^\d+\.\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.-]+)?$'
+
+          if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
+            $version = $env:REQUESTED_VERSION
+          }
+          else {
+            $tag = $env:GITHUB_REF_NAME
+            if ($tag -notmatch '^(?:(?<product>twainx|twain)-)?v(?<version>\d+\.\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.-]+)?)$') {
+              throw "Tag '$tag' does not contain a valid package version."
+            }
+            $version = $Matches.version
+            $tagProduct = $Matches.product
+            if ($tagProduct -and $tagProduct -ne $product) {
+              throw "Tag '$tag' targets '$tagProduct', but this checkout publishes '$product'."
+            }
+          }
+
+          $version = $version.Trim()
+          if ($version -notmatch $versionPattern) {
+            throw "Version '$version' is not a valid NuGet version."
+          }
+
+          $assemblyVersion = ($version -split '-', 2)[0]
+          $parts = @($assemblyVersion.Split('.'))
+          while ($parts.Count -lt 4) {
+            $parts += '0'
+          }
+          $assemblyVersion = $parts -join '.'
+
+          "product=$product" >> $env:GITHUB_OUTPUT
+          "project=$project" >> $env:GITHUB_OUTPUT
+          "solution=$solution" >> $env:GITHUB_OUTPUT
+          "tests=$tests" >> $env:GITHUB_OUTPUT
+          "package_id=$packageId" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "assembly_version=$assemblyVersion" >> $env:GITHUB_OUTPUT
+
+          Write-Output "Publishing $packageId $version (assembly $assemblyVersion) from $project."
+
+      - name: Build
+        shell: pwsh
+        run: |
+          dotnet build '${{ steps.package.outputs.solution }}' -c Release `
+            -p:Version='${{ steps.package.outputs.version }}' `
+            -p:AssemblyVersion='${{ steps.package.outputs.assembly_version }}' `
+            -p:FileVersion='${{ steps.package.outputs.assembly_version }}' `
+            -p:GeneratePackageOnBuild=false
+
+      - name: Test
+        shell: pwsh
+        run: |
+          dotnet test '${{ steps.package.outputs.tests }}' -c Release --no-build
+
+      - name: Pack
+        shell: pwsh
+        run: |
+          dotnet pack '${{ steps.package.outputs.project }}' -c Release --no-build `
+            -o artifacts `
+            -p:Version='${{ steps.package.outputs.version }}' `
+            -p:AssemblyVersion='${{ steps.package.outputs.assembly_version }}' `
+            -p:FileVersion='${{ steps.package.outputs.assembly_version }}'
+
+          $packageId = '${{ steps.package.outputs.package_id }}'
+          $packages = @(Get-ChildItem artifacts -Filter "$packageId.*.nupkg")
+          if ($packages.Count -ne 1) {
+            throw "Expected exactly one $packageId .nupkg in artifacts, found $($packages.Count)."
+          }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($packages[0].FullName)
+          try {
+            $entry = $archive.Entries | Where-Object { $_.FullName -like '*.nuspec' } | Select-Object -First 1
+            if (-not $entry) {
+              throw "Package '$($packages[0].Name)' does not contain a nuspec."
+            }
+            $reader = [System.IO.StreamReader]::new($entry.Open())
+            try {
+              $nuspec = [xml]$reader.ReadToEnd()
+            }
+            finally {
+              $reader.Dispose()
+            }
+            if ($nuspec.package.metadata.id -ne $packageId) {
+              throw "Unexpected package id '$($nuspec.package.metadata.id)' in '$($packages[0].Name)'."
+            }
+            Write-Output "Package: $($nuspec.package.metadata.id) $($nuspec.package.metadata.version)"
+          }
+          finally {
+            $archive.Dispose()
+          }
+
+          Get-ChildItem artifacts | Format-Table Name, Length
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: artifacts/*
+          if-no-files-found: error
+
+      - name: NuGet login (OIDC -> temporary API key)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Publish package
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: |
+          $source = 'https://api.nuget.org/v3/index.json'
+
+          $packages = @(Get-ChildItem artifacts -Filter '*.nupkg')
+          if ($packages.Count -eq 0) {
+            throw 'No .nupkg files found in artifacts.'
+          }
+
+          foreach ($package in $packages) {
+            Write-Output "Pushing $($package.Name)"
+            dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source $source --skip-duplicate --no-symbols
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to push $($package.Name)."
+            }
+          }
+
+          $symbolPackages = @(Get-ChildItem artifacts -Filter '*.snupkg')
+          foreach ($package in $symbolPackages) {
+            Write-Output "Pushing symbols $($package.Name)"
+            dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source $source --skip-duplicate
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to push $($package.Name)."
+            }
+          }
