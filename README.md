@@ -68,34 +68,6 @@ dotnet build Saraff.TwainX.csproj -c Release
 dotnet test tests/Saraff.TwainX.Tests/Saraff.TwainX.Tests.csproj -c Release
 ```
 
-## Publishing
-
-Publishing uses [NuGet Trusted Publishing](https://www.nuget.org/account/trustedpublishing) (OIDC), so no long-lived NuGet API key is stored in the repository. The `Publish` workflow (`.github/workflows/publish.yml`) builds, tests, packs and pushes the package and its `.snupkg` symbols.
-
-One-time setup:
-
-1. On nuget.org open **Trusted Publishing** and add a policy for this repository:
-
-   | Field | Value |
-   |---|---|
-   | Repository Owner | `saraff-9EB1047A4BEB4cef8506B29BA325BD5A` |
-   | Repository | `Saraff.Twain.NET` |
-   | Workflow File | `publish.yml` |
-   | Environment | `release` |
-
-   Select the owner (your account or the organization) that owns the package, and allow pushing new packages and new versions for the `Saraff.TwainX` scope. Because this package is new on nuget.org, the policy must allow publishing new packages.
-2. In GitHub, add the repository secret `NUGET_USER` with the nuget.org username of the Trusted Publishing policy creator (profile name, not email). This secret is already configured for the repository.
-3. Optionally add required reviewers to the `release` environment to gate publishing.
-
-Publish from a tag:
-
-```
-git tag twainx-v1.0.34
-git push origin twainx-v1.0.34
-```
-
-On this branch the generic `v*` tag also works, but tag names are shared by both branches, so the `twainx-` prefix avoids a collision with `Saraff.Twain` releases. You can also run the **Publish** workflow manually and pass the version. Enable `dry_run` to build, test and validate the package without logging in to nuget.org or pushing it.
-
 Also, you can see: 
 * [NuGet package of the Saraff.TwainX](https://www.nuget.org/packages/Saraff.TwainX/)
 * [Saraff.TwainX Extensions (LINQ to TWAIN)](https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.Extensions/tree/twainx)
