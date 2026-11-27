@@ -6,7 +6,6 @@
     <NoWarn Condition="'$(TargetFramework)' == 'net8.0-windows'">$(NoWarn);0672;SYSLIB0051</NoWarn>
     <UseWindowsForms Condition="'$(TargetFramework)' == 'net8.0-windows'">true</UseWindowsForms>
     <UseWPF Condition="'$(TargetFramework)' == 'net8.0-windows'">true</UseWPF>
-    <GenerateAssemblyInfo Condition="'$(TargetFramework)' == 'net462'">false</GenerateAssemblyInfo>
     <GenerateResourceUsePreserializedResources Condition="'$(TargetFramework)' == 'net462'">true</GenerateResourceUsePreserializedResources>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>sign.snk</AssemblyOriginatorKeyFile>
@@ -19,9 +18,8 @@
     <Company>SARAFF SOFTWARE</Company>
     <Product>Saraff.Twain.NET</Product>
     <Copyright>Copyright © SARAFF 2011</Copyright>
-    <AssemblyVersion>1.0.33.756</AssemblyVersion>
-    <FileVersion>1.0.33.756</FileVersion>
-    <Version>1.0.33.756</Version>
+    <Trademark>SARAFF SOFTWARE</Trademark>
+    <Version>1.0.35</Version>
     <PackageProjectUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET</PackageProjectUrl>
     <RepositoryUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.NET.git</RepositoryUrl>
     <PackageTags>TWAIN TWAIN.NET C# .NET FREE Open Source OSS Toolkit WPF x64 scan .NETCore</PackageTags>
@@ -58,10 +56,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Properties\AssemblyInfo.cs" />
     <Compile Remove="tests/**/*.cs" />
     <None Remove="tests/**/*" />
     <EmbeddedResource Remove="tests/**/*" />
     <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.InteropServices.ComVisibleAttribute">
+      <_Parameter1>false</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.InteropServices.GuidAttribute">
+      <_Parameter1>d8d1eb72-d26a-48b6-bc2b-e42a72b65ef1</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>

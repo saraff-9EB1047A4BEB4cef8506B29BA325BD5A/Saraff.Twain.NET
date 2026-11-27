@@ -130,33 +130,14 @@ jobs:
             -p:FileVersion='${{ steps.package.outputs.assembly_version }}'
 
           $packageId = '${{ steps.package.outputs.package_id }}'
-          $packages = @(Get-ChildItem artifacts -Filter "$packageId.*.nupkg")
+          $version = '${{ steps.package.outputs.version }}'
+          $packages = @(Get-ChildItem artifacts -Filter "$packageId.*.nupkg" -File |
+              Where-Object { $_.Name -notlike '*.snupkg' })
           if ($packages.Count -ne 1) {
             throw "Expected exactly one $packageId .nupkg in artifacts, found $($packages.Count)."
           }
 
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $archive = [System.IO.Compression.ZipFile]::OpenRead($packages[0].FullName)
-          try {
-            $entry = $archive.Entries | Where-Object { $_.FullName -like '*.nuspec' } | Select-Object -First 1
-            if (-not $entry) {
-              throw "Package '$($packages[0].Name)' does not contain a nuspec."
-            }
-            $reader = [System.IO.StreamReader]::new($entry.Open())
-            try {
-              $nuspec = [xml]$reader.ReadToEnd()
-            }
-            finally {
-              $reader.Dispose()
-            }
-            if ($nuspec.package.metadata.id -ne $packageId) {
-              throw "Unexpected package id '$($nuspec.package.metadata.id)' in '$($packages[0].Name)'."
-            }
-            Write-Output "Package: $($nuspec.package.metadata.id) $($nuspec.package.metadata.version)"
-          }
-          finally {
-            $archive.Dispose()
-          }
+          ./scripts/verify-package-version.ps1 -PackagePath $packages[0].FullName -PackageId $packageId -Version $version
 
           Get-ChildItem artifacts | Format-Table Name, Length
 

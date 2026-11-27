@@ -47,7 +47,7 @@ jobs:
         run: |
           dotnet build '${{ steps.product.outputs.solution }}' -c Release
           dotnet test '${{ steps.product.outputs.tests }}' -c Release --no-build
-      - name: Validate package identity
+      - name: Validate package identity and version
         shell: pwsh
         run: |
           $project = '${{ steps.product.outputs.project }}'
@@ -58,6 +58,14 @@ jobs:
             throw "Unexpected package id '$packageId' in project '$project'; expected '$expected'."
           }
           Write-Output "Package identity: $packageId $version"
+
+          $packages = @(Get-ChildItem -Path 'bin/Release' -Filter "$expected.*.nupkg" -File |
+              Where-Object { $_.Name -notlike '*.snupkg' })
+          if ($packages.Count -ne 1) {
+            throw "Expected exactly one $expected .nupkg in bin/Release, found $($packages.Count)."
+          }
+
+          ./scripts/verify-package-version.ps1 -PackagePath $packages[0].FullName -PackageId $expected -Version $version
 
   package-identities:
     runs-on: windows-latest
